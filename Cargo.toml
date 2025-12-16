@@ -1,0 +1,48 @@
+[package]
+name = "sistema-temperaturas"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Framework web
+axum = { version = "0.7", features = ["macros"] }
+tokio = { version = "1", features = ["full"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["fs", "trace", "cors"] }
+
+# Base de datos
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite", "chrono"] }
+
+# Serialización
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Manejo de fechas
+chrono = { version = "0.4", features = ["serde"] }
+
+# Seguridad y autenticación
+bcrypt = "0.15"
+uuid = { version = "1", features = ["v4", "serde"] }
+
+# Variables de entorno
+dotenv = "0.15"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Utilidades
+thiserror = "1"
+anyhow = "1"
+async-trait = "0.1"
+
+# Cookies y sesiones
+tower-sessions = "0.12"
+tower-sessions-sqlx-store = { version = "0.12", features = ["sqlite"] }
+time = "0.3"
+
+# Generación de PDF
+printpdf = "0.7"
+
+# Generación de CSV
+csv = "1"

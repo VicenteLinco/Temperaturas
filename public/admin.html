@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Temperaturas - Administración</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .sidebar {
+            background-color: white;
+            min-height: calc(100vh - 56px);
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        .sidebar .nav-link {
+            color: #495057;
+            padding: 12px 20px;
+            border-left: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        .sidebar .nav-link:hover {
+            background-color: #f8f9fa;
+            border-left-color: #667eea;
+        }
+        .sidebar .nav-link.active {
+            background-color: #e7f1ff;
+            border-left-color: #667eea;
+            color: #667eea;
+            font-weight: 600;
+        }
+        .content-area {
+            padding: 30px;
+        }
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .btn-primary {
+            background: #667eea;
+            border: none;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        .table-actions button {
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="bi bi-thermometer-half"></i> Sistema de Temperaturas - Administración
+            </span>
+            <div class="d-flex">
+                <span class="text-white me-3">Usuario: <span id="username"></span></span>
+                <button class="btn btn-outline-light btn-sm" onclick="logout()">Cerrar Sesión</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 p-0 sidebar">
+                <nav class="nav flex-column pt-3">
+                    <a class="nav-link active" href="#" onclick="showSection('usuarios')">
+                        <i class="bi bi-people"></i> Usuarios
+                    </a>
+                    <a class="nav-link" href="#" onclick="showSection('areas')">
+                        <i class="bi bi-building"></i> Áreas Técnicas
+                    </a>
+                    <a class="nav-link" href="#" onclick="showSection('tipos')">
+                        <i class="bi bi-gear"></i> Tipos de Termómetros
+                    </a>
+                    <a class="nav-link" href="#" onclick="showSection('termometros')">
+                        <i class="bi bi-thermometer"></i> Termómetros
+                    </a>
+                    <a class="nav-link" href="#" onclick="showSection('registros')">
+                        <i class="bi bi-clipboard-data"></i> Gestión de Registros
+                    </a>
+                    <a class="nav-link" href="#" onclick="showSection('configuracion')">
+                        <i class="bi bi-sliders"></i> Configuración
+                    </a>
+                    <a class="nav-link" href="#" onclick="showSection('reportes')">
+                        <i class="bi bi-file-earmark-text"></i> Reportes
+                    </a>
+                </nav>
+            </div>
+
+            <!-- Content Area -->
+            <div class="col-md-9 col-lg-10 content-area">
+                <!-- Usuarios Section -->
+                <div id="section-usuarios" class="content-section">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2>Gestión de Usuarios</h2>
+                        <button class="btn btn-primary" onclick="nuevoUsuario()">
+                            <i class="bi bi-plus-circle"></i> Nuevo Usuario
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="card-body">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Usuario</th>
+                                        <th>Rol</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usuariosTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Áreas Section -->
+                <div id="section-areas" class="content-section" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2>Áreas Técnicas</h2>
+                        <button class="btn btn-primary" onclick="nuevaArea()">
+                            <i class="bi bi-plus-circle"></i> Nueva Área
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="card-body">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Nombre</th>
+                                        <th>Descripción</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="areasTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tipos de Termómetros Section -->
+                <div id="section-tipos" class="content-section" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2>Tipos de Termómetros</h2>
+                        <button class="btn btn-primary" onclick="nuevoTipo()">
+                            <i class="bi bi-plus-circle"></i> Nuevo Tipo
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="card-body">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Nombre</th>
+                                        <th>Humedad</th>
+                                        <th>Rango Temp.</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tiposTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Termómetros Section -->
+                <div id="section-termometros" class="content-section" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2>Termómetros</h2>
+                        <button class="btn btn-primary" onclick="nuevoTermometro()">
+                            <i class="bi bi-plus-circle"></i> Nuevo Termómetro
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="card-body">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Nombre</th>
+                                        <th>Área</th>
+                                        <th>Tipo</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="termometrosTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Registros Section -->
+                <div id="section-registros" class="content-section" style="display: none;">
+                    <h2 class="mb-4">Gestión de Registros</h2>
+
+                    <!-- Filtros -->
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">Filtros</h5>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label class="form-label">Fecha Desde</label>
+                                    <input type="date" class="form-control" id="filtro_fecha_desde">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Fecha Hasta</label>
+                                    <input type="date" class="form-control" id="filtro_fecha_hasta">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Área</label>
+                                    <select class="form-select" id="filtro_area">
+                                        <option value="">Todas</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Ventana Horaria</label>
+                                    <select class="form-select" id="filtro_ventana">
+                                        <option value="">Todas</option>
+                                        <option value="MAÑANA">MAÑANA</option>
+                                        <option value="NOCHE">NOCHE</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-12">
+                                    <button class="btn btn-primary" onclick="cargarRegistros()">
+                                        <i class="bi bi-search"></i> Buscar
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="limpiarFiltrosRegistros()">
+                                        <i class="bi bi-x-circle"></i> Limpiar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de Registros -->
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Fecha</th>
+                                            <th>Ventana</th>
+                                            <th>Área</th>
+                                            <th>Termómetro</th>
+                                            <th>Temp. Max</th>
+                                            <th>Temp. Min</th>
+                                            <th>Humedad</th>
+                                            <th>Usuario</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="registrosTable"></tbody>
+                                </table>
+                            </div>
+                            <div id="registrosEmpty" class="text-center text-muted py-4" style="display: none;">
+                                <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                                <p class="mt-2">No hay registros para mostrar</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Configuración Section -->
+                <div id="section-configuracion" class="content-section" style="display: none;">
+                    <h2 class="mb-4">Configuración Global</h2>
+                    <div class="card">
+                        <div class="card-body">
+                            <form id="configForm">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Horario Registro 1 (HH:MM)</label>
+                                        <input type="text" class="form-control" id="config_hora1" placeholder="14:00">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Horario Registro 2 (HH:MM)</label>
+                                        <input type="text" class="form-control" id="config_hora2" placeholder="02:00">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Ventana de Tolerancia (minutos)</label>
+                                    <input type="number" class="form-control" id="config_tolerancia" placeholder="119">
+                                </div>
+                                <button type="submit" class="btn btn-primary">Guardar Configuración</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reportes Section -->
+                <div id="section-reportes" class="content-section" style="display: none;">
+                    <h2 class="mb-4">Reportes</h2>
+
+                    <!-- Reporte Diario -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="bi bi-calendar-day"></i> Reporte Diario</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label">Fecha</label>
+                                    <input type="date" class="form-control" id="reporte_diario_fecha">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Área</label>
+                                    <select class="form-select" id="reporte_diario_area">
+                                        <option value="">Todas las áreas</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Formato</label>
+                                    <div class="btn-group w-100 mt-2" role="group">
+                                        <button type="button" class="btn btn-outline-primary" onclick="generarReporteDiario('csv')">
+                                            <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary" onclick="generarReporteDiario('pdf')">
+                                            <i class="bi bi-file-earmark-pdf"></i> PDF
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reporte Mensual -->
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="bi bi-calendar-month"></i> Reporte Mensual</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label class="form-label">Mes</label>
+                                    <select class="form-select" id="reporte_mensual_mes">
+                                        <option value="1">Enero</option>
+                                        <option value="2">Febrero</option>
+                                        <option value="3">Marzo</option>
+                                        <option value="4">Abril</option>
+                                        <option value="5">Mayo</option>
+                                        <option value="6">Junio</option>
+                                        <option value="7">Julio</option>
+                                        <option value="8">Agosto</option>
+                                        <option value="9">Septiembre</option>
+                                        <option value="10">Octubre</option>
+                                        <option value="11">Noviembre</option>
+                                        <option value="12">Diciembre</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Año</label>
+                                    <input type="number" class="form-control" id="reporte_mensual_anio" min="2020" max="2100">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Área</label>
+                                    <select class="form-select" id="reporte_mensual_area">
+                                        <option value="">Todas las áreas</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Formato</label>
+                                    <div class="btn-group w-100 mt-2" role="group">
+                                        <button type="button" class="btn btn-outline-success" onclick="generarReporteMensual('csv')">
+                                            <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+                                        </button>
+                                        <button type="button" class="btn btn-outline-success" onclick="generarReporteMensual('pdf')">
+                                            <i class="bi bi-file-earmark-pdf"></i> PDF
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Usuario -->
+    <div class="modal fade" id="usuarioModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Usuario</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="usuarioForm">
+                        <input type="hidden" id="usuario_id">
+                        <div class="mb-3">
+                            <label class="form-label">Usuario</label>
+                            <input type="text" class="form-control" id="usuario_username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Contraseña</label>
+                            <input type="password" class="form-control" id="usuario_password">
+                            <small class="text-muted">Dejar en blanco para no cambiar</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Rol</label>
+                            <select class="form-select" id="usuario_rol" required>
+                                <option value="ADMINISTRADOR">Administrador</option>
+                                <option value="REGISTRADOR">Registrador</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="guardarUsuario()">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Área -->
+    <div class="modal fade" id="areaModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Área Técnica</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="areaForm">
+                        <input type="hidden" id="area_id">
+                        <div class="mb-3">
+                            <label class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="area_nombre" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Descripción</label>
+                            <textarea class="form-control" id="area_descripcion" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="guardarArea()">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Tipo de Termómetro -->
+    <div class="modal fade" id="tipoModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Tipo de Termómetro</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="tipoForm">
+                        <input type="hidden" id="tipo_id">
+
+                        <div class="mb-3">
+                            <label class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="tipo_nombre" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Descripción</label>
+                            <textarea class="form-control" id="tipo_descripcion" rows="2"></textarea>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="tipo_tiene_humedad" onchange="toggleHumedadFields()">
+                            <label class="form-check-label" for="tipo_tiene_humedad">¿Mide humedad?</label>
+                        </div>
+
+                        <h6 class="mt-4 mb-3">Rangos de Temperatura (°C)</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Mínima Operativa</label>
+                                    <input type="number" step="0.1" class="form-control" id="tipo_temp_min_operativa" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Máxima Operativa</label>
+                                    <input type="number" step="0.1" class="form-control" id="tipo_temp_max_operativa" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Mínima Física</label>
+                                    <input type="number" step="0.1" class="form-control" id="tipo_temp_min_fisica" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Máxima Física</label>
+                                    <input type="number" step="0.1" class="form-control" id="tipo_temp_max_fisica" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="humedadFields" style="display: none;">
+                            <h6 class="mt-4 mb-3">Rangos de Humedad (%)</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Mínima Operativa</label>
+                                        <input type="number" step="0.1" class="form-control" id="tipo_hum_min_operativa">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Máxima Operativa</label>
+                                        <input type="number" step="0.1" class="form-control" id="tipo_hum_max_operativa">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Mínima Física</label>
+                                        <input type="number" step="0.1" class="form-control" id="tipo_hum_min_fisica">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Máxima Física</label>
+                                        <input type="number" step="0.1" class="form-control" id="tipo_hum_max_fisica">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="guardarTipo()">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Termómetro -->
+    <div class="modal fade" id="termometroModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Termómetro</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="termometroForm">
+                        <input type="hidden" id="termometro_id">
+
+                        <div class="mb-3">
+                            <label class="form-label">ID Numérico (para código QR)</label>
+                            <input type="number" class="form-control" id="termometro_id_numerico" required>
+                            <small class="text-muted">Este ID se usará para generar el código QR</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Nombre (opcional)</label>
+                            <input type="text" class="form-control" id="termometro_nombre">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Área</label>
+                            <select class="form-select" id="termometro_area_id" required>
+                                <option value="">Seleccione un área</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Tipo de Termómetro</label>
+                            <select class="form-select" id="termometro_tipo_id" required>
+                                <option value="">Seleccione un tipo</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Ubicación</label>
+                            <textarea class="form-control" id="termometro_ubicacion" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="guardarTermometro()">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal QR Code -->
+    <div class="modal fade" id="qrModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Código QR del Termómetro</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <h4 id="qr_termometro_nombre" class="mb-3"></h4>
+                    <div id="qrcode" class="d-flex justify-content-center mb-3"></div>
+                    <p class="text-muted">ID: <span id="qr_termometro_id"></span></p>
+                    <button class="btn btn-primary" onclick="imprimirQR()">
+                        <i class="bi bi-printer"></i> Imprimir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script>
+        let currentUser = null;
+
+        // Verificar autenticación
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/me');
+                if (!response.ok) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+                currentUser = await response.json();
+
+                if (currentUser.rol !== 'ADMINISTRADOR') {
+                    alert('Acceso denegado. Solo administradores.');
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                document.getElementById('username').textContent = currentUser.username;
+                cargarUsuarios();
+                cargarConfiguracion();
+            } catch (error) {
+                window.location.href = '/login.html';
+            }
+        }
+
+        function showSection(section) {
+            // Ocultar todas las secciones
+            document.querySelectorAll('.content-section').forEach(el => el.style.display = 'none');
+
+            // Desactivar todos los links
+            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+
+            // Mostrar sección seleccionada
+            document.getElementById('section-' + section).style.display = 'block';
+
+            // Activar link
+            event.target.classList.add('active');
+
+            // Cargar datos según sección
+            switch(section) {
+                case 'usuarios': cargarUsuarios(); break;
+                case 'areas': cargarAreas(); break;
+                case 'tipos': cargarTipos(); break;
+                case 'termometros': cargarTermometros(); break;
+                case 'registros': cargarFiltrosRegistros(); break;
+                case 'reportes': inicializarReportes(); break;
+                case 'configuracion': cargarConfiguracion(); break;
+            }
+        }
+
+        // === USUARIOS ===
+        async function cargarUsuarios() {
+            try {
+                const response = await fetch('/api/admin/usuarios');
+                const usuarios = await response.json();
+
+                const tbody = document.getElementById('usuariosTable');
+                tbody.innerHTML = usuarios.map(u => `
+                    <tr>
+                        <td>${u.id}</td>
+                        <td>${u.username}</td>
+                        <td><span class="badge bg-${u.rol === 'ADMINISTRADOR' ? 'danger' : 'info'}">${u.rol}</span></td>
+                        <td><span class="badge bg-${u.activo ? 'success' : 'secondary'}">${u.activo ? 'Activo' : 'Inactivo'}</span></td>
+                        <td class="table-actions">
+                            <button class="btn btn-sm btn-warning" onclick="editarUsuario(${u.id})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="eliminarUsuario(${u.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                alert('Error al cargar usuarios: ' + error.message);
+            }
+        }
+
+        function nuevoUsuario() {
+            document.getElementById('usuarioForm').reset();
+            document.getElementById('usuario_id').value = '';
+            new bootstrap.Modal(document.getElementById('usuarioModal')).show();
+        }
+
+        async function guardarUsuario() {
+            const id = document.getElementById('usuario_id').value;
+            const data = {
+                username: document.getElementById('usuario_username').value,
+                password: document.getElementById('usuario_password').value,
+                rol: document.getElementById('usuario_rol').value
+            };
+
+            try {
+                const url = id ? `/api/admin/usuarios/${id}` : '/api/admin/usuarios';
+                const method = id ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('usuarioModal')).hide();
+                    cargarUsuarios();
+                } else {
+                    alert('Error al guardar usuario');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function eliminarUsuario(id) {
+            if (!confirm('¿Está seguro de eliminar este usuario?')) return;
+
+            try {
+                const response = await fetch(`/api/admin/usuarios/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    cargarUsuarios();
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // === ÁREAS ===
+        async function cargarAreas() {
+            try {
+                const response = await fetch('/api/areas');
+                const areas = await response.json();
+
+                const tbody = document.getElementById('areasTable');
+                tbody.innerHTML = areas.map(a => `
+                    <tr>
+                        <td>${a.id}</td>
+                        <td>${a.nombre}</td>
+                        <td>${a.descripcion || '-'}</td>
+                        <td><span class="badge bg-${a.activa ? 'success' : 'secondary'}">${a.activa ? 'Activa' : 'Inactiva'}</span></td>
+                        <td class="table-actions">
+                            <button class="btn btn-sm btn-warning" onclick="editarArea(${a.id})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="eliminarArea(${a.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                alert('Error al cargar áreas: ' + error.message);
+            }
+        }
+
+        function nuevaArea() {
+            document.getElementById('areaForm').reset();
+            document.getElementById('area_id').value = '';
+            new bootstrap.Modal(document.getElementById('areaModal')).show();
+        }
+
+        async function guardarArea() {
+            const id = document.getElementById('area_id').value;
+            const data = {
+                nombre: document.getElementById('area_nombre').value,
+                descripcion: document.getElementById('area_descripcion').value || null
+            };
+
+            try {
+                const url = id ? `/api/admin/areas/${id}` : '/api/admin/areas';
+                const method = id ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('areaModal')).hide();
+                    cargarAreas();
+                } else {
+                    alert('Error al guardar área');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function eliminarArea(id) {
+            if (!confirm('¿Está seguro de eliminar esta área?')) return;
+
+            try {
+                const response = await fetch(`/api/admin/areas/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    cargarAreas();
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // === TIPOS ===
+        async function cargarTipos() {
+            try {
+                const response = await fetch('/api/tipos-termometro');
+                const tipos = await response.json();
+
+                const tbody = document.getElementById('tiposTable');
+                tbody.innerHTML = tipos.map(t => `
+                    <tr>
+                        <td>${t.id}</td>
+                        <td>${t.nombre}</td>
+                        <td>${t.tiene_humedad ? 'Sí' : 'No'}</td>
+                        <td>${t.temp_min_operativa}°C - ${t.temp_max_operativa}°C</td>
+                        <td><span class="badge bg-${t.activo ? 'success' : 'secondary'}">${t.activo ? 'Activo' : 'Inactivo'}</span></td>
+                        <td class="table-actions">
+                            <button class="btn btn-sm btn-warning" onclick="editarTipo(${t.id})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="eliminarTipo(${t.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                alert('Error al cargar tipos: ' + error.message);
+            }
+        }
+
+        function toggleHumedadFields() {
+            const tieneHumedad = document.getElementById('tipo_tiene_humedad').checked;
+            document.getElementById('humedadFields').style.display = tieneHumedad ? 'block' : 'none';
+        }
+
+        function nuevoTipo() {
+            document.getElementById('tipoForm').reset();
+            document.getElementById('tipo_id').value = '';
+            document.getElementById('humedadFields').style.display = 'none';
+            new bootstrap.Modal(document.getElementById('tipoModal')).show();
+        }
+
+        async function editarTipo(id) {
+            try {
+                const response = await fetch('/api/tipos-termometro');
+                const tipos = await response.json();
+                const tipo = tipos.find(t => t.id === id);
+
+                if (!tipo) {
+                    alert('Tipo no encontrado');
+                    return;
+                }
+
+                document.getElementById('tipo_id').value = tipo.id;
+                document.getElementById('tipo_nombre').value = tipo.nombre;
+                document.getElementById('tipo_descripcion').value = tipo.descripcion || '';
+                document.getElementById('tipo_tiene_humedad').checked = tipo.tiene_humedad;
+                document.getElementById('tipo_temp_min_operativa').value = tipo.temp_min_operativa;
+                document.getElementById('tipo_temp_max_operativa').value = tipo.temp_max_operativa;
+                document.getElementById('tipo_temp_min_fisica').value = tipo.temp_min_fisica;
+                document.getElementById('tipo_temp_max_fisica').value = tipo.temp_max_fisica;
+                document.getElementById('tipo_hum_min_operativa').value = tipo.hum_min_operativa || '';
+                document.getElementById('tipo_hum_max_operativa').value = tipo.hum_max_operativa || '';
+                document.getElementById('tipo_hum_min_fisica').value = tipo.hum_min_fisica || '';
+                document.getElementById('tipo_hum_max_fisica').value = tipo.hum_max_fisica || '';
+
+                toggleHumedadFields();
+
+                new bootstrap.Modal(document.getElementById('tipoModal')).show();
+            } catch (error) {
+                alert('Error al cargar tipo: ' + error.message);
+            }
+        }
+
+        async function guardarTipo() {
+            const id = document.getElementById('tipo_id').value;
+            const tieneHumedad = document.getElementById('tipo_tiene_humedad').checked;
+
+            const data = {
+                nombre: document.getElementById('tipo_nombre').value,
+                descripcion: document.getElementById('tipo_descripcion').value || null,
+                tiene_humedad: tieneHumedad,
+                temp_min_operativa: parseFloat(document.getElementById('tipo_temp_min_operativa').value),
+                temp_max_operativa: parseFloat(document.getElementById('tipo_temp_max_operativa').value),
+                temp_min_fisica: parseFloat(document.getElementById('tipo_temp_min_fisica').value),
+                temp_max_fisica: parseFloat(document.getElementById('tipo_temp_max_fisica').value),
+                hum_min_operativa: tieneHumedad ? parseFloat(document.getElementById('tipo_hum_min_operativa').value) : null,
+                hum_max_operativa: tieneHumedad ? parseFloat(document.getElementById('tipo_hum_max_operativa').value) : null,
+                hum_min_fisica: tieneHumedad ? parseFloat(document.getElementById('tipo_hum_min_fisica').value) : null,
+                hum_max_fisica: tieneHumedad ? parseFloat(document.getElementById('tipo_hum_max_fisica').value) : null,
+            };
+
+            try {
+                const url = id ? `/api/admin/tipos-termometro/${id}` : '/api/admin/tipos-termometro';
+                const method = id ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('tipoModal')).hide();
+                    cargarTipos();
+                } else {
+                    alert('Error al guardar tipo de termómetro');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function eliminarTipo(id) {
+            if (!confirm('¿Está seguro de eliminar este tipo de termómetro? Esto puede afectar a termómetros existentes.')) return;
+
+            try {
+                const response = await fetch(`/api/admin/tipos-termometro/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    cargarTipos();
+                } else {
+                    alert('No se puede eliminar. Puede que haya termómetros usando este tipo.');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // === TERMÓMETROS ===
+        async function cargarTermometros() {
+            try {
+                const response = await fetch('/api/termometros');
+                const termometros = await response.json();
+
+                const tbody = document.getElementById('termometrosTable');
+                tbody.innerHTML = termometros.map(t => `
+                    <tr>
+                        <td>${t.id}</td>
+                        <td>${t.nombre || '-'}</td>
+                        <td>${t.area_nombre || t.area_id}</td>
+                        <td>${t.tipo_nombre || t.tipo_id}</td>
+                        <td><span class="badge bg-${t.activo ? 'success' : 'secondary'}">${t.activo ? 'Activo' : 'Inactivo'}</span></td>
+                        <td class="table-actions">
+                            <button class="btn btn-sm btn-info" onclick="mostrarQR(${t.id}, '${t.nombre || 'ID: ' + t.id}')" title="Ver QR">
+                                <i class="bi bi-qr-code"></i>
+                            </button>
+                            <button class="btn btn-sm btn-warning" onclick="editarTermometro(${t.id})" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="eliminarTermometro(${t.id})" title="Eliminar">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                alert('Error al cargar termómetros: ' + error.message);
+            }
+        }
+
+        async function cargarSelectsTermometro() {
+            try {
+                // Cargar áreas
+                const areasResponse = await fetch('/api/areas');
+                const areas = await areasResponse.json();
+
+                const selectArea = document.getElementById('termometro_area_id');
+                selectArea.innerHTML = '<option value="">Seleccione un área</option>';
+                areas.forEach(area => {
+                    if (area.activa) {
+                        const option = document.createElement('option');
+                        option.value = area.id;
+                        option.textContent = area.nombre;
+                        selectArea.appendChild(option);
+                    }
+                });
+
+                // Cargar tipos
+                const tiposResponse = await fetch('/api/tipos-termometro');
+                const tipos = await tiposResponse.json();
+
+                const selectTipo = document.getElementById('termometro_tipo_id');
+                selectTipo.innerHTML = '<option value="">Seleccione un tipo</option>';
+                tipos.forEach(tipo => {
+                    if (tipo.activo) {
+                        const option = document.createElement('option');
+                        option.value = tipo.id;
+                        option.textContent = tipo.nombre;
+                        selectTipo.appendChild(option);
+                    }
+                });
+            } catch (error) {
+                console.error('Error al cargar selects:', error);
+            }
+        }
+
+        async function nuevoTermometro() {
+            await cargarSelectsTermometro();
+            document.getElementById('termometroForm').reset();
+            document.getElementById('termometro_id').value = '';
+            new bootstrap.Modal(document.getElementById('termometroModal')).show();
+        }
+
+        async function editarTermometro(id) {
+            try {
+                await cargarSelectsTermometro();
+
+                const response = await fetch(`/api/termometros/${id}`);
+                const termometro = await response.json();
+
+                document.getElementById('termometro_id').value = termometro.id;
+                document.getElementById('termometro_id_numerico').value = termometro.id;
+                document.getElementById('termometro_id_numerico').readOnly = true;
+                document.getElementById('termometro_nombre').value = termometro.nombre || '';
+                document.getElementById('termometro_area_id').value = termometro.area_id;
+                document.getElementById('termometro_tipo_id').value = termometro.tipo_id;
+                document.getElementById('termometro_ubicacion').value = termometro.ubicacion || '';
+
+                new bootstrap.Modal(document.getElementById('termometroModal')).show();
+            } catch (error) {
+                alert('Error al cargar termómetro: ' + error.message);
+            }
+        }
+
+        async function guardarTermometro() {
+            const id = document.getElementById('termometro_id').value;
+            const idNumerico = parseInt(document.getElementById('termometro_id_numerico').value);
+
+            const data = {
+                id: idNumerico,
+                nombre: document.getElementById('termometro_nombre').value || null,
+                area_id: parseInt(document.getElementById('termometro_area_id').value),
+                tipo_id: parseInt(document.getElementById('termometro_tipo_id').value),
+                ubicacion: document.getElementById('termometro_ubicacion').value || null,
+            };
+
+            try {
+                let response;
+                if (id) {
+                    // Actualizar
+                    response = await fetch(`/api/admin/termometros/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            nombre: data.nombre,
+                            area_id: data.area_id,
+                            tipo_id: data.tipo_id,
+                            ubicacion: data.ubicacion
+                        })
+                    });
+                } else {
+                    // Crear
+                    response = await fetch('/api/admin/termometros', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                }
+
+                if (response.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('termometroModal')).hide();
+                    cargarTermometros();
+                } else {
+                    const error = await response.text();
+                    alert('Error al guardar termómetro: ' + error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function eliminarTermometro(id) {
+            if (!confirm('¿Está seguro de eliminar este termómetro? Esto puede afectar a los registros existentes.')) return;
+
+            try {
+                const response = await fetch(`/api/admin/termometros/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    cargarTermometros();
+                } else {
+                    alert('No se puede eliminar. Puede que haya registros asociados.');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        let currentQR = null;
+
+        function mostrarQR(id, nombre) {
+            // Limpiar QR anterior
+            const qrDiv = document.getElementById('qrcode');
+            qrDiv.innerHTML = '';
+
+            document.getElementById('qr_termometro_id').textContent = id;
+            document.getElementById('qr_termometro_nombre').textContent = nombre;
+
+            // Generar nuevo QR
+            currentQR = new QRCode(qrDiv, {
+                text: id.toString(),
+                width: 256,
+                height: 256,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            new bootstrap.Modal(document.getElementById('qrModal')).show();
+        }
+
+        function imprimirQR() {
+            window.print();
+        }
+
+        // === REGISTROS ===
+        async function cargarRegistros() {
+            try {
+                // Construir parámetros de filtro
+                const params = new URLSearchParams();
+
+                const fechaDesde = document.getElementById('filtro_fecha_desde').value;
+                const fechaHasta = document.getElementById('filtro_fecha_hasta').value;
+                const areaId = document.getElementById('filtro_area').value;
+                const ventana = document.getElementById('filtro_ventana').value;
+
+                if (fechaDesde) params.append('fecha_desde', fechaDesde);
+                if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+                if (areaId) params.append('area_id', areaId);
+                if (ventana) params.append('ventana_horaria', ventana);
+
+                const response = await fetch(`/api/admin/registros?${params}`);
+                const registros = await response.json();
+
+                const tbody = document.getElementById('registrosTable');
+                const emptyMsg = document.getElementById('registrosEmpty');
+
+                if (registros.length === 0) {
+                    tbody.innerHTML = '';
+                    emptyMsg.style.display = 'block';
+                    return;
+                }
+
+                emptyMsg.style.display = 'none';
+                tbody.innerHTML = registros.map(r => {
+                    const fecha = new Date(r.fecha_registro).toLocaleString('es-ES');
+                    const humedad = r.humedad !== null ? r.humedad + '%' : '-';
+                    const estado = r.fuera_rango_operativo
+                        ? '<span class="badge bg-warning">Fuera de rango</span>'
+                        : '<span class="badge bg-success">Normal</span>';
+
+                    return `
+                        <tr>
+                            <td>${r.id}</td>
+                            <td>${fecha}</td>
+                            <td>${r.ventana_horaria}</td>
+                            <td>${r.area_nombre}</td>
+                            <td>${r.termometro_nombre || 'ID: ' + r.termometro_id}</td>
+                            <td>${r.temp_maxima}°C</td>
+                            <td>${r.temp_minima}°C</td>
+                            <td>${humedad}</td>
+                            <td>${r.usuario_nombre}</td>
+                            <td>${estado}</td>
+                            <td class="table-actions">
+                                <button class="btn btn-sm btn-danger" onclick="eliminarRegistro(${r.id})" title="Eliminar">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                alert('Error al cargar registros: ' + error.message);
+            }
+        }
+
+        async function eliminarRegistro(id) {
+            if (!confirm('¿Está seguro de eliminar este registro? Esta acción no se puede deshacer.')) return;
+
+            try {
+                const response = await fetch(`/api/admin/registros/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    cargarRegistros();
+                } else {
+                    alert('Error al eliminar registro');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        function limpiarFiltrosRegistros() {
+            document.getElementById('filtro_fecha_desde').value = '';
+            document.getElementById('filtro_fecha_hasta').value = '';
+            document.getElementById('filtro_area').value = '';
+            document.getElementById('filtro_ventana').value = '';
+            cargarRegistros();
+        }
+
+        async function cargarFiltrosRegistros() {
+            try {
+                // Cargar áreas para el filtro
+                const response = await fetch('/api/areas');
+                const areas = await response.json();
+
+                const selectArea = document.getElementById('filtro_area');
+                selectArea.innerHTML = '<option value="">Todas</option>';
+                areas.forEach(area => {
+                    if (area.activa) {
+                        const option = document.createElement('option');
+                        option.value = area.id;
+                        option.textContent = area.nombre;
+                        selectArea.appendChild(option);
+                    }
+                });
+
+                // Establecer fechas por defecto (últimos 7 días)
+                const hoy = new Date();
+                const hace7Dias = new Date();
+                hace7Dias.setDate(hoy.getDate() - 7);
+
+                document.getElementById('filtro_fecha_desde').value = hace7Dias.toISOString().split('T')[0];
+                document.getElementById('filtro_fecha_hasta').value = hoy.toISOString().split('T')[0];
+
+                // Cargar registros iniciales
+                cargarRegistros();
+            } catch (error) {
+                console.error('Error al cargar filtros:', error);
+            }
+        }
+
+        // === CONFIGURACIÓN ===
+        async function cargarConfiguracion() {
+            try {
+                const response = await fetch('/api/admin/configuracion');
+                const config = await response.json();
+
+                document.getElementById('config_hora1').value = config.registro_hora_1 || '14:00';
+                document.getElementById('config_hora2').value = config.registro_hora_2 || '02:00';
+                document.getElementById('config_tolerancia').value = config.ventana_tolerancia_minutos || '119';
+            } catch (error) {
+                console.error('Error al cargar configuración:', error);
+            }
+        }
+
+        document.getElementById('configForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const data = {
+                registro_hora_1: document.getElementById('config_hora1').value,
+                registro_hora_2: document.getElementById('config_hora2').value,
+                ventana_tolerancia_minutos: parseInt(document.getElementById('config_tolerancia').value)
+            };
+
+            try {
+                const response = await fetch('/api/admin/configuracion', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert('Configuración guardada');
+                } else {
+                    alert('Error al guardar configuración');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+
+        // === REPORTES ===
+        async function inicializarReportes() {
+            try {
+                // Cargar áreas para los selectores
+                const response = await fetch('/api/areas');
+                const areas = await response.json();
+
+                // Cargar en selector de reporte diario
+                const selectDiario = document.getElementById('reporte_diario_area');
+                selectDiario.innerHTML = '<option value="">Todas las áreas</option>';
+                areas.forEach(area => {
+                    if (area.activa) {
+                        const option = document.createElement('option');
+                        option.value = area.id;
+                        option.textContent = area.nombre;
+                        selectDiario.appendChild(option);
+                    }
+                });
+
+                // Cargar en selector de reporte mensual
+                const selectMensual = document.getElementById('reporte_mensual_area');
+                selectMensual.innerHTML = '<option value="">Todas las áreas</option>';
+                areas.forEach(area => {
+                    if (area.activa) {
+                        const option = document.createElement('option');
+                        option.value = area.id;
+                        option.textContent = area.nombre;
+                        selectMensual.appendChild(option);
+                    }
+                });
+
+                // Establecer fecha de hoy en reporte diario
+                const hoy = new Date().toISOString().split('T')[0];
+                document.getElementById('reporte_diario_fecha').value = hoy;
+
+                // Establecer mes y año actual en reporte mensual
+                const fechaActual = new Date();
+                document.getElementById('reporte_mensual_mes').value = fechaActual.getMonth() + 1;
+                document.getElementById('reporte_mensual_anio').value = fechaActual.getFullYear();
+            } catch (error) {
+                console.error('Error al inicializar reportes:', error);
+            }
+        }
+
+        async function generarReporteDiario(formato) {
+            const fecha = document.getElementById('reporte_diario_fecha').value;
+            const areaId = document.getElementById('reporte_diario_area').value;
+
+            if (!fecha) {
+                alert('Por favor seleccione una fecha');
+                return;
+            }
+
+            try {
+                const params = new URLSearchParams({
+                    fecha: fecha,
+                    formato: formato
+                });
+                if (areaId) params.append('area_id', areaId);
+
+                const response = await fetch(`/api/admin/reportes/diario?${params}`);
+
+                if (!response.ok) {
+                    throw new Error('Error al generar reporte');
+                }
+
+                // Descargar archivo
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `reporte_diario_${fecha}.${formato}`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (error) {
+                alert('Error al generar reporte: ' + error.message);
+            }
+        }
+
+        async function generarReporteMensual(formato) {
+            const mes = document.getElementById('reporte_mensual_mes').value;
+            const anio = document.getElementById('reporte_mensual_anio').value;
+            const areaId = document.getElementById('reporte_mensual_area').value;
+
+            if (!mes || !anio) {
+                alert('Por favor seleccione mes y año');
+                return;
+            }
+
+            try {
+                const params = new URLSearchParams({
+                    mes: mes,
+                    anio: anio,
+                    formato: formato
+                });
+                if (areaId) params.append('area_id', areaId);
+
+                const response = await fetch(`/api/admin/reportes/mensual?${params}`);
+
+                if (!response.ok) {
+                    throw new Error('Error al generar reporte');
+                }
+
+                // Descargar archivo
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `reporte_mensual_${anio}_${mes}.${formato}`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (error) {
+                alert('Error al generar reporte: ' + error.message);
+            }
+        }
+
+        async function logout() {
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+                window.location.href = '/login.html';
+            } catch (error) {
+                window.location.href = '/login.html';
+            }
+        }
+
+        // Inicializar
+        checkAuth();
+    </script>
+</body>
+</html>
