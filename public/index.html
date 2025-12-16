@@ -5,85 +5,138 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Temperaturas - Registrador</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
         body {
             background-color: #f5f5f5;
-            padding-top: 20px;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
         }
         .navbar {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
-        .card {
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+        .main-container {
+            display: flex;
+            height: calc(100vh - 56px);
+            margin-top: 56px;
         }
-        .termometro-item {
-            padding: 15px;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
+        .scanner-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background-color: #fff;
         }
-        .termometro-item:hover {
+        .sidebar-panel {
+            width: 350px;
             background-color: #f8f9fa;
-            border-color: #667eea;
+            border-left: 1px solid #dee2e6;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        #qr-reader {
+            width: 100%;
+            max-width: 500px;
+            border: 3px solid #667eea;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        .scanner-status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.1em;
+        }
+        .area-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .area-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        .termometro-mini {
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 5px;
+            font-size: 0.9em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .termometro-pendiente {
+            background-color: #fff3cd;
+            border-left: 3px solid #ffc107;
         }
         .termometro-completado {
             background-color: #d4edda;
-            border-color: #28a745;
+            border-left: 3px solid #28a745;
         }
-        .badge-custom {
-            font-size: 0.9em;
+        .stats-badge {
+            font-size: 0.85em;
+            padding: 4px 8px;
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-dark mb-4">
+    <nav class="navbar navbar-dark fixed-top">
         <div class="container-fluid">
-            <span class="navbar-brand mb-0 h1">Sistema de Temperaturas - Registrador</span>
-            <div class="d-flex">
-                <span class="text-white me-3">Usuario: <span id="username"></span></span>
-                <button class="btn btn-outline-light btn-sm" onclick="logout()">Cerrar Sesión</button>
+            <span class="navbar-brand mb-0 h1">
+                <i class="bi bi-qr-code-scan"></i> Scanner de Temperaturas
+            </span>
+            <div class="d-flex align-items-center">
+                <span class="text-white me-3">
+                    <i class="bi bi-person-circle"></i> <span id="username"></span>
+                </span>
+                <button class="btn btn-outline-light btn-sm" onclick="logout()">
+                    <i class="bi bi-box-arrow-right"></i> Salir
+                </button>
             </div>
         </div>
     </nav>
 
-    <div class="container">
-        <!-- Selección de Área -->
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Seleccionar Área</h5>
-                <select class="form-select" id="areaSelect" onchange="cargarTermometros()">
-                    <option value="">-- Seleccione un área --</option>
-                </select>
+    <div class="main-container">
+        <!-- Sección del Scanner -->
+        <div class="scanner-section">
+            <div class="text-center mb-4">
+                <h2><i class="bi bi-upc-scan"></i> Escanear Código QR</h2>
+                <p class="text-muted">Acerca el código QR del termómetro a la cámara</p>
+            </div>
+
+            <div id="qr-reader"></div>
+
+            <div id="scannerStatus" class="scanner-status d-none"></div>
+
+            <div class="mt-4 text-center">
+                <p class="text-muted">
+                    <i class="bi bi-info-circle"></i>
+                    Los datos se registrarán automáticamente al escanear
+                </p>
             </div>
         </div>
 
-        <!-- Panel de Información -->
-        <div class="card" id="infoPanel" style="display: none;">
-            <div class="card-body">
-                <h5 class="card-title">Ventana Horaria Actual</h5>
-                <p class="mb-1"><strong>Ventana:</strong> <span id="ventanaActual">-</span></p>
-                <p class="mb-0"><strong>Horario válido:</strong> <span id="horarioValido">-</span></p>
+        <!-- Panel Lateral -->
+        <div class="sidebar-panel">
+            <div class="mb-3">
+                <h5><i class="bi bi-building"></i> Estado por Áreas</h5>
+                <p class="text-muted small">Ventana: <strong id="ventanaActual">-</strong></p>
             </div>
-        </div>
 
-        <!-- Lista de Termómetros -->
-        <div class="card" id="termometrosPanel" style="display: none;">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="card-title mb-0">Termómetros</h5>
-                    <button class="btn btn-primary btn-sm" onclick="cargarTermometros()">
-                        <i class="bi bi-arrow-clockwise"></i> Actualizar
-                    </button>
-                </div>
-
-                <div id="termometrosList"></div>
-
-                <div class="mt-3 text-center">
-                    <button class="btn btn-success" onclick="mostrarResumen()">Cerrar Mediciones</button>
+            <div id="areasContainer">
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                    <p class="mt-2">Cargando áreas...</p>
                 </div>
             </div>
         </div>
@@ -138,9 +191,11 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>
         let currentUser = null;
-        let currentArea = null;
+        let html5QrCode = null;
+        let areasData = {};
         let termometroSeleccionado = null;
 
         // Verificar autenticación al cargar
@@ -153,97 +208,178 @@
                 }
                 currentUser = await response.json();
                 document.getElementById('username').textContent = currentUser.username;
-                cargarAreas();
+
+                await inicializarApp();
             } catch (error) {
                 window.location.href = '/login.html';
             }
         }
 
-        async function cargarAreas() {
+        async function inicializarApp() {
+            await cargarTodasLasAreas();
+            inicializarScanner();
+        }
+
+        function inicializarScanner() {
+            html5QrCode = new Html5Qrcode("qr-reader");
+
+            const config = {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            };
+
+            html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                onScanSuccess,
+                onScanError
+            ).catch(err => {
+                console.error('Error al iniciar scanner:', err);
+                mostrarEstado('Error al iniciar la cámara. Por favor, permite el acceso.', 'danger');
+            });
+        }
+
+        async function onScanSuccess(decodedText, decodedResult) {
+            const termometroId = parseInt(decodedText);
+
+            if (isNaN(termometroId)) {
+                mostrarEstado('QR no válido', 'warning');
+                return;
+            }
+
+            // Pausar el scanner mientras procesamos
+            html5QrCode.pause();
+
+            try {
+                await procesarTermometro(termometroId);
+            } catch (error) {
+                console.error('Error:', error);
+                mostrarEstado('Error al procesar termómetro', 'danger');
+                setTimeout(() => html5QrCode.resume(), 2000);
+            }
+        }
+
+        function onScanError(errorMessage) {
+            // Ignorar errores de escaneo continuos
+        }
+
+        async function procesarTermometro(termometroId) {
+            try {
+                const response = await fetch(`/api/termometros/${termometroId}`);
+                if (!response.ok) {
+                    throw new Error('Termómetro no encontrado');
+                }
+
+                const termometro = await response.json();
+
+                mostrarEstado(`✓ ${termometro.nombre || 'ID: ' + termometro.id} - ${termometro.area_nombre}`, 'success');
+
+                // Resaltar el área en el panel
+                resaltarArea(termometro.area_id);
+
+                // Abrir modal de registro
+                await abrirModalRegistro(termometro);
+
+            } catch (error) {
+                mostrarEstado('Termómetro no encontrado', 'danger');
+                setTimeout(() => html5QrCode.resume(), 2000);
+            }
+        }
+
+        async function cargarTodasLasAreas() {
             try {
                 const response = await fetch('/api/areas');
                 const areas = await response.json();
 
-                const select = document.getElementById('areaSelect');
-                select.innerHTML = '<option value="">-- Seleccione un área --</option>';
+                for (const area of areas) {
+                    if (!area.activa) continue;
 
-                areas.forEach(area => {
-                    if (area.activa) {
-                        const option = document.createElement('option');
-                        option.value = area.id;
-                        option.textContent = area.nombre;
-                        select.appendChild(option);
+                    try {
+                        const pendientesResponse = await fetch(`/api/areas/${area.id}/pendientes`);
+                        const pendientesData = await pendientesResponse.json();
+
+                        areasData[area.id] = {
+                            area: area,
+                            ventana: pendientesData.ventana_horaria,
+                            pendientes: pendientesData.pendientes || [],
+                            completados: pendientesData.completados || []
+                        };
+                    } catch (error) {
+                        console.error(`Error al cargar datos del área ${area.id}:`, error);
                     }
-                });
+                }
+
+                renderizarAreas();
             } catch (error) {
-                alert('Error al cargar áreas: ' + error.message);
+                console.error('Error al cargar áreas:', error);
             }
         }
 
-        async function cargarTermometros() {
-            const areaId = document.getElementById('areaSelect').value;
-            if (!areaId) {
-                document.getElementById('termometrosPanel').style.display = 'none';
-                document.getElementById('infoPanel').style.display = 'none';
+        function renderizarAreas() {
+            const container = document.getElementById('areasContainer');
+            const ventana = Object.values(areasData)[0]?.ventana || '-';
+            document.getElementById('ventanaActual').textContent = ventana;
+
+            if (Object.keys(areasData).length === 0) {
+                container.innerHTML = '<div class="text-center text-muted py-3">No hay áreas disponibles</div>';
                 return;
             }
 
-            currentArea = areaId;
+            container.innerHTML = '';
 
-            try {
-                // Cargar termómetros del área
-                const response = await fetch(`/api/termometros?area_id=${areaId}`);
-                const termometros = await response.json();
+            for (const [areaId, data] of Object.entries(areasData)) {
+                const totalPendientes = data.pendientes.length;
+                const totalCompletados = data.completados.length;
+                const total = totalPendientes + totalCompletados;
 
-                // Cargar pendientes
-                const pendientesResponse = await fetch(`/api/areas/${areaId}/pendientes`);
-                const pendientesData = await pendientesResponse.json();
+                const areaCard = document.createElement('div');
+                areaCard.className = 'area-card';
+                areaCard.id = `area-${areaId}`;
 
-                // Mostrar información de ventana horaria
-                document.getElementById('infoPanel').style.display = 'block';
-                document.getElementById('ventanaActual').textContent = pendientesData.ventana_horaria || 'Fuera de horario';
-                document.getElementById('horarioValido').textContent = pendientesData.dentro_ventana ? 'SÍ' : 'NO';
-
-                // Crear lista de termómetros
-                const lista = document.getElementById('termometrosList');
-                lista.innerHTML = '';
-
-                const pendientesIds = pendientesData.pendientes?.map(p => p.id) || [];
-                const completadosIds = pendientesData.completados?.map(c => c.id) || [];
-
-                termometros.forEach(term => {
-                    const isPendiente = pendientesIds.includes(term.id);
-                    const isCompletado = completadosIds.includes(term.id);
-
-                    const div = document.createElement('div');
-                    div.className = `termometro-item ${isCompletado ? 'termometro-completado' : ''}`;
-                    div.onclick = () => abrirModalRegistro(term);
-
-                    div.innerHTML = `
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong>${term.nombre || 'ID: ' + term.id}</strong>
-                                <br>
-                                <small class="text-muted">${term.tipo_nombre}</small>
-                            </div>
-                            <div>
-                                ${isCompletado ?
-                                    '<span class="badge bg-success badge-custom">Completado</span>' :
-                                    '<span class="badge bg-warning badge-custom">Pendiente</span>'}
-                            </div>
+                areaCard.innerHTML = `
+                    <div class="area-header">
+                        <strong>${data.area.nombre}</strong>
+                        <div>
+                            <span class="badge bg-success stats-badge">${totalCompletados}</span>
+                            <span class="badge bg-warning stats-badge">${totalPendientes}</span>
                         </div>
-                    `;
+                    </div>
+                    <div class="termometros-list">
+                        ${data.pendientes.map(t => `
+                            <div class="termometro-mini termometro-pendiente">
+                                <span>${t.nombre || 'ID: ' + t.id}</span>
+                                <i class="bi bi-hourglass-split"></i>
+                            </div>
+                        `).join('')}
+                        ${data.completados.map(r => `
+                            <div class="termometro-mini termometro-completado">
+                                <span>${r.termometro_nombre || 'ID: ' + r.termometro_id}</span>
+                                <i class="bi bi-check-circle"></i>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
 
-                    lista.appendChild(div);
-                });
-
-                document.getElementById('termometrosPanel').style.display = 'block';
-            } catch (error) {
-                alert('Error al cargar termómetros: ' + error.message);
+                container.appendChild(areaCard);
             }
         }
 
-        function abrirModalRegistro(termometro) {
+        function resaltarArea(areaId) {
+            // Quitar resaltado anterior
+            document.querySelectorAll('.area-card').forEach(card => {
+                card.style.border = 'none';
+            });
+
+            // Resaltar área actual
+            const areaCard = document.getElementById(`area-${areaId}`);
+            if (areaCard) {
+                areaCard.style.border = '3px solid #667eea';
+                areaCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        async function abrirModalRegistro(termometro) {
             termometroSeleccionado = termometro;
 
             document.getElementById('termometroId').value = termometro.id;
@@ -290,30 +426,38 @@
                 });
 
                 if (response.ok) {
-                    alert('Registro guardado exitosamente');
+                    mostrarEstado('✓ Registro guardado exitosamente', 'success');
                     bootstrap.Modal.getInstance(document.getElementById('registroModal')).hide();
-                    cargarTermometros();
+
+                    // Recargar datos de las áreas
+                    await cargarTodasLasAreas();
+
+                    // Resumir scanner después de 1 segundo
+                    setTimeout(() => {
+                        if (html5QrCode) {
+                            html5QrCode.resume();
+                        }
+                    }, 1000);
                 } else {
                     const error = await response.text();
                     alert('Error al guardar: ' + error);
+                    html5QrCode.resume();
                 }
             } catch (error) {
                 alert('Error de conexión: ' + error.message);
+                html5QrCode.resume();
             }
         }
 
-        function mostrarResumen() {
-            const areaId = document.getElementById('areaSelect').value;
-            if (!areaId) return;
+        function mostrarEstado(mensaje, tipo) {
+            const status = document.getElementById('scannerStatus');
+            status.className = `scanner-status alert alert-${tipo}`;
+            status.textContent = mensaje;
+            status.classList.remove('d-none');
 
-            fetch(`/api/areas/${areaId}/pendientes`)
-                .then(r => r.json())
-                .then(data => {
-                    const pendientes = data.pendientes?.length || 0;
-                    const completados = data.completados?.length || 0;
-
-                    alert(`Resumen de Mediciones:\n\nCompletados: ${completados}\nPendientes: ${pendientes}`);
-                });
+            setTimeout(() => {
+                status.classList.add('d-none');
+            }, 3000);
         }
 
         async function logout() {
