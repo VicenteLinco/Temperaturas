@@ -15,7 +15,10 @@
       "Bash(netstat:*)",
       "Bash(findstr:*)",
       "Bash(taskkill:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nImplementar sistema completo de gestión de temperaturas con todas las funcionalidades\n\n- Sistema de autenticación con roles (ADMINISTRADOR/REGISTRADOR)\n- CRUD completo de tipos de termómetros con rangos operativos y físicos\n- CRUD completo de termómetros con generación de códigos QR\n- Gestión de registros con filtros por fecha, área y ventana horaria\n- Sistema de reportes diarios y mensuales con exportación CSV\n- Interfaz web responsive con Bootstrap 5\n- Backend en Rust con Axum y SQLite\n- Validación de ventanas horarias y rangos de temperatura\n- Sistema de auditoría completo\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(git commit:*)"
     ]
   },
   "outputStyle": "default"
