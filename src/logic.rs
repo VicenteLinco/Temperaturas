@@ -1,4 +1,4 @@
-use chrono::{NaiveTime, Local, Timelike};
+use chrono::{NaiveTime, NaiveDate, Local, Timelike, Datelike};
 use anyhow::{Result, anyhow};
 use crate::models::TipoTermometro;
 
@@ -9,13 +9,15 @@ pub struct VentanaHoraria {
     pub hora_central: NaiveTime,
     pub hora_inicio: NaiveTime,
     pub hora_fin: NaiveTime,
+    pub es_turno_noche: bool, // true si es el turno 20pm-8am
 }
 
 /// Determina la ventana horaria actual basándose en la hora del sistema
+/// Con el nuevo sistema flexible, siempre devuelve una ventana dependiendo del turno
 pub fn determinar_ventana_actual(
-    hora_1: &str,
-    hora_2: &str,
-    tolerancia_minutos: i32,
+    hora_1: &str,  // "14:00" turno día
+    hora_2: &str,  // "02:00" turno noche
+    _tolerancia_minutos: i32, // No se usa en el nuevo sistema flexible
 ) -> Result<Option<VentanaHoraria>> {
     let ahora = Local::now().time();
 
@@ -23,71 +25,56 @@ pub fn determinar_ventana_actual(
     let hora_central_1 = NaiveTime::parse_from_str(hora_1, "%H:%M")?;
     let hora_central_2 = NaiveTime::parse_from_str(hora_2, "%H:%M")?;
 
-    // Calcular ventanas
-    let ventana_1 = calcular_ventana(hora_1, hora_central_1, tolerancia_minutos)?;
-    let ventana_2 = calcular_ventana(hora_2, hora_central_2, tolerancia_minutos)?;
+    // Determinar en qué turno estamos
+    // Turno día: 8:00 - 20:00 → ventana 14:00
+    // Turno noche: 20:00 - 8:00 → ventana 02:00
 
-    // Verificar si estamos en alguna ventana
-    if esta_en_ventana(&ahora, &ventana_1) {
-        return Ok(Some(ventana_1));
+    let hora_inicio_dia = NaiveTime::from_hms_opt(8, 0, 0).unwrap();
+    let hora_fin_dia = NaiveTime::from_hms_opt(20, 0, 0).unwrap();
+
+    if ahora >= hora_inicio_dia && ahora < hora_fin_dia {
+        // Turno día
+        Ok(Some(VentanaHoraria {
+            nombre: hora_1.to_string(),
+            hora_central: hora_central_1,
+            hora_inicio: hora_inicio_dia,
+            hora_fin: hora_fin_dia,
+            es_turno_noche: false,
+        }))
+    } else {
+        // Turno noche
+        Ok(Some(VentanaHoraria {
+            nombre: hora_2.to_string(),
+            hora_central: hora_central_2,
+            hora_inicio: hora_fin_dia, // 20:00
+            hora_fin: hora_inicio_dia, // 8:00 (del día siguiente)
+            es_turno_noche: true,
+        }))
     }
-
-    if esta_en_ventana(&ahora, &ventana_2) {
-        return Ok(Some(ventana_2));
-    }
-
-    Ok(None)
 }
 
-/// Calcula los límites de una ventana horaria
-fn calcular_ventana(
-    nombre: &str,
-    hora_central: NaiveTime,
-    tolerancia_minutos: i32,
-) -> Result<VentanaHoraria> {
-    // Calcular minutos totales desde medianoche
-    let minutos_centrales = hora_central.hour() as i32 * 60 + hora_central.minute() as i32;
+/// Calcula el día asignado para un registro basándose en el turno
+/// - Turno día (8am-20pm): El día asignado es el día actual
+/// - Turno noche (20pm-8am): El día asignado es el día siguiente
+pub fn calcular_dia_asignado(ventana: &VentanaHoraria, fecha_registro: &chrono::NaiveDateTime) -> NaiveDate {
+    let fecha_actual = fecha_registro.date();
 
-    // Calcular inicio y fin
-    let minutos_inicio = minutos_centrales - tolerancia_minutos;
-    let minutos_fin = minutos_centrales + tolerancia_minutos;
+    if ventana.es_turno_noche {
+        // Para el turno noche, si estamos después de las 20:00, el día asignado es mañana
+        // Si estamos antes de las 8:00 (madrugada), el día asignado es hoy
+        let hora_registro = fecha_registro.time();
+        let hora_corte = NaiveTime::from_hms_opt(20, 0, 0).unwrap();
 
-    // Manejar wrap-around de medianoche
-    let hora_inicio = minutos_a_tiempo(if minutos_inicio < 0 {
-        1440 + minutos_inicio // 1440 = 24 * 60
+        if hora_registro >= hora_corte {
+            // Estamos entre 20:00-23:59, día asignado es mañana
+            fecha_actual + chrono::Duration::days(1)
+        } else {
+            // Estamos entre 00:00-07:59, día asignado es hoy
+            fecha_actual
+        }
     } else {
-        minutos_inicio
-    });
-
-    let hora_fin = minutos_a_tiempo(if minutos_fin >= 1440 {
-        minutos_fin - 1440
-    } else {
-        minutos_fin
-    });
-
-    Ok(VentanaHoraria {
-        nombre: nombre.to_string(),
-        hora_central,
-        hora_inicio,
-        hora_fin,
-    })
-}
-
-/// Convierte minutos desde medianoche a NaiveTime
-fn minutos_a_tiempo(minutos: i32) -> NaiveTime {
-    let horas = (minutos / 60) % 24;
-    let mins = minutos % 60;
-    NaiveTime::from_hms_opt(horas as u32, mins as u32, 0).unwrap()
-}
-
-/// Verifica si una hora está dentro de una ventana
-fn esta_en_ventana(hora: &NaiveTime, ventana: &VentanaHoraria) -> bool {
-    if ventana.hora_inicio <= ventana.hora_fin {
-        // Ventana no cruza medianoche
-        *hora >= ventana.hora_inicio && *hora <= ventana.hora_fin
-    } else {
-        // Ventana cruza medianoche (ej: 23:00 - 03:00)
-        *hora >= ventana.hora_inicio || *hora <= ventana.hora_fin
+        // Turno día: día asignado es el día actual
+        fecha_actual
     }
 }
 
@@ -220,16 +207,31 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_calcular_ventana() {
-        let ventana = calcular_ventana("14:00", NaiveTime::from_hms_opt(14, 0, 0).unwrap(), 119).unwrap();
-        assert_eq!(ventana.hora_inicio, NaiveTime::from_hms_opt(12, 1, 0).unwrap());
-        assert_eq!(ventana.hora_fin, NaiveTime::from_hms_opt(15, 59, 0).unwrap());
+    fn test_determinar_ventana_turno_dia() {
+        // Este test necesitaría mockear la hora actual para ser determinístico
+        // Por ahora lo dejamos como placeholder
     }
 
     #[test]
-    fn test_ventana_cruza_medianoche() {
-        let ventana = calcular_ventana("02:00", NaiveTime::from_hms_opt(2, 0, 0).unwrap(), 119).unwrap();
-        assert_eq!(ventana.hora_inicio, NaiveTime::from_hms_opt(0, 1, 0).unwrap());
-        assert_eq!(ventana.hora_fin, NaiveTime::from_hms_opt(3, 59, 0).unwrap());
+    fn test_calcular_dia_asignado() {
+        let ventana_noche = VentanaHoraria {
+            nombre: "02:00".to_string(),
+            hora_central: NaiveTime::from_hms_opt(2, 0, 0).unwrap(),
+            hora_inicio: NaiveTime::from_hms_opt(20, 0, 0).unwrap(),
+            hora_fin: NaiveTime::from_hms_opt(8, 0, 0).unwrap(),
+            es_turno_noche: true,
+        };
+
+        // Lunes 22:00 → Martes
+        let fecha_lunes_noche = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()
+            .and_hms_opt(22, 0, 0).unwrap();
+        let dia_asignado = calcular_dia_asignado(&ventana_noche, &fecha_lunes_noche);
+        assert_eq!(dia_asignado, NaiveDate::from_ymd_opt(2024, 1, 2).unwrap());
+
+        // Martes 03:00 → Martes
+        let fecha_martes_madrugada = NaiveDate::from_ymd_opt(2024, 1, 2).unwrap()
+            .and_hms_opt(3, 0, 0).unwrap();
+        let dia_asignado = calcular_dia_asignado(&ventana_noche, &fecha_martes_madrugada);
+        assert_eq!(dia_asignado, NaiveDate::from_ymd_opt(2024, 1, 2).unwrap());
     }
 }

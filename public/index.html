@@ -18,78 +18,233 @@
         }
         .main-container {
             display: flex;
-            height: calc(100vh - 56px);
+            flex-direction: column;
+            min-height: calc(100vh - 56px);
             margin-top: 56px;
         }
         .scanner-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
             padding: 20px;
             background-color: #fff;
-        }
-        .sidebar-panel {
-            width: 350px;
-            background-color: #f8f9fa;
-            border-left: 1px solid #dee2e6;
-            overflow-y: auto;
-            padding: 20px;
+            text-align: center;
         }
         #qr-reader {
             width: 100%;
-            max-width: 500px;
+            max-width: 400px;
+            margin: 0 auto;
             border: 3px solid #667eea;
             border-radius: 15px;
             overflow: hidden;
         }
         .scanner-status {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-            font-size: 1.1em;
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1em;
         }
-        .area-card {
+
+        /* PESTAÑAS */
+        .tabs-container {
+            background: white;
+            border-bottom: 2px solid #dee2e6;
+            position: sticky;
+            top: 56px;
+            z-index: 100;
+        }
+        .nav-tabs {
+            border-bottom: none;
+        }
+        .nav-tabs .nav-link {
+            color: #666;
+            font-weight: 500;
+            border: none;
+            border-bottom: 3px solid transparent;
+            padding: 15px 20px;
+        }
+        .nav-tabs .nav-link.active {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            background: none;
+        }
+        .tab-content {
+            padding: 20px;
+        }
+
+        /* ÁREA ACTUAL */
+        .area-header-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .area-selector {
+            margin-bottom: 15px;
+        }
+        .progress-bar-custom {
+            height: 8px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.3);
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: white;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+
+        /* TERMÓMETROS */
+        .termometros-section {
+            margin-bottom: 25px;
+        }
+        .section-title {
+            font-size: 0.9em;
+            font-weight: 700;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .termometro-card {
             background: white;
             border-radius: 10px;
             padding: 15px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            transition: all 0.2s ease;
+            cursor: pointer;
         }
-        .area-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #667eea;
+        .termometro-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
         }
-        .termometro-mini {
-            padding: 8px 12px;
-            margin: 5px 0;
-            border-radius: 5px;
+        .termometro-card.pendiente {
+            border-left: 4px solid #ffc107;
+        }
+        .termometro-card.completado {
+            border-left: 4px solid #28a745;
+        }
+        .termometro-nombre {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .termometro-datos {
             font-size: 0.9em;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            color: #666;
         }
-        .termometro-pendiente {
-            background-color: #fff3cd;
-            border-left: 3px solid #ffc107;
-        }
-        .termometro-completado {
-            background-color: #d4edda;
-            border-left: 3px solid #28a745;
-        }
-        .stats-badge {
+        .temp-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
             font-size: 0.85em;
-            padding: 4px 8px;
+            margin-right: 8px;
+            margin-bottom: 4px;
+        }
+        .temp-max {
+            background: #ffe5e5;
+            color: #d32f2f;
+        }
+        .temp-min {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        .temp-hum {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        /* RESUMEN GLOBAL */
+        .area-summary-card {
+            background: white;
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        .area-summary-card.completo {
+            border-left: 5px solid #28a745;
+        }
+        .area-summary-card.incompleto {
+            border-left: 5px solid #ffc107;
+        }
+        .area-summary-card.sin-iniciar {
+            border-left: 5px solid #dc3545;
+        }
+        .area-title {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .progress-text {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .pendientes-list {
+            font-size: 0.85em;
+            color: #888;
+            margin-top: 8px;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        /* AVISOS */
+        .toast-container-custom {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            z-index: 9999;
+        }
+        .celebration-modal {
+            text-align: center;
+        }
+        .celebration-icon {
+            font-size: 4rem;
+        }
+
+        /* RESPONSIVE MÓVIL */
+        @media (max-width: 768px) {
+            .main-container {
+                margin-top: 56px;
+            }
+            .scanner-section {
+                padding: 15px;
+            }
+            #qr-reader {
+                max-width: 100%;
+                border-width: 2px;
+            }
+            .tab-content {
+                padding: 15px 10px;
+            }
+            .nav-tabs .nav-link {
+                padding: 12px 15px;
+                font-size: 0.9em;
+            }
+            .termometro-card {
+                padding: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .area-header-card {
+                padding: 15px;
+            }
+            .termometro-nombre {
+                font-size: 0.95em;
+            }
+            .temp-badge {
+                font-size: 0.8em;
+                padding: 3px 8px;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Navbar -->
     <nav class="navbar navbar-dark fixed-top">
         <div class="container-fluid">
             <span class="navbar-brand mb-0 h1">
@@ -107,52 +262,82 @@
     </nav>
 
     <div class="main-container">
-        <!-- Sección del Scanner -->
+        <!-- Scanner Section -->
         <div class="scanner-section">
-            <div class="text-center mb-4">
-                <h2><i class="bi bi-upc-scan"></i> Escanear Código QR</h2>
-                <p class="text-muted">Acerca el código QR del termómetro a la cámara</p>
-            </div>
-
+            <h5><i class="bi bi-upc-scan"></i> Escanear Código QR</h5>
+            <p class="text-muted small">Acerca el código QR del termómetro a la cámara</p>
             <div id="qr-reader"></div>
-
             <div id="scannerStatus" class="scanner-status d-none"></div>
-
-            <div class="mt-4 text-center">
-                <p class="text-muted">
-                    <i class="bi bi-info-circle"></i>
-                    Los datos se registrarán automáticamente al escanear
-                </p>
-            </div>
         </div>
 
-        <!-- Panel Lateral -->
-        <div class="sidebar-panel">
-            <div class="mb-3">
-                <h5><i class="bi bi-building"></i> Estado por Áreas</h5>
-                <p class="text-muted small">Ventana: <strong id="ventanaActual">-</strong></p>
+        <!-- Tabs Container -->
+        <div class="tabs-container">
+            <ul class="nav nav-tabs container" id="mainTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="area-tab" data-bs-toggle="tab" data-bs-target="#area-actual" type="button" role="tab">
+                        <i class="bi bi-building"></i> Área Actual
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="global-tab" data-bs-toggle="tab" data-bs-target="#resumen-global" type="button" role="tab">
+                        <i class="bi bi-globe"></i> Resumen Global
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            <!-- Área Actual Tab -->
+            <div class="tab-pane fade show active" id="area-actual" role="tabpanel">
+                <div class="container">
+                    <div id="areaActualContent">
+                        <div class="text-center text-muted py-5">
+                            <i class="bi bi-qr-code-scan" style="font-size: 3rem;"></i>
+                            <p class="mt-3">Escanea un termómetro para comenzar</p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div id="areasContainer">
-                <div class="text-center text-muted py-5">
-                    <i class="bi bi-inbox" style="font-size: 3rem;"></i>
-                    <p class="mt-2">Cargando áreas...</p>
+            <!-- Resumen Global Tab -->
+            <div class="tab-pane fade" id="resumen-global" role="tabpanel">
+                <div class="container">
+                    <div class="mb-3">
+                        <h5><i class="bi bi-list-check"></i> Estado General</h5>
+                        <p class="text-muted small">Ventana: <strong id="ventanaGlobal">-</strong></p>
+                    </div>
+                    <div id="resumenGlobalContent">
+                        <div class="text-center text-muted py-5">
+                            <i class="bi bi-hourglass-split" style="font-size: 3rem;"></i>
+                            <p class="mt-2">Cargando resumen...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal para Registro -->
+    <!-- Toast Container for Notifications -->
+    <div class="toast-container-custom" id="toastContainer"></div>
+
+    <!-- Modal para Registro/Edición -->
     <div class="modal fade" id="registroModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Registrar Temperatura</h5>
+                    <h5 class="modal-title" id="registroModalTitle">Registrar Temperatura</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    <div id="yaRegistradoAlert" class="alert alert-info" style="display: none;">
+                        <i class="bi bi-info-circle"></i> Este termómetro ya fue registrado en esta ventana. Puedes editar los valores.
+                    </div>
+
                     <form id="registroForm">
                         <input type="hidden" id="termometroId">
+                        <input type="hidden" id="registroId">
+                        <input type="hidden" id="esEdicion">
 
                         <div class="mb-3">
                             <label class="form-label"><strong>Termómetro:</strong></label>
@@ -178,13 +363,28 @@
                             <label for="observaciones" class="form-label">Observaciones (opcional)</label>
                             <textarea class="form-control" id="observaciones" rows="3"></textarea>
                         </div>
-
-                        <div id="advertencias" class="alert alert-warning" style="display: none;"></div>
                     </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-primary" onclick="guardarRegistro()">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Celebración -->
+    <div class="modal fade" id="celebrationModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content celebration-modal">
+                <div class="modal-body py-5">
+                    <div class="celebration-icon">🎉</div>
+                    <h3 class="mt-3">¡Excelente Trabajo!</h3>
+                    <p id="celebrationMessage" class="text-muted"></p>
+                    <div id="celebrationStats" class="mt-3"></div>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Continuar</button>
                 </div>
             </div>
         </div>
@@ -196,9 +396,11 @@
         let currentUser = null;
         let html5QrCode = null;
         let areasData = {};
+        let areaActualId = null;
         let termometroSeleccionado = null;
 
-        // Verificar autenticación al cargar
+        // ===== INICIALIZACIÓN =====
+
         async function checkAuth() {
             try {
                 const response = await fetch('/api/me');
@@ -225,7 +427,7 @@
 
             const config = {
                 fps: 10,
-                qrbox: { width: 250, height: 250 },
+                qrbox: { width: 220, height: 220 },
                 aspectRatio: 1.0
             };
 
@@ -240,6 +442,8 @@
             });
         }
 
+        // ===== SCANNER HANDLERS =====
+
         async function onScanSuccess(decodedText, decodedResult) {
             const termometroId = parseInt(decodedText);
 
@@ -248,7 +452,6 @@
                 return;
             }
 
-            // Pausar el scanner mientras procesamos
             html5QrCode.pause();
 
             try {
@@ -261,7 +464,7 @@
         }
 
         function onScanError(errorMessage) {
-            // Ignorar errores de escaneo continuos
+            // Ignorar errores continuos
         }
 
         async function procesarTermometro(termometroId) {
@@ -275,17 +478,24 @@
 
                 mostrarEstado(`✓ ${termometro.nombre || 'ID: ' + termometro.id} - ${termometro.area_nombre}`, 'success');
 
-                // Resaltar el área en el panel
-                resaltarArea(termometro.area_id);
+                // Cambiar a área del termómetro si es diferente
+                if (areaActualId !== termometro.area_id) {
+                    await cambiarAreaActual(termometro.area_id);
+                }
 
-                // Abrir modal de registro
-                await abrirModalRegistro(termometro);
+                // Verificar si ya está registrado
+                const areaData = areasData[termometro.area_id];
+                const yaRegistrado = areaData?.completados.find(r => r.termometro_id === termometro.id);
+
+                await abrirModalRegistro(termometro, yaRegistrado);
 
             } catch (error) {
                 mostrarEstado('Termómetro no encontrado', 'danger');
                 setTimeout(() => html5QrCode.resume(), 2000);
             }
         }
+
+        // ===== CARGA DE DATOS =====
 
         async function cargarTodasLasAreas() {
             try {
@@ -310,83 +520,257 @@
                     }
                 }
 
-                renderizarAreas();
+                renderizarResumenGlobal();
             } catch (error) {
                 console.error('Error al cargar áreas:', error);
             }
         }
 
-        function renderizarAreas() {
-            const container = document.getElementById('areasContainer');
+        // ===== ÁREA ACTUAL =====
+
+        async function cambiarAreaActual(areaId) {
+            areaActualId = areaId;
+            renderizarAreaActual();
+        }
+
+        function renderizarAreaActual() {
+            const container = document.getElementById('areaActualContent');
+
+            if (!areaActualId || !areasData[areaActualId]) {
+                container.innerHTML = `
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-qr-code-scan" style="font-size: 3rem;"></i>
+                        <p class="mt-3">Escanea un termómetro para comenzar</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const data = areasData[areaActualId];
+            const totalPendientes = data.pendientes.length;
+            const totalCompletados = data.completados.length;
+            const total = totalPendientes + totalCompletados;
+            const progreso = total > 0 ? Math.round((totalCompletados / total) * 100) : 0;
+
+            let html = `
+                <div class="area-header-card">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h4 class="mb-1">${data.area.nombre}</h4>
+                            <small>Ventana: ${data.ventana}</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="badge bg-light text-dark">${totalCompletados}/${total}</div>
+                        </div>
+                    </div>
+                    <div class="progress-bar-custom">
+                        <div class="progress-fill" style="width: ${progreso}%"></div>
+                    </div>
+                    <div class="text-center mt-2">
+                        <small>${progreso}% completado</small>
+                    </div>
+                </div>
+
+                <!-- Selector de Área -->
+                <div class="area-selector">
+                    <label class="form-label small text-muted">Cambiar de área:</label>
+                    <select class="form-select" onchange="cambiarAreaActual(parseInt(this.value))">
+                        ${Object.values(areasData).map(a => `
+                            <option value="${a.area.id}" ${a.area.id === areaActualId ? 'selected' : ''}>
+                                ${a.area.nombre} (${a.completados.length}/${a.pendientes.length + a.completados.length})
+                            </option>
+                        `).join('')}
+                    </select>
+                </div>
+            `;
+
+            // Pendientes
+            if (totalPendientes > 0) {
+                html += `
+                    <div class="termometros-section">
+                        <div class="section-title">
+                            <i class="bi bi-hourglass-split"></i> Pendientes (${totalPendientes})
+                        </div>
+                `;
+                data.pendientes.forEach(t => {
+                    html += `
+                        <div class="termometro-card pendiente" onclick="seleccionarTermometro(${t.id})">
+                            <div class="termometro-nombre">
+                                ${t.nombre || 'ID: ' + t.id}
+                            </div>
+                            <div class="termometro-datos text-muted small">
+                                <i class="bi bi-thermometer"></i> ${t.tipo_nombre}
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+            }
+
+            // Completados
+            if (totalCompletados > 0) {
+                html += `
+                    <div class="termometros-section">
+                        <div class="section-title">
+                            <i class="bi bi-check-circle"></i> Completados (${totalCompletados})
+                        </div>
+                `;
+                data.completados.forEach(r => {
+                    html += `
+                        <div class="termometro-card completado" onclick="editarRegistro(${r.termometro_id})">
+                            <div class="termometro-nombre">
+                                ${r.termometro_nombre || 'ID: ' + r.termometro_id}
+                            </div>
+                            <div class="termometro-datos">
+                                <span class="temp-badge temp-max">Máx: ${r.temp_maxima.toFixed(1)}°C</span>
+                                <span class="temp-badge temp-min">Mín: ${r.temp_minima.toFixed(1)}°C</span>
+                                ${r.humedad ? `<span class="temp-badge temp-hum">H: ${r.humedad.toFixed(1)}%</span>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+            }
+
+            container.innerHTML = html;
+
+            // Verificar si el área está completa
+            if (totalPendientes === 0 && totalCompletados > 0) {
+                mostrarCelebracionArea(data.area.nombre);
+            }
+        }
+
+        async function seleccionarTermometro(termometroId) {
+            try {
+                const response = await fetch(`/api/termometros/${termometroId}`);
+                const termometro = await response.json();
+                await abrirModalRegistro(termometro, null);
+            } catch (error) {
+                console.error('Error al seleccionar termómetro:', error);
+            }
+        }
+
+        async function editarRegistro(termometroId) {
+            const areaData = areasData[areaActualId];
+            const registro = areaData.completados.find(r => r.termometro_id === termometroId);
+
+            if (!registro) return;
+
+            try {
+                const response = await fetch(`/api/termometros/${termometroId}`);
+                const termometro = await response.json();
+                await abrirModalRegistro(termometro, registro);
+            } catch (error) {
+                console.error('Error al cargar termómetro:', error);
+            }
+        }
+
+        // ===== RESUMEN GLOBAL =====
+
+        function renderizarResumenGlobal() {
+            const container = document.getElementById('resumenGlobalContent');
             const ventana = Object.values(areasData)[0]?.ventana || '-';
-            document.getElementById('ventanaActual').textContent = ventana;
+            document.getElementById('ventanaGlobal').textContent = ventana;
 
             if (Object.keys(areasData).length === 0) {
                 container.innerHTML = '<div class="text-center text-muted py-3">No hay áreas disponibles</div>';
                 return;
             }
 
-            container.innerHTML = '';
+            let totalPendientesGeneral = 0;
+            let totalCompletadosGeneral = 0;
+            let areasCompletas = 0;
+
+            let html = '';
 
             for (const [areaId, data] of Object.entries(areasData)) {
                 const totalPendientes = data.pendientes.length;
                 const totalCompletados = data.completados.length;
                 const total = totalPendientes + totalCompletados;
+                const progreso = total > 0 ? Math.round((totalCompletados / total) * 100) : 0;
 
-                const areaCard = document.createElement('div');
-                areaCard.className = 'area-card';
-                areaCard.id = `area-${areaId}`;
+                totalPendientesGeneral += totalPendientes;
+                totalCompletadosGeneral += totalCompletados;
 
-                areaCard.innerHTML = `
-                    <div class="area-header">
-                        <strong>${data.area.nombre}</strong>
-                        <div>
-                            <span class="badge bg-success stats-badge">${totalCompletados}</span>
-                            <span class="badge bg-warning stats-badge">${totalPendientes}</span>
+                let estado = 'incompleto';
+                if (totalPendientes === 0 && totalCompletados > 0) {
+                    estado = 'completo';
+                    areasCompletas++;
+                } else if (totalCompletados === 0) {
+                    estado = 'sin-iniciar';
+                }
+
+                html += `
+                    <div class="area-summary-card ${estado}" onclick="cambiarAreaActual(${areaId}); bootstrap.Tab.getOrCreateInstance(document.getElementById('area-tab')).show();">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="area-title">${data.area.nombre}</div>
+                            <span class="badge ${estado === 'completo' ? 'bg-success' : estado === 'sin-iniciar' ? 'bg-danger' : 'bg-warning text-dark'}">
+                                ${totalCompletados}/${total}
+                            </span>
                         </div>
-                    </div>
-                    <div class="termometros-list">
-                        ${data.pendientes.map(t => `
-                            <div class="termometro-mini termometro-pendiente">
-                                <span>${t.nombre || 'ID: ' + t.id}</span>
-                                <i class="bi bi-hourglass-split"></i>
+                        <div class="progress mt-2" style="height: 6px;">
+                            <div class="progress-bar ${estado === 'completo' ? 'bg-success' : 'bg-warning'}"
+                                 style="width: ${progreso}%"></div>
+                        </div>
+                        <div class="progress-text mt-1">${progreso}% completado</div>
+                        ${totalPendientes > 0 ? `
+                            <div class="pendientes-list">
+                                <strong>Pendientes:</strong> ${data.pendientes.slice(0, 3).map(t => t.nombre || 'ID: ' + t.id).join(', ')}
+                                ${totalPendientes > 3 ? ` y ${totalPendientes - 3} más...` : ''}
                             </div>
-                        `).join('')}
-                        ${data.completados.map(r => `
-                            <div class="termometro-mini termometro-completado">
-                                <span>${r.termometro_nombre || 'ID: ' + r.termometro_id}</span>
-                                <i class="bi bi-check-circle"></i>
-                            </div>
-                        `).join('')}
+                        ` : ''}
                     </div>
                 `;
+            }
 
-                container.appendChild(areaCard);
+            // Insertar resumen general al inicio
+            const totalGeneral = totalPendientesGeneral + totalCompletadosGeneral;
+            const progresoGeneral = totalGeneral > 0 ? Math.round((totalCompletadosGeneral / totalGeneral) * 100) : 0;
+
+            html = `
+                <div class="area-header-card mb-4">
+                    <h5 class="mb-3">Progreso Total</h5>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="h3 mb-0">${totalCompletadosGeneral}</div>
+                            <small>Completados</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h3 mb-0">${totalPendientesGeneral}</div>
+                            <small>Pendientes</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h3 mb-0">${areasCompletas}</div>
+                            <small>Áreas Completas</small>
+                        </div>
+                    </div>
+                    <div class="progress-bar-custom mt-3">
+                        <div class="progress-fill" style="width: ${progresoGeneral}%"></div>
+                    </div>
+                    <div class="text-center mt-2">
+                        <small>${progresoGeneral}% completado</small>
+                    </div>
+                </div>
+                <h6 class="mb-3">Áreas</h6>
+            ` + html;
+
+            container.innerHTML = html;
+
+            // Verificar si TODO está completo
+            if (totalPendientesGeneral === 0 && totalCompletadosGeneral > 0) {
+                mostrarCelebracionTotal(totalCompletadosGeneral, areasCompletas);
             }
         }
 
-        function resaltarArea(areaId) {
-            // Quitar resaltado anterior
-            document.querySelectorAll('.area-card').forEach(card => {
-                card.style.border = 'none';
-            });
+        // ===== MODAL REGISTRO =====
 
-            // Resaltar área actual
-            const areaCard = document.getElementById(`area-${areaId}`);
-            if (areaCard) {
-                areaCard.style.border = '3px solid #667eea';
-                areaCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
-        }
-
-        async function abrirModalRegistro(termometro) {
+        async function abrirModalRegistro(termometro, registroExistente) {
             termometroSeleccionado = termometro;
 
             document.getElementById('termometroId').value = termometro.id;
             document.getElementById('termometroNombre').textContent =
                 `${termometro.nombre || 'ID: ' + termometro.id} - ${termometro.tipo_nombre}`;
 
-            // Mostrar/ocultar campo de humedad
             const humedadGroup = document.getElementById('humedadGroup');
             if (termometro.tiene_humedad) {
                 humedadGroup.style.display = 'block';
@@ -398,7 +782,29 @@
 
             // Limpiar formulario
             document.getElementById('registroForm').reset();
-            document.getElementById('advertencias').style.display = 'none';
+            document.getElementById('yaRegistradoAlert').style.display = 'none';
+
+            if (registroExistente) {
+                // Modo edición
+                document.getElementById('registroModalTitle').textContent = 'Editar Temperatura';
+                document.getElementById('registroId').value = registroExistente.id;
+                document.getElementById('esEdicion').value = 'true';
+                document.getElementById('yaRegistradoAlert').style.display = 'block';
+
+                document.getElementById('tempMaxima').value = registroExistente.temp_maxima;
+                document.getElementById('tempMinima').value = registroExistente.temp_minima;
+                if (registroExistente.humedad) {
+                    document.getElementById('humedad').value = registroExistente.humedad;
+                }
+                if (registroExistente.observaciones) {
+                    document.getElementById('observaciones').value = registroExistente.observaciones;
+                }
+            } else {
+                // Modo nuevo
+                document.getElementById('registroModalTitle').textContent = 'Registrar Temperatura';
+                document.getElementById('registroId').value = '';
+                document.getElementById('esEdicion').value = 'false';
+            }
 
             const modal = new bootstrap.Modal(document.getElementById('registroModal'));
             modal.show();
@@ -411,28 +817,49 @@
             const humedad = document.getElementById('humedad').value ?
                 parseFloat(document.getElementById('humedad').value) : null;
             const observaciones = document.getElementById('observaciones').value || null;
+            const esEdicion = document.getElementById('esEdicion').value === 'true';
+            const registroId = document.getElementById('registroId').value;
 
             try {
-                const response = await fetch('/api/registros', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        termometro_id: parseInt(termometroId),
-                        temp_maxima: tempMaxima,
-                        temp_minima: tempMinima,
-                        humedad: humedad,
-                        observaciones: observaciones
-                    })
-                });
+                let response;
+
+                if (esEdicion) {
+                    // Editar registro existente
+                    response = await fetch(`/api/registros/${registroId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            temp_maxima: tempMaxima,
+                            temp_minima: tempMinima,
+                            humedad: humedad,
+                            observaciones: observaciones
+                        })
+                    });
+                } else {
+                    // Crear nuevo registro
+                    response = await fetch('/api/registros', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            termometro_id: parseInt(termometroId),
+                            temp_maxima: tempMaxima,
+                            temp_minima: tempMinima,
+                            humedad: humedad,
+                            observaciones: observaciones
+                        })
+                    });
+                }
 
                 if (response.ok) {
-                    mostrarEstado('✓ Registro guardado exitosamente', 'success');
+                    mostrarEstado(esEdicion ? '✓ Registro actualizado' : '✓ Registro guardado', 'success');
                     bootstrap.Modal.getInstance(document.getElementById('registroModal')).hide();
 
-                    // Recargar datos de las áreas
+                    // Recargar datos
                     await cargarTodasLasAreas();
+                    renderizarAreaActual();
+                    renderizarResumenGlobal();
 
-                    // Resumir scanner después de 1 segundo
+                    // Resumir scanner
                     setTimeout(() => {
                         if (html5QrCode) {
                             html5QrCode.resume();
@@ -449,6 +876,46 @@
             }
         }
 
+        // ===== CELEBRACIONES =====
+
+        function mostrarCelebracionArea(nombreArea) {
+            // Evitar mostrar múltiples veces
+            if (sessionStorage.getItem(`area_${nombreArea}_celebrada`)) {
+                return;
+            }
+            sessionStorage.setItem(`area_${nombreArea}_celebrada`, 'true');
+
+            mostrarToast(`¡Área ${nombreArea} Completa!`, 'success');
+        }
+
+        function mostrarCelebracionTotal(totalCompletados, areasCompletas) {
+            // Evitar mostrar múltiples veces
+            if (sessionStorage.getItem('total_celebrado')) {
+                return;
+            }
+            sessionStorage.setItem('total_celebrado', 'true');
+
+            document.getElementById('celebrationMessage').textContent =
+                'Has completado TODOS los registros del turno';
+            document.getElementById('celebrationStats').innerHTML = `
+                <div class="row">
+                    <div class="col-6">
+                        <div class="h4">${totalCompletados}</div>
+                        <div class="text-muted">Termómetros</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="h4">${areasCompletas}</div>
+                        <div class="text-muted">Áreas</div>
+                    </div>
+                </div>
+            `;
+
+            const modal = new bootstrap.Modal(document.getElementById('celebrationModal'));
+            modal.show();
+        }
+
+        // ===== UTILIDADES =====
+
         function mostrarEstado(mensaje, tipo) {
             const status = document.getElementById('scannerStatus');
             status.className = `scanner-status alert alert-${tipo}`;
@@ -458,6 +925,20 @@
             setTimeout(() => {
                 status.classList.add('d-none');
             }, 3000);
+        }
+
+        function mostrarToast(mensaje, tipo) {
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${tipo} alert-dismissible fade show`;
+            toast.innerHTML = `
+                ${mensaje}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.getElementById('toastContainer').appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 5000);
         }
 
         async function logout() {
