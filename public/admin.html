@@ -53,6 +53,92 @@
         .table-actions button {
             margin-right: 5px;
         }
+
+        /* Estilos responsive para móviles */
+        @media (max-width: 767px) {
+            body {
+                overflow-x: hidden;
+            }
+            .sidebar {
+                min-height: auto;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                margin-bottom: 10px;
+            }
+            .sidebar .nav {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .sidebar .nav-link {
+                padding: 10px 12px;
+                font-size: 0.85rem;
+                border-left: none;
+                border-bottom: 3px solid transparent;
+                text-align: center;
+            }
+            .sidebar .nav-link.active {
+                border-left: none;
+                border-bottom: 3px solid #667eea;
+            }
+            .content-area {
+                padding: 10px;
+                width: 100%;
+                overflow-x: hidden;
+            }
+            .card {
+                margin-bottom: 15px;
+                overflow-x: hidden;
+            }
+            .card-body {
+                padding: 10px;
+            }
+            /* Hacer que el navbar sea sticky para que siempre esté visible */
+            .navbar {
+                position: sticky;
+                top: 0;
+                z-index: 1000;
+            }
+            /* Tablas responsive con scroll horizontal */
+            .table-responsive {
+                display: block;
+                width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .table {
+                min-width: 600px;
+                font-size: 0.85rem;
+            }
+            .table th,
+            .table td {
+                padding: 8px;
+                white-space: nowrap;
+            }
+            /* Botones más compactos en tablas */
+            .table-actions button {
+                padding: 4px 8px;
+                font-size: 0.75rem;
+                margin-right: 3px;
+            }
+            /* Formularios más compactos */
+            .form-label {
+                font-size: 0.9rem;
+                margin-bottom: 4px;
+            }
+            .form-control,
+            .form-select {
+                font-size: 0.9rem;
+                padding: 6px 10px;
+            }
+            .btn {
+                padding: 6px 12px;
+                font-size: 0.9rem;
+            }
+            /* Ocultar columnas menos importantes en móviles */
+            .mobile-hide {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -109,18 +195,20 @@
                     </div>
                     <div class="card">
                         <div class="card-body">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Usuario</th>
-                                        <th>Rol</th>
-                                        <th>Estado</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="usuariosTable"></tbody>
-                            </table>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Usuario</th>
+                                            <th>Rol</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="usuariosTable"></tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -135,18 +223,20 @@
                     </div>
                     <div class="card">
                         <div class="card-body">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Nombre</th>
-                                        <th>Descripción</th>
-                                        <th>Estado</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="areasTable"></tbody>
-                            </table>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Nombre</th>
+                                            <th>Descripción</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="areasTable"></tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -161,19 +251,21 @@
                     </div>
                     <div class="card">
                         <div class="card-body">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Nombre</th>
-                                        <th>Humedad</th>
-                                        <th>Rango Temp.</th>
-                                        <th>Estado</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tiposTable"></tbody>
-                            </table>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Nombre</th>
+                                            <th>Humedad</th>
+                                            <th>Rango Temp.</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tiposTable"></tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -188,19 +280,21 @@
                     </div>
                     <div class="card">
                         <div class="card-body">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Nombre</th>
-                                        <th>Área</th>
-                                        <th>Tipo</th>
-                                        <th>Estado</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="termometrosTable"></tbody>
-                            </table>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Nombre</th>
+                                            <th>Área</th>
+                                            <th>Tipo</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="termometrosTable"></tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -232,8 +326,8 @@
                                     <label class="form-label">Ventana Horaria</label>
                                     <select class="form-select" id="filtro_ventana">
                                         <option value="">Todas</option>
-                                        <option value="MAÑANA">MAÑANA</option>
-                                        <option value="NOCHE">NOCHE</option>
+                                        <option value="14:00">14:00</option>
+                                        <option value="02:00">02:00</option>
                                     </select>
                                 </div>
                             </div>
@@ -670,10 +764,28 @@
             document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
 
             // Mostrar sección seleccionada
-            document.getElementById('section-' + section).style.display = 'block';
+            const sectionElement = document.getElementById('section-' + section);
+            sectionElement.style.display = 'block';
 
             // Activar link
             event.target.classList.add('active');
+
+            // Scroll automático al inicio del contenido (especialmente útil en móviles)
+            setTimeout(() => {
+                // En móviles, hacer scroll al inicio del contenido
+                if (window.innerWidth < 768) {
+                    window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+                } else {
+                    // En desktop, scroll a la sección de contenido
+                    const contentArea = document.querySelector('.content-area');
+                    if (contentArea) {
+                        contentArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
+            }, 100);
 
             // Cargar datos según sección
             switch(section) {

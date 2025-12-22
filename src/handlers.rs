@@ -3,13 +3,14 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use chrono::{Local, NaiveDate};
-use serde::{Deserialize, Serialize};
+use chrono::Local;
+use serde::Deserialize;
 use sqlx::SqlitePool;
 use tower_sessions::Session;
+use printpdf::*;
 
 use crate::{
-    auth::{self, hash_password, verify_password, CurrentUser, SessionUser},
+    auth::{self, hash_password, verify_password, CurrentUser},
     db::{get_config, log_auditoria, set_config},
     logic::{determinar_ventana_actual, validar_registro},
     models::*,
@@ -874,7 +875,7 @@ pub async fn crear_registro(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     // Validar registro
-    let (fuera_rango_operativo, advertencias) = validar_registro(
+    let (fuera_rango_operativo, _advertencias) = validar_registro(
         payload.temp_maxima,
         payload.temp_minima,
         payload.humedad,
@@ -1160,7 +1161,7 @@ pub async fn generar_reporte_mensual(
     }
 }
 
-fn generar_csv_diario(rows: Vec<sqlx::sqlite::SqliteRow>, fecha: &str) -> Result<(StatusCode, Vec<u8>), StatusCode> {
+fn generar_csv_diario(rows: Vec<sqlx::sqlite::SqliteRow>, _fecha: &str) -> Result<(StatusCode, Vec<u8>), StatusCode> {
     use sqlx::Row;
 
     let mut wtr = csv::Writer::from_writer(vec![]);
@@ -1201,11 +1202,115 @@ fn generar_csv_mensual(rows: Vec<sqlx::sqlite::SqliteRow>, mes: u32, anio: i32) 
     generar_csv_diario(rows, &format!("{}-{:02}", anio, mes))
 }
 
-fn generar_pdf_diario(_rows: Vec<sqlx::sqlite::SqliteRow>, _fecha: &str) -> Result<(StatusCode, Vec<u8>), StatusCode> {
-    // Implementación simplificada de PDF
-    // Por ahora retornamos un mensaje indicando que está en desarrollo
-    let mensaje = b"Generacion de PDF en desarrollo. Use CSV por ahora.";
-    Ok((StatusCode::OK, mensaje.to_vec()))
+fn generar_pdf_diario(rows: Vec<sqlx::sqlite::SqliteRow>, fecha: &str) -> Result<(StatusCode, Vec<u8>), StatusCode> {
+    use sqlx::Row;
+
+    // Crear documento PDF en orientación HORIZONTAL (Landscape)
+    let (doc, page1, layer1) = PdfDocument::new("Reporte de Temperaturas", Mm(297.0), Mm(210.0), "Capa 1");
+    let current_layer = doc.get_page(page1).get_layer(layer1);
+
+    // Fuentes
+    let font_bold = doc.add_builtin_font(BuiltinFont::HelveticaBold)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let font_regular = doc.add_builtin_font(BuiltinFont::Helvetica)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    // Título y fecha
+    current_layer.use_text("REPORTE DE CONTROL DE TEMPERATURAS", 14.0, Mm(10.0), Mm(195.0), &font_bold);
+    current_layer.use_text(&format!("Período: {}", fecha), 11.0, Mm(10.0), Mm(188.0), &font_regular);
+
+    // Encabezados de tabla (más columnas aprovechando el ancho)
+    let mut y_pos = 175.0;
+    current_layer.use_text("ID", 9.0, Mm(5.0), Mm(y_pos), &font_bold);
+    current_layer.use_text("Fecha/Hora", 9.0, Mm(15.0), Mm(y_pos), &font_bold);
+    current_layer.use_text("Ventana", 9.0, Mm(50.0), Mm(y_pos), &font_bold);
+    current_layer.use_text("Área", 9.0, Mm(70.0), Mm(y_pos), &font_bold);
+    current_layer.use_text("Termómetro", 9.0, Mm(105.0), Mm(y_pos), &font_bold);
+    current_layer.use_text("Tipo", 9.0, Mm(145.0), Mm(y_pos), &font_bold);
+    current_layer.use_text("T.Máx", 9.0, Mm(170.0), Mm(y_pos), &font_bold);
+    current_layer.use_text("T.Mín", 9.0, Mm(185.0), Mm(y_pos), &font_bold);
+    current_layer.use_text("Hum.", 9.0, Mm(200.0), Mm(y_pos), &font_bold);
+    current_layer.use_text("Estado", 9.0, Mm(215.0), Mm(y_pos), &font_bold);
+    current_layer.use_text("Usuario", 9.0, Mm(235.0), Mm(y_pos), &font_bold);
+    current_layer.use_text("Observaciones", 9.0, Mm(260.0), Mm(y_pos), &font_bold);
+
+    // Línea separadora
+    y_pos -= 2.0;
+
+    // Datos
+    y_pos -= 5.0;
+    for row in rows.iter().take(40) { // Más registros por página en landscape
+        let id: i64 = row.get("id");
+        let fecha_registro: String = row.get("fecha_registro");
+        let ventana: String = row.get("ventana_horaria");
+        let area: String = row.get("area_nombre");
+        let termo: String = row.try_get::<String, _>("termometro_nombre")
+            .unwrap_or_else(|_| format!("ID: {}", row.get::<i64, _>("termometro_id")));
+        let tipo: String = row.get("tipo_nombre");
+        let temp_max: f64 = row.get("temp_maxima");
+        let temp_min: f64 = row.get("temp_minima");
+        let humedad: Option<f64> = row.try_get("humedad").ok();
+        let fuera_rango: bool = row.get("fuera_rango_operativo");
+        let usuario: String = row.get("usuario_nombre");
+        let observaciones: Option<String> = row.try_get("observaciones").ok();
+
+        // Fecha corta (solo fecha, sin hora)
+        let fecha_corta = if fecha_registro.len() > 10 {
+            &fecha_registro[..10]
+        } else {
+            &fecha_registro
+        };
+
+        // Observaciones cortas
+        let obs_corta = observaciones
+            .as_ref()
+            .map(|o| if o.len() > 20 { format!("{}...", &o[..17]) } else { o.clone() })
+            .unwrap_or_else(|| "-".to_string());
+
+        // Estado visual
+        let estado = if fuera_rango { "⚠ Alert" } else { "✓ OK" };
+
+        current_layer.use_text(&id.to_string(), 8.0, Mm(5.0), Mm(y_pos), &font_regular);
+        current_layer.use_text(fecha_corta, 8.0, Mm(15.0), Mm(y_pos), &font_regular);
+        current_layer.use_text(&ventana, 8.0, Mm(50.0), Mm(y_pos), &font_regular);
+        current_layer.use_text(&area, 8.0, Mm(70.0), Mm(y_pos), &font_regular);
+        current_layer.use_text(&termo, 8.0, Mm(105.0), Mm(y_pos), &font_regular);
+        current_layer.use_text(&tipo, 7.0, Mm(145.0), Mm(y_pos), &font_regular);
+        current_layer.use_text(&format!("{:.1}°C", temp_max), 8.0, Mm(170.0), Mm(y_pos), &font_regular);
+        current_layer.use_text(&format!("{:.1}°C", temp_min), 8.0, Mm(185.0), Mm(y_pos), &font_regular);
+        current_layer.use_text(
+            &humedad.map(|h| format!("{:.1}%", h)).unwrap_or_else(|| "-".to_string()),
+            8.0, Mm(200.0), Mm(y_pos), &font_regular
+        );
+        current_layer.use_text(estado, 8.0, Mm(215.0), Mm(y_pos), &font_regular);
+        current_layer.use_text(&usuario, 8.0, Mm(235.0), Mm(y_pos), &font_regular);
+        current_layer.use_text(&obs_corta, 7.0, Mm(260.0), Mm(y_pos), &font_regular);
+
+        y_pos -= 5.5;
+
+        if y_pos < 15.0 {
+            break; // Evitar salirse de la página
+        }
+    }
+
+    // Pie de página
+    current_layer.use_text(
+        &format!("Total de registros: {} | Generado: {}",
+            rows.len(),
+            chrono::Local::now().format("%Y-%m-%d %H:%M")
+        ),
+        9.0, Mm(10.0), Mm(8.0), &font_regular
+    );
+    current_layer.use_text(
+        "Sistema de Control de Temperaturas",
+        9.0, Mm(220.0), Mm(8.0), &font_regular
+    );
+
+    // Guardar PDF en memoria
+    let pdf_bytes = doc.save_to_bytes()
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok((StatusCode::OK, pdf_bytes))
 }
 
 fn generar_pdf_mensual(rows: Vec<sqlx::sqlite::SqliteRow>, mes: u32, anio: i32) -> Result<(StatusCode, Vec<u8>), StatusCode> {

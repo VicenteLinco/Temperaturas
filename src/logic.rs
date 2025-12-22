@@ -1,4 +1,4 @@
-use chrono::{NaiveTime, NaiveDate, Local, Timelike, Datelike};
+use chrono::{NaiveTime, NaiveDate, Local};
 use anyhow::{Result, anyhow};
 use crate::models::TipoTermometro;
 
@@ -6,9 +6,13 @@ use crate::models::TipoTermometro;
 #[derive(Debug, Clone)]
 pub struct VentanaHoraria {
     pub nombre: String, // "14:00" o "02:00"
+    #[allow(dead_code)]
     pub hora_central: NaiveTime,
+    #[allow(dead_code)]
     pub hora_inicio: NaiveTime,
+    #[allow(dead_code)]
     pub hora_fin: NaiveTime,
+    #[allow(dead_code)]
     pub es_turno_noche: bool, // true si es el turno 20pm-8am
 }
 
@@ -56,6 +60,7 @@ pub fn determinar_ventana_actual(
 /// Calcula el día asignado para un registro basándose en el turno
 /// - Turno día (8am-20pm): El día asignado es el día actual
 /// - Turno noche (20pm-8am): El día asignado es el día siguiente
+#[allow(dead_code)]
 pub fn calcular_dia_asignado(ventana: &VentanaHoraria, fecha_registro: &chrono::NaiveDateTime) -> NaiveDate {
     let fecha_actual = fecha_registro.date();
 

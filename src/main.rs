@@ -10,7 +10,6 @@ use axum::{
     Router,
 };
 use dotenv::dotenv;
-use sqlx::SqlitePool;
 use std::env;
 use time;
 use tower::ServiceBuilder;
@@ -19,7 +18,7 @@ use tower_http::{
     trace::TraceLayer,
 };
 use tower_sessions::{
-    Expiry, SessionManagerLayer,
+    cookie::SameSite, Expiry, SessionManagerLayer,
 };
 use tower_sessions_sqlx_store::SqliteStore;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -52,6 +51,8 @@ async fn main() -> anyhow::Result<()> {
     session_store.migrate().await?;
 
     let session_layer = SessionManagerLayer::new(session_store)
+        .with_secure(false) // Permitir cookies en HTTP (no solo HTTPS)
+        .with_same_site(SameSite::Lax) // Permitir cookies entre diferentes hosts en la misma red
         .with_expiry(Expiry::OnInactivity(time::Duration::hours(8)));
 
     // Configurar rutas

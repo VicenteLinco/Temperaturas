@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use chrono::{DateTime, Utc, NaiveDateTime};
+use chrono::NaiveDateTime;
 use sqlx::FromRow;
 
 // ===== MODELOS DE BASE DE DATOS =====
@@ -84,6 +84,7 @@ pub struct Configuracion {
     pub updated_at: NaiveDateTime,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct LogAuditoria {
     pub id: i64,
@@ -260,19 +261,6 @@ pub struct PendientesResponse {
     pub completados: Vec<RegistroConDetalles>,
 }
 
-#[derive(Debug, Serialize)]
-pub struct EstadisticasResponse {
-    pub total_termometros: i64,
-    pub total_registrados: i64,
-    pub total_pendientes: i64,
-    pub fuera_de_rango: i64,
-}
-
-#[derive(Debug, Serialize)]
-pub struct ErrorResponse {
-    pub error: String,
-}
-
 impl From<Usuario> for UsuarioResponse {
     fn from(u: Usuario) -> Self {
         UsuarioResponse {
@@ -282,4 +270,69 @@ impl From<Usuario> for UsuarioResponse {
             activo: u.activo,
         }
     }
+}
+
+// ===== ALERTAS =====
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct Alerta {
+    pub id: i64,
+    pub registro_id: i64,
+    pub tipo: String, // 'ADVERTENCIA', 'CRITICA'
+    pub fecha_alerta: NaiveDateTime,
+    pub temperatura_registrada: f64,
+    pub humedad_registrada: Option<f64>,
+    pub desviacion: f64,
+    pub campo_afectado: String, // 'temp_maxima', 'temp_minima', 'humedad'
+
+    // Notificación
+    pub notificado: bool,
+    pub fecha_notificacion: Option<NaiveDateTime>,
+    pub destinatario: Option<String>,
+
+    // Resolución
+    pub estado: String, // 'PENDIENTE', 'RESUELTO', 'AUTO_RESUELTO'
+    pub fecha_resolucion: Option<NaiveDateTime>,
+    pub accion_correctiva: Option<String>,
+    pub responsable_resolucion: Option<String>,
+}
+
+#[derive(Debug, Serialize, FromRow)]
+pub struct AlertaConDetalles {
+    // Datos de alerta
+    pub id: i64,
+    pub tipo: String,
+    pub fecha_alerta: NaiveDateTime,
+    pub temperatura_registrada: f64,
+    pub humedad_registrada: Option<f64>,
+    pub desviacion: f64,
+    pub campo_afectado: String,
+    pub notificado: bool,
+    pub fecha_notificacion: Option<NaiveDateTime>,
+    pub destinatario: Option<String>,
+    pub estado: String,
+    pub fecha_resolucion: Option<NaiveDateTime>,
+    pub accion_correctiva: Option<String>,
+    pub responsable_resolucion: Option<String>,
+
+    // Datos del registro asociado
+    pub registro_id: i64,
+    pub fecha_registro: NaiveDateTime,
+    pub ventana_horaria: String,
+
+    // Datos del termómetro
+    pub termometro_id: i64,
+    pub termometro_nombre: Option<String>,
+
+    // Datos del área
+    pub area_nombre: String,
+
+    // Datos del usuario
+    pub usuario_nombre: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ResolverAlertaRequest {
+    pub accion_correctiva: String,
+    pub responsable: String,
 }

@@ -1,18 +1,16 @@
 use axum::{
-    extract::{Request, State},
+    extract::Request,
     http::StatusCode,
     middleware::Next,
-    response::{IntoResponse, Response},
-    Json,
+    response::Response,
 };
 use async_trait::async_trait;
 use bcrypt::{hash, verify, DEFAULT_COST};
 use serde::{Deserialize, Serialize};
-use sqlx::SqlitePool;
 use tower_sessions::Session;
 use anyhow::Result;
 
-use crate::models::{Usuario, UsuarioResponse};
+use crate::models::Usuario;
 
 const SESSION_USER_KEY: &str = "user_id";
 const SESSION_ROLE_KEY: &str = "user_role";

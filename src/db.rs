@@ -175,6 +175,56 @@ async fn create_tables(pool: &SqlitePool) -> Result<()> {
     .execute(pool)
     .await?;
 
+    // Tabla de alertas
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS alertas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            registro_id INTEGER NOT NULL,
+            tipo TEXT NOT NULL CHECK(tipo IN ('ADVERTENCIA', 'CRITICA')),
+            fecha_alerta DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            temperatura_registrada REAL NOT NULL,
+            humedad_registrada REAL,
+            desviacion REAL NOT NULL,
+            campo_afectado TEXT NOT NULL, -- 'temp_maxima', 'temp_minima', 'humedad'
+
+            -- Notificación
+            notificado BOOLEAN NOT NULL DEFAULT 0,
+            fecha_notificacion DATETIME,
+            destinatario TEXT,
+
+            -- Resolución
+            estado TEXT NOT NULL DEFAULT 'PENDIENTE' CHECK(estado IN ('PENDIENTE', 'RESUELTO', 'AUTO_RESUELTO')),
+            fecha_resolucion DATETIME,
+            accion_correctiva TEXT,
+            responsable_resolucion TEXT,
+
+            FOREIGN KEY (registro_id) REFERENCES registros(id)
+        )
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    // Agregar campos a tabla areas si no existen
+    sqlx::query(
+        r#"
+        ALTER TABLE areas ADD COLUMN IF NOT EXISTS responsable TEXT
+        "#,
+    )
+    .execute(pool)
+    .await
+    .ok(); // Ignorar si ya existe
+
+    sqlx::query(
+        r#"
+        ALTER TABLE areas ADD COLUMN IF NOT EXISTS email_notificacion TEXT
+        "#,
+    )
+    .execute(pool)
+    .await
+    .ok(); // Ignorar si ya existe
+
     // Insertar configuración por defecto si no existe
     sqlx::query(
         r#"
@@ -183,7 +233,15 @@ async fn create_tables(pool: &SqlitePool) -> Result<()> {
             ('registro_hora_1', '14:00', 'Primera ventana horaria de registro'),
             ('registro_hora_2', '02:00', 'Segunda ventana horaria de registro'),
             ('ventana_tolerancia_minutos', '119', 'Minutos de tolerancia antes y después del horario'),
-            ('session_timeout_horas', '8', 'Horas de inactividad antes de cerrar sesión')
+            ('session_timeout_horas', '8', 'Horas de inactividad antes de cerrar sesión'),
+            ('smtp_host', '', 'Servidor SMTP para envío de emails'),
+            ('smtp_port', '587', 'Puerto SMTP (587 para TLS, 465 para SSL)'),
+            ('smtp_username', '', 'Usuario SMTP'),
+            ('smtp_password', '', 'Contraseña SMTP'),
+            ('smtp_from_email', '', 'Email remitente'),
+            ('smtp_from_name', 'Sistema de Temperaturas', 'Nombre del remitente'),
+            ('notificaciones_activas', '0', 'Activar/desactivar notificaciones automáticas'),
+            ('empresa_nombre', '', 'Nombre de la empresa para reportes')
         "#,
     )
     .execute(pool)
@@ -201,6 +259,29 @@ async fn create_tables(pool: &SqlitePool) -> Result<()> {
     .bind(admin_hash)
     .execute(pool)
     .await?;
+
+    // Migrar datos antiguos: actualizar ventana_horaria de "noche"/"mañana" a horas
+    sqlx::query(
+        r#"
+        UPDATE registros
+        SET ventana_horaria = '02:00'
+        WHERE ventana_horaria IN ('noche', 'Noche', 'NOCHE', '02am', '2am')
+        "#,
+    )
+    .execute(pool)
+    .await
+    .ok(); // Ignorar errores si no hay registros antiguos
+
+    sqlx::query(
+        r#"
+        UPDATE registros
+        SET ventana_horaria = '14:00'
+        WHERE ventana_horaria IN ('mañana', 'Mañana', 'MAÑANA', 'dia', 'día', '14pm', '2pm')
+        "#,
+    )
+    .execute(pool)
+    .await
+    .ok(); // Ignorar errores si no hay registros antiguos
 
     Ok(())
 }
