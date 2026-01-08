@@ -5,7 +5,8 @@ use anyhow::Result;
 pub async fn init_db(database_url: &str) -> Result<SqlitePool> {
     // Crear pool de conexiones con opción de crear el archivo si no existe
     let pool = SqlitePoolOptions::new()
-        .max_connections(5)
+        .max_connections(20)  // ✅ Aumentado de 5 a 20 para mejor concurrencia
+        .min_connections(2)   // ✅ Mantener al menos 2 conexiones activas
         .connect_with(
             database_url
                 .parse::<sqlx::sqlite::SqliteConnectOptions>()?
@@ -113,6 +114,7 @@ async fn create_tables(pool: &SqlitePool) -> Result<()> {
             usuario_id INTEGER NOT NULL,
             ventana_horaria TEXT NOT NULL,
 
+            temp_actual REAL,
             temp_maxima REAL NOT NULL,
             temp_minima REAL NOT NULL,
             humedad REAL,
@@ -138,6 +140,39 @@ async fn create_tables(pool: &SqlitePool) -> Result<()> {
         CREATE UNIQUE INDEX IF NOT EXISTS idx_registros_unique_per_day
         ON registros(termometro_id, DATE(fecha_registro), ventana_horaria)
         "#,
+    )
+    .execute(pool)
+    .await?;
+
+    // ✅ NUEVOS ÍNDICES PARA MEJORAR PERFORMANCE
+    // Índice para búsquedas por fecha
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_registros_fecha
+         ON registros(fecha_registro)"
+    )
+    .execute(pool)
+    .await?;
+
+    // Índice para joins con termómetros
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_registros_termometro
+         ON registros(termometro_id)"
+    )
+    .execute(pool)
+    .await?;
+
+    // Índice para filtros por usuario
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_registros_usuario
+         ON registros(usuario_id)"
+    )
+    .execute(pool)
+    .await?;
+
+    // Índice para joins de termómetros con áreas
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_termometros_area
+         ON termometros(area_id)"
     )
     .execute(pool)
     .await?;
@@ -175,6 +210,22 @@ async fn create_tables(pool: &SqlitePool) -> Result<()> {
     .execute(pool)
     .await?;
 
+    // Índice para logs de auditoría por usuario
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_logs_usuario
+         ON logs_auditoria(usuario_id)"
+    )
+    .execute(pool)
+    .await?;
+
+    // Índice para logs de auditoría por fecha
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_logs_timestamp
+         ON logs_auditoria(timestamp)"
+    )
+    .execute(pool)
+    .await?;
+
     // Tabla de alertas
     sqlx::query(
         r#"
@@ -205,6 +256,16 @@ async fn create_tables(pool: &SqlitePool) -> Result<()> {
     )
     .execute(pool)
     .await?;
+
+    // ✅ MIGRACIÓN: Agregar campo temp_actual si no existe
+    sqlx::query(
+        r#"
+        ALTER TABLE registros ADD COLUMN IF NOT EXISTS temp_actual REAL
+        "#,
+    )
+    .execute(pool)
+    .await
+    .ok(); // Ignorar si ya existe
 
     // Agregar campos a tabla areas si no existen
     sqlx::query(

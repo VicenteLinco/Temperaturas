@@ -159,6 +159,14 @@ pub fn validar_registro(
     let mut advertencias = Vec::new();
     let mut fuera_rango_operativo = false;
 
+    // ✅ NUEVA VALIDACIÓN: Verificar coherencia entre máxima y mínima
+    if temp_maxima < temp_minima {
+        return Err(anyhow!(
+            "Temperatura máxima ({:.1}°C) no puede ser menor que temperatura mínima ({:.1}°C)",
+            temp_maxima, temp_minima
+        ));
+    }
+
     // Validar temperatura máxima
     match validar_temperatura(temp_maxima, tipo, "máxima") {
         ValidacionResultado::Ok => {},

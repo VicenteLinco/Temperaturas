@@ -31,7 +31,22 @@
       "Bash(./ngrok.exe config add-authtoken:*)",
       "Bash(powershell.exe -Command \"Stop-Process -Name ''sistema-temperaturas'' -Force\")",
       "Bash(cmd.exe /c \"taskkill /PID 2752 /F\")",
-      "Bash(timeout /t 3 /nobreak)"
+      "Bash(timeout /t 3 /nobreak)",
+      "Bash(timeout 5 tail:*)",
+      "Bash(python -m json.tool:*)",
+      "Bash(time:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(python:*)",
+      "Bash(cargo test:*)",
+      "Bash(dir:*)",
+      "Bash(dir *BANDEJA*.bat)",
+      "Bash(wc:*)",
+      "Bash(tree:*)",
+      "Bash(timeout 10 cargo run:*)",
+      "Bash(chmod:*)",
+      "Bash(bash test_login_flow.sh:*)",
+      "Bash(xargs:*)",
+      "Bash(Select-Object -Last 20)"
     ]
   },
   "outputStyle": "default"

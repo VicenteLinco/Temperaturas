@@ -51,8 +51,9 @@ async fn main() -> anyhow::Result<()> {
     session_store.migrate().await?;
 
     let session_layer = SessionManagerLayer::new(session_store)
-        .with_secure(false) // Permitir cookies en HTTP (no solo HTTPS)
-        .with_same_site(SameSite::Lax) // Permitir cookies entre diferentes hosts en la misma red
+        .with_secure(cfg!(not(debug_assertions))) // ✅ Secure en producción, permite HTTP en desarrollo
+        .with_same_site(SameSite::Strict) // ✅ Protección CSRF mejorada
+        .with_http_only(true) // ✅ Previene acceso desde JavaScript
         .with_expiry(Expiry::OnInactivity(time::Duration::hours(8)));
 
     // Configurar rutas
@@ -107,7 +108,7 @@ async fn main() -> anyhow::Result<()> {
         .merge(auth_routes)
         .merge(registrador_routes)
         .merge(admin_routes)
-        .nest_service("/", ServeDir::new("public"))
+        .fallback_service(ServeDir::new("public"))
         .layer(
             ServiceBuilder::new()
                 .layer(TraceLayer::new_for_http())
@@ -118,7 +119,13 @@ async fn main() -> anyhow::Result<()> {
     // Iniciar servidor
     let addr = format!("{}:{}", host, port);
     tracing::info!("Servidor iniciado en http://{}", addr);
-    tracing::info!("Usuario por defecto: admin / admin123");
+
+    // Solo mostrar credenciales en modo debug
+    if cfg!(debug_assertions) {
+        tracing::warn!("⚠️  Usuario por defecto: admin / admin123 (CAMBIAR EN PRODUCCIÓN)");
+    } else {
+        tracing::info!("✅ Sistema iniciado correctamente");
+    }
 
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     axum::serve(listener, app).await?;

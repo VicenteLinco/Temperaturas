@@ -68,6 +68,7 @@ pub struct Registro {
     pub termometro_id: i64,
     pub usuario_id: i64,
     pub ventana_horaria: String,
+    pub temp_actual: Option<f64>,
     pub temp_maxima: f64,
     pub temp_minima: f64,
     pub humedad: Option<f64>,
@@ -185,6 +186,7 @@ pub struct ActualizarTermometroRequest {
 #[derive(Debug, Deserialize)]
 pub struct CrearRegistroRequest {
     pub termometro_id: i64,
+    pub temp_actual: Option<f64>,
     pub temp_maxima: f64,
     pub temp_minima: f64,
     pub humedad: Option<f64>,
@@ -193,6 +195,7 @@ pub struct CrearRegistroRequest {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ActualizarRegistroRequest {
+    pub temp_actual: Option<f64>,
     pub temp_maxima: Option<f64>,
     pub temp_minima: Option<f64>,
     pub humedad: Option<f64>,
@@ -244,6 +247,7 @@ pub struct RegistroConDetalles {
     pub area_nombre: String,
     pub usuario_nombre: String,
     pub ventana_horaria: String,
+    pub temp_actual: Option<f64>,
     pub temp_maxima: f64,
     pub temp_minima: f64,
     pub humedad: Option<f64>,
