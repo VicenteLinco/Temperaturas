@@ -29,9 +29,27 @@ if %errorlevel% equ 0 (
 )
 
 echo.
-echo [1/4] Configurando ngrok con token...
-set /p NGROK_TOKEN=<"%~dp0token.txt"
-"%~dp0ngrok.exe" config add-authtoken %NGROK_TOKEN% >nul 2>&1
+echo [1/4] Configurando ngrok...
+set NGROK_TOKEN=
+REM Intentar leer desde .env en la raiz
+if exist "%~dp0..\.env" (
+    for /f "tokens=2 delims==" %%a in ('findstr /B "NGROK_AUTHTOKEN=" "%~dp0..\.env"') do set NGROK_TOKEN=%%a
+)
+REM Si no esta en .env, intentar leer desde token.txt
+if "%NGROK_TOKEN%"=="" (
+    if exist "%~dp0token.txt" (
+        set /p NGROK_TOKEN=<"%~dp0token.txt"
+    )
+)
+
+if not "%NGROK_TOKEN%"=="" (
+    echo [OK] Token encontrado, habilitando tunel publico.
+    "%~dp0ngrok.exe" config add-authtoken %NGROK_TOKEN% >nul 2>&1
+    set USE_NGROK=1
+) else (
+    echo [INFO] No se encontro token de ngrok, se iniciara en modo solo local.
+    set USE_NGROK=0
+)
 
 echo [2/4] Iniciando servidor Rust...
 cd /d "%~dp0.."
@@ -40,23 +58,34 @@ start /B cargo run >nul 2>&1
 echo [3/4] Esperando que el servidor este listo...
 timeout /t 5 /nobreak >nul
 
-echo [4/4] Iniciando ngrok...
-start "" /B "%~dp0ngrok.exe" http 3000
+if %USE_NGROK%==1 (
+    echo [4/4] Iniciando ngrok...
+    start "" /B "%~dp0ngrok.exe" http 3000
+    
+    echo.
+    echo Esperando que ngrok se conecte...
+    timeout /t 5 /nobreak >nul
+    
+    echo.
+    echo ════════════════════════════════════════════════════
+    echo   SERVICIOS INICIADOS CORRECTAMENTE
+    echo ════════════════════════════════════════════════════
+    echo.
+    echo Obteniendo URL publica...
+    echo.
 
-echo.
-echo Esperando que ngrok se conecte...
-timeout /t 5 /nobreak >nul
-
-echo.
-echo ════════════════════════════════════════════════════
-echo   SERVICIOS INICIADOS CORRECTAMENTE
-echo ════════════════════════════════════════════════════
-echo.
-echo Obteniendo URL publica...
-echo.
-
-REM Obtener la URL de ngrok usando PowerShell
-powershell -Command "$response = Invoke-RestMethod -Uri 'http://localhost:4040/api/tunnels'; $url = $response.tunnels[0].public_url; Write-Host ''; Write-Host 'URL PUBLICA: ' -NoNewline -ForegroundColor Green; Write-Host $url -ForegroundColor Cyan; Write-Host ''; Write-Host 'Credenciales por defecto:' -ForegroundColor Yellow; Write-Host '   Usuario: admin' -ForegroundColor White; Write-Host '   Contrasena: admin123' -ForegroundColor White; Write-Host ''; Write-Host 'Servidor local: http://localhost:3000' -ForegroundColor Gray; Write-Host '';"
+    REM Obtener la URL de ngrok usando PowerShell
+    powershell -Command "$response = try { Invoke-RestMethod -Uri 'http://localhost:4040/api/tunnels' -ErrorAction SilentlyContinue } catch { $null }; if($response) { $url = $response.tunnels[0].public_url; Write-Host ''; Write-Host 'URL PUBLICA: ' -NoNewline -ForegroundColor Green; Write-Host $url -ForegroundColor Cyan; Write-Host ''; Write-Host 'Servidor local: http://localhost:3000' -ForegroundColor Gray; Write-Host ''; } else { Write-Host 'Error al conectar con ngrok. Revisa el token.' -ForegroundColor Red; }"
+) else (
+    echo [4/4] Saltando inicio de ngrok (Modo Local).
+    echo.
+    echo ════════════════════════════════════════════════════
+    echo   SERVIDOR INICIADO (SOLO LOCAL)
+    echo ════════════════════════════════════════════════════
+    echo.
+    echo URL LOCAL: http://localhost:3000
+    echo.
+)
 
 echo ════════════════════════════════════════════════════
 echo.

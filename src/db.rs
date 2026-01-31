@@ -286,25 +286,51 @@ async fn create_tables(pool: &SqlitePool) -> Result<()> {
     .await
     .ok(); // Ignorar si ya existe
 
+    // Obtener valores de configuración de variables de entorno o usar defaults
+    let reg_hora_1 = std::env::var("REGISTRO_HORA_1").unwrap_or_else(|_| "14:00".to_string());
+    let reg_hora_2 = std::env::var("REGISTRO_HORA_2").unwrap_or_else(|_| "02:00".to_string());
+    let tol_minutos = std::env::var("VENTANA_TOLERANCIA_MINUTOS").unwrap_or_else(|_| "119".to_string());
+    let sess_timeout = std::env::var("SESSION_TIMEOUT_HORAS").unwrap_or_else(|_| "8".to_string());
+    let smtp_host = std::env::var("SMTP_HOST").unwrap_or_else(|_| "".to_string());
+    let smtp_port = std::env::var("SMTP_PORT").unwrap_or_else(|_| "587".to_string());
+    let smtp_user = std::env::var("SMTP_USERNAME").unwrap_or_else(|_| "".to_string());
+    let smtp_pass = std::env::var("SMTP_PASSWORD").unwrap_or_else(|_| "".to_string());
+    let smtp_from_email = std::env::var("SMTP_FROM_EMAIL").unwrap_or_else(|_| "".to_string());
+    let smtp_from_name = std::env::var("SMTP_FROM_NAME").unwrap_or_else(|_| "Sistema de Temperaturas".to_string());
+    let notif_activas = std::env::var("NOTIFICACIONES_ACTIVAS").unwrap_or_else(|_| "0".to_string());
+    let empresa_nombre = std::env::var("EMPRESA_NOMBRE").unwrap_or_else(|_| "".to_string());
+
     // Insertar configuración por defecto si no existe
     sqlx::query(
         r#"
         INSERT OR IGNORE INTO configuracion (clave, valor, descripcion)
         VALUES
-            ('registro_hora_1', '14:00', 'Primera ventana horaria de registro'),
-            ('registro_hora_2', '02:00', 'Segunda ventana horaria de registro'),
-            ('ventana_tolerancia_minutos', '119', 'Minutos de tolerancia antes y después del horario'),
-            ('session_timeout_horas', '8', 'Horas de inactividad antes de cerrar sesión'),
-            ('smtp_host', '', 'Servidor SMTP para envío de emails'),
-            ('smtp_port', '587', 'Puerto SMTP (587 para TLS, 465 para SSL)'),
-            ('smtp_username', '', 'Usuario SMTP'),
-            ('smtp_password', '', 'Contraseña SMTP'),
-            ('smtp_from_email', '', 'Email remitente'),
-            ('smtp_from_name', 'Sistema de Temperaturas', 'Nombre del remitente'),
-            ('notificaciones_activas', '0', 'Activar/desactivar notificaciones automáticas'),
-            ('empresa_nombre', '', 'Nombre de la empresa para reportes')
+            ('registro_hora_1', ?, 'Primera ventana horaria de registro'),
+            ('registro_hora_2', ?, 'Segunda ventana horaria de registro'),
+            ('ventana_tolerancia_minutos', ?, 'Minutos de tolerancia antes y después del horario'),
+            ('session_timeout_horas', ?, 'Horas de inactividad antes de cerrar sesión'),
+            ('smtp_host', ?, 'Servidor SMTP para envío de emails'),
+            ('smtp_port', ?, 'Puerto SMTP (587 para TLS, 465 para SSL)'),
+            ('smtp_username', ?, 'Usuario SMTP'),
+            ('smtp_password', ?, 'Contraseña SMTP'),
+            ('smtp_from_email', ?, 'Email remitente'),
+            ('smtp_from_name', ?, 'Nombre del remitente'),
+            ('notificaciones_activas', ?, 'Activar/desactivar notificaciones automáticas'),
+            ('empresa_nombre', ?, 'Nombre de la empresa para reportes')
         "#,
     )
+    .bind(reg_hora_1)
+    .bind(reg_hora_2)
+    .bind(tol_minutos)
+    .bind(sess_timeout)
+    .bind(smtp_host)
+    .bind(smtp_port)
+    .bind(smtp_user)
+    .bind(smtp_pass)
+    .bind(smtp_from_email)
+    .bind(smtp_from_name)
+    .bind(notif_activas)
+    .bind(empresa_nombre)
     .execute(pool)
     .await?;
 

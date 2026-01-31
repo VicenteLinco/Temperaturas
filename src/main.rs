@@ -120,9 +120,9 @@ async fn main() -> anyhow::Result<()> {
     let addr = format!("{}:{}", host, port);
     tracing::info!("Servidor iniciado en http://{}", addr);
 
-    // Solo mostrar credenciales en modo debug
+    // Solo mostrar advertencia de seguridad en modo debug
     if cfg!(debug_assertions) {
-        tracing::warn!("⚠️  Usuario por defecto: admin / admin123 (CAMBIAR EN PRODUCCIÓN)");
+        tracing::warn!("⚠️  Modo DEBUG activo: Asegúrese de configurar credenciales seguras en producción.");
     } else {
         tracing::info!("✅ Sistema iniciado correctamente");
     }

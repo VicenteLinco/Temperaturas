@@ -23,6 +23,9 @@ REM Crear acceso directo usando PowerShell
 echo Creando acceso directo...
 powershell -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%DESKTOP%\Sistema de Temperaturas.lnk'); $Shortcut.TargetPath = '%~dp0iniciar_servidor_oculto.vbs'; $Shortcut.WorkingDirectory = '%~dp0'; $Shortcut.Description = 'Iniciar Sistema de Gestion de Temperaturas en segundo plano'; $Shortcut.Save()"
 
+echo Creando acceso directo (Modo Local)...
+powershell -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%DESKTOP%\Temperaturas - Consola Local.lnk'); $Shortcut.TargetPath = '%~dp0iniciar_servidor_local.bat'; $Shortcut.WorkingDirectory = '%~dp0'; $Shortcut.Description = 'Iniciar Sistema de Temperaturas con consola visible'; $Shortcut.Save()"
+
 if %errorlevel% equ 0 (
     echo.
     echo ════════════════════════════════════════════════════
@@ -33,7 +36,9 @@ if %errorlevel% equ 0 (
     echo "Sistema de Temperaturas"
     echo.
     echo Ahora puedes hacer doble clic en ese acceso directo
-    echo para iniciar el servidor en segundo plano.
+    echo para iniciar el servidor.
+    echo.
+    echo Tambien se creo "Temperaturas - Consola Local" para ver los logs.
     echo.
 ) else (
     echo.

@@ -26,8 +26,6 @@ Scripts/iniciar_servidor_oculto.vbs   (recomendado - bandeja)
 Scripts/iniciar_servidor.bat          (tradicional - con ventana)
 ```
 
-**Credenciales**: `admin` / `admin123`
-
 ---
 
 ## ✨ Características Principales
@@ -115,14 +113,9 @@ cargo run
 
 El servidor iniciará en `http://localhost:3000`
 
-## Usuario Por Defecto
+## Seguridad e Instalación
 
-Al iniciar por primera vez, se crea automáticamente un usuario administrador:
-
-- **Usuario**: `admin`
-- **Contraseña**: `admin123`
-
-**IMPORTANTE**: Cambia esta contraseña después del primer login.
+Al iniciar por primera vez, el sistema configura un usuario administrador inicial. Consulte la documentación técnica interna para obtener las credenciales de primer acceso y asegúrese de cambiarlas inmediatamente después del primer login.
 
 ## 📚 Documentación
 
