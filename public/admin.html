@@ -141,7 +141,7 @@
         }
     </style>
 </head>
-<body>
+<body style="display: none;">
     <nav class="navbar navbar-dark">
         <div class="container-fluid">
             <span class="navbar-brand mb-0 h1">
@@ -899,6 +899,10 @@
                 }
 
                 document.getElementById('username').textContent = currentUser.username;
+
+                // Mostrar el cuerpo solo después de confirmar que es administrador
+                document.body.style.display = 'block';
+
                 cargarUsuarios();
                 cargarConfiguracion();
             } catch (error) {

@@ -243,9 +243,8 @@
         }
     </style>
 </head>
-<body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-dark fixed-top">
+<body style="display: none;">
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top shadow">
         <div class="container-fluid">
             <span class="navbar-brand mb-0 h1">
                 <i class="bi bi-qr-code-scan"></i> Scanner de Temperaturas
@@ -434,6 +433,9 @@
                 }
                 currentUser = await response.json();
                 document.getElementById('username').textContent = currentUser.username;
+
+                // Mostrar el cuerpo solo después de confirmar la autenticación
+                document.body.style.display = 'block';
 
                 await inicializarApp();
             } catch (error) {
