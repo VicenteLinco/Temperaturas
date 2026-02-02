@@ -1,4 +1,5 @@
 @echo off
+SETLOCAL EnableDelayedExpansion
 chcp 65001 >nul
 title Sistema de Gestion de Temperaturas
 color 0A
@@ -33,7 +34,7 @@ echo [1/4] Configurando ngrok...
 set NGROK_TOKEN=
 REM Intentar leer desde .env en la raiz
 if exist "%~dp0..\.env" (
-    for /f "tokens=2 delims==" %%a in ('findstr /B "NGROK_AUTHTOKEN=" "%~dp0..\.env"') do set NGROK_TOKEN=%%a
+    for /f "tokens=2 delims==" %%a in ('findstr "NGROK_AUTHTOKEN=" "%~dp0..\.env"') do set NGROK_TOKEN=%%a
 )
 REM Si no esta en .env, intentar leer desde token.txt
 if "%NGROK_TOKEN%"=="" (
@@ -53,12 +54,15 @@ if not "%NGROK_TOKEN%"=="" (
 
 echo [2/4] Iniciando servidor Rust...
 cd /d "%~dp0.."
-start /B cargo run >nul 2>&1
+start "Servidor Rust" /min cargo run
 
 echo [3/4] Esperando que el servidor este listo...
 timeout /t 5 /nobreak >nul
 
-if %USE_NGROK%==1 (
+if "%USE_NGROK%"=="1" GOTO NgrokPath
+GOTO LocalPath
+
+:NgrokPath
     echo [4/4] Iniciando ngrok...
     start "" /B "%~dp0ngrok.exe" http 3000
     
@@ -74,9 +78,11 @@ if %USE_NGROK%==1 (
     echo Obteniendo URL publica...
     echo.
 
-    REM Obtener la URL de ngrok usando PowerShell
-    powershell -Command "$response = try { Invoke-RestMethod -Uri 'http://localhost:4040/api/tunnels' -ErrorAction SilentlyContinue } catch { $null }; if($response) { $url = $response.tunnels[0].public_url; Write-Host ''; Write-Host 'URL PUBLICA: ' -NoNewline -ForegroundColor Green; Write-Host $url -ForegroundColor Cyan; Write-Host ''; Write-Host 'Servidor local: http://localhost:3000' -ForegroundColor Gray; Write-Host ''; } else { Write-Host 'Error al conectar con ngrok. Revisa el token.' -ForegroundColor Red; }"
-) else (
+    REM Obtener la URL de ngrok usando el nuevo script de PowerShell
+    powershell -ExecutionPolicy Bypass -File "%~dp0get_ngrok_url.ps1"
+GOTO EndNgrokIf
+
+:LocalPath
     echo [4/4] Saltando inicio de ngrok (Modo Local).
     echo.
     echo ════════════════════════════════════════════════════
@@ -85,7 +91,9 @@ if %USE_NGROK%==1 (
     echo.
     echo URL LOCAL: http://localhost:3000
     echo.
-)
+GOTO EndNgrokIf
+
+:EndNgrokIf
 
 echo ════════════════════════════════════════════════════
 echo.
@@ -93,10 +101,22 @@ echo Presiona cualquier tecla para abrir la URL en el navegador...
 pause >nul
 
 REM Abrir la URL en el navegador
-powershell -Command "$response = Invoke-RestMethod -Uri 'http://localhost:4040/api/tunnels'; $url = $response.tunnels[0].public_url; Start-Process $url"
+if "%USE_NGROK%"=="1" GOTO OpenNgrokUrl
+GOTO OpenLocalUrl
+
+:OpenNgrokUrl
+    powershell -Command "$response = try { Invoke-RestMethod -Uri 'http://localhost:4040/api/tunnels' -ErrorAction SilentlyContinue } catch { $null }; if($response) { $url = $response.tunnels[0].public_url; Start-Process $url; echo 'Navegador abierto con URL publica.'; } else { echo 'ERROR: No se pudo obtener la URL de ngrok para abrir el navegador.'; }"
+GOTO EndOpenUrl
+
+:OpenLocalUrl
+    powershell -Command "Start-Process http://localhost:3000"
+    echo "Navegador abierto con URL local."
+GOTO EndOpenUrl
+
+:EndOpenUrl
 
 echo.
-echo El navegador se ha abierto con la URL publica.
+echo El navegador se ha abierto.
 echo.
 echo IMPORTANTE: Mantener esta ventana abierta.
 echo Si cierras esta ventana, los servicios se detendran.

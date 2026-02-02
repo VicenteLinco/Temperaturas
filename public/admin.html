@@ -159,7 +159,10 @@
             <!-- Sidebar -->
             <div class="col-md-3 col-lg-2 p-0 sidebar">
                 <nav class="nav flex-column pt-3">
-                    <a class="nav-link active" href="#" onclick="showSection('usuarios')">
+                    <a class="nav-link active" href="#" onclick="showSection('dashboard')">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                    <a class="nav-link" href="#" onclick="showSection('usuarios')">
                         <i class="bi bi-people"></i> Usuarios
                     </a>
                     <a class="nav-link" href="#" onclick="showSection('areas')">
@@ -188,6 +191,69 @@
 
             <!-- Content Area -->
             <div class="col-md-9 col-lg-10 content-area">
+                <!-- Dashboard Section -->
+                <div id="section-dashboard" class="content-section">
+                    <h2 class="mb-4">Dashboard de Estado</h2>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <h6 class="card-title">Total Registros (7d)</h6>
+                                    <h2 id="dash-total-registros">-</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-dark">
+                                <div class="card-body">
+                                    <h6 class="card-title">Fuera de Rango (7d)</h6>
+                                    <h2 id="dash-fuera-rango">-</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <h6 class="card-title">Áreas Activas</h6>
+                                    <h2 id="dash-total-areas">-</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <h6 class="card-title">Termómetros</h6>
+                                    <h2 id="dash-total-termometros">-</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-8 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-white">
+                                    <h5 class="mb-0">Tendencia de Temperaturas (Últimos 100 registros)</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="tempChart" height="300"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-white">
+                                    <h5 class="mb-0">Registros por Área (7d)</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="areaChart" height="300"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Usuarios Section -->
                 <div id="section-usuarios" class="content-section">
                     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -879,8 +945,10 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         let currentUser = null;
+        let mainChart = null;
 
         // Verificar autenticación
         async function checkAuth() {
@@ -903,7 +971,7 @@
                 // Mostrar el cuerpo solo después de confirmar que es administrador
                 document.body.style.display = 'block';
 
-                cargarUsuarios();
+                cargarDashboard();
                 cargarConfiguracion();
             } catch (error) {
                 window.location.href = '/login.html';
@@ -919,30 +987,26 @@
 
             // Mostrar sección seleccionada
             const sectionElement = document.getElementById('section-' + section);
-            sectionElement.style.display = 'block';
+            if (sectionElement) sectionElement.style.display = 'block';
 
             // Activar link
-            event.target.classList.add('active');
+            // Buscamos el link que tenga el onclick correspondiente
+            document.querySelectorAll('.nav-link').forEach(el => {
+                if (el.getAttribute('onclick') === `showSection('${section}')`) {
+                    el.classList.add('active');
+                }
+            });
 
-            // Scroll automático al inicio del contenido (especialmente útil en móviles)
+            // Scroll automático al inicio del contenido
             setTimeout(() => {
-                // En móviles, hacer scroll al inicio del contenido
                 if (window.innerWidth < 768) {
-                    window.scrollTo({
-                        top: 0,
-                        behavior: 'smooth'
-                    });
-                } else {
-                    // En desktop, scroll a la sección de contenido
-                    const contentArea = document.querySelector('.content-area');
-                    if (contentArea) {
-                        contentArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
             }, 100);
 
             // Cargar datos según sección
             switch(section) {
+                case 'dashboard': cargarDashboard(); break;
                 case 'usuarios': cargarUsuarios(); break;
                 case 'areas': cargarAreas(); break;
                 case 'tipos': cargarTipos(); break;
@@ -952,6 +1016,134 @@
                 case 'reportes': inicializarReportes(); break;
                 case 'configuracion': cargarConfiguracion(); break;
             }
+        }
+
+        // === DASHBOARD ===
+        async function cargarDashboard() {
+            try {
+                // 1. Obtener datos básicos
+                const areasResp = await fetch('/api/areas');
+                const areas = await areasResp.json();
+                document.getElementById('dash-total-areas').textContent = areas.filter(a => a.activa).length;
+
+                const termResp = await fetch('/api/termometros');
+                const termometros = await termResp.json();
+                document.getElementById('dash-total-termometros').textContent = termometros.length;
+
+                // 2. Obtener registros de los últimos 7 días
+                const hoy = new Date();
+                const hace7d = new Date();
+                hace7d.setDate(hoy.getDate() - 7);
+                
+                const fecha_desde = hace7d.toISOString().split('T')[0];
+                const registrosResp = await fetch(`/api/admin/registros?fecha_desde=${fecha_desde}`);
+                const registros = await registrosResp.json();
+
+                document.getElementById('dash-total-registros').textContent = registros.length;
+                document.getElementById('dash-fuera-rango').textContent = registros.filter(r => r.fuera_rango_operativo).length;
+
+                // 3. Renderizar Gráfico de Tendencia (últimos 100 registros)
+                renderizarGraficoTendencia(registros.slice(0, 100).reverse());
+
+                // 4. Renderizar Gráfico por Área
+                renderizarGraficoAreas(registros, areas);
+
+            } catch (error) {
+                console.error('Error al cargar dashboard:', error);
+            }
+        }
+
+        function renderizarGraficoTendencia(registros) {
+            const ctx = document.getElementById('tempChart').getContext('2d');
+            
+            if (window.trendChart) window.trendChart.destroy();
+
+            const labels = registros.map(r => new Date(r.fecha_registro).toLocaleDateString('es-ES', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'}));
+            const dataMax = registros.map(r => r.temp_maxima);
+            const dataMin = registros.map(r => r.temp_minima);
+            const dataActual = registros.map(r => r.temp_actual);
+
+            window.trendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'T. Máxima',
+                            data: dataMax,
+                            borderColor: '#ff6384',
+                            backgroundColor: 'transparent',
+                            tension: 0.3,
+                            pointRadius: 2
+                        },
+                        {
+                            label: 'T. Mínima',
+                            data: dataMin,
+                            borderColor: '#36a2eb',
+                            backgroundColor: 'transparent',
+                            tension: 0.3,
+                            pointRadius: 2
+                        },
+                        {
+                            label: 'T. Actual',
+                            data: dataActual,
+                            borderColor: '#ffce56',
+                            backgroundColor: 'transparent',
+                            borderDash: [5, 5],
+                            tension: 0.3,
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    },
+                    scales: {
+                        y: { title: { display: true, text: 'Temperatura (°C)' } },
+                        x: { ticks: { maxRotation: 45, minRotation: 45, font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        function renderizarGraficoAreas(registros, areas) {
+            const ctx = document.getElementById('areaChart').getContext('2d');
+            
+            if (window.pieChart) window.pieChart.destroy();
+
+            const conteoPorArea = {};
+            areas.forEach(a => conteoPorArea[a.nombre] = 0);
+            registros.forEach(r => {
+                if (conteoPorArea[r.area_nombre] !== undefined) {
+                    conteoPorArea[r.area_nombre]++;
+                }
+            });
+
+            const labels = Object.keys(conteoPorArea).filter(k => conteoPorArea[k] > 0);
+            const data = labels.map(k => conteoPorArea[k]);
+
+            window.pieChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: [
+                            '#4bc0c0', '#ff6384', '#36a2eb', '#ffce56', '#9966ff', '#ff9f40', '#c9cbcf'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
         }
 
         // === USUARIOS ===

@@ -59,11 +59,11 @@ if %USE_NGROK%==1 (
 REM Iniciar servidor Rust
 echo [%date% %time%] Iniciando servidor Rust... >> "%LOGFILE%"
 cd /d "%~dp0.."
-start /B cargo run >> "%LOGFILE%" 2>&1
+start /B "" cmd /c "cargo run >> \"%LOGFILE%\" 2>&1"
 
 REM Esperar que el servidor esté listo
 echo [%date% %time%] Esperando que el servidor esté listo... >> "%LOGFILE%"
-timeout /t 7 /nobreak >nul
+timeout /t 10 /nobreak >nul
 
 REM Iniciar ngrok si está habilitado
 if %USE_NGROK%==1 (
