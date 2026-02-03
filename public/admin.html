@@ -237,7 +237,9 @@
                                     <h5 class="mb-0">Tendencia de Temperaturas (Últimos 100 registros)</h5>
                                 </div>
                                 <div class="card-body">
-                                    <canvas id="tempChart" height="300"></canvas>
+                                    <div style="position: relative; height: 300px; width: 100%;">
+                                        <canvas id="tempChart"></canvas>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -247,7 +249,9 @@
                                     <h5 class="mb-0">Registros por Área (7d)</h5>
                                 </div>
                                 <div class="card-body">
-                                    <canvas id="areaChart" height="300"></canvas>
+                                    <div style="position: relative; height: 300px; width: 100%;">
+                                        <canvas id="areaChart"></canvas>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -610,6 +614,12 @@
                                 <div class="mb-3">
                                     <label class="form-label">Ventana de Tolerancia (minutos)</label>
                                     <input type="number" class="form-control" id="config_tolerancia" placeholder="119">
+                                </div>
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="config_restriccion">
+                                    <label class="form-check-label" for="config_restriccion">
+                                        Activar restricción estricta de horario (si se desactiva, permite registrar a cualquier hora)
+                                    </label>
                                 </div>
                                 <button type="submit" class="btn btn-primary">Guardar Configuración</button>
                             </form>
@@ -1178,6 +1188,28 @@
             document.getElementById('usuarioForm').reset();
             document.getElementById('usuario_id').value = '';
             new bootstrap.Modal(document.getElementById('usuarioModal')).show();
+        }
+
+        async function editarUsuario(id) {
+            try {
+                const response = await fetch('/api/admin/usuarios');
+                const usuarios = await response.json();
+                const usuario = usuarios.find(u => u.id === id);
+
+                if (!usuario) {
+                    alert('Usuario no encontrado');
+                    return;
+                }
+
+                document.getElementById('usuario_id').value = usuario.id;
+                document.getElementById('usuario_username').value = usuario.username;
+                document.getElementById('usuario_password').value = ''; // Password is not returned from API
+                document.getElementById('usuario_rol').value = usuario.rol;
+
+                new bootstrap.Modal(document.getElementById('usuarioModal')).show();
+            } catch (error) {
+                alert('Error al cargar datos del usuario: ' + error.message);
+            }
         }
 
         async function guardarUsuario() {
@@ -1960,6 +1992,7 @@
                 document.getElementById('config_hora1').value = config.registro_hora_1 || '14:00';
                 document.getElementById('config_hora2').value = config.registro_hora_2 || '02:00';
                 document.getElementById('config_tolerancia').value = config.ventana_tolerancia_minutos || '119';
+                document.getElementById('config_restriccion').checked = config.restriccion_ventana_activa === '1';
             } catch (error) {
                 console.error('Error al cargar configuración:', error);
             }
@@ -1971,7 +2004,8 @@
             const data = {
                 registro_hora_1: document.getElementById('config_hora1').value,
                 registro_hora_2: document.getElementById('config_hora2').value,
-                ventana_tolerancia_minutos: parseInt(document.getElementById('config_tolerancia').value)
+                ventana_tolerancia_minutos: parseInt(document.getElementById('config_tolerancia').value),
+                restriccion_ventana_activa: document.getElementById('config_restriccion').checked
             };
 
             try {

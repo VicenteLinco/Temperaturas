@@ -104,9 +104,10 @@ pub async fn obtener_pendientes_area(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .parse()
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let restriccion_activa = get_config(&pool, "restriccion_ventana_activa").await.unwrap_or_else(|_| "0".to_string()) == "1";
 
     // Determinar ventana actual
-    let ventana = determinar_ventana_actual(&hora_1, &hora_2, tolerancia)
+    let ventana = determinar_ventana_actual(&hora_1, &hora_2, tolerancia, restriccion_activa)
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::BAD_REQUEST)?; // Fuera de ventana permitida
 
@@ -125,6 +126,7 @@ pub async fn obtener_pendientes_area(
         SELECT
             t.id, t.area_id, a.nombre as area_nombre,
             t.tipo_id, ti.nombre as tipo_nombre, ti.tiene_humedad,
+            ti.temp_min_operativa, ti.temp_max_operativa,
             t.nombre, t.ubicacion, t.activo
         FROM termometros t
         JOIN areas a ON t.area_id = a.id
@@ -180,34 +182,35 @@ pub async fn crear_registro(
     current_user: CurrentUser,
     State(pool): State<SqlitePool>,
     Json(payload): Json<CrearRegistroRequest>,
-) -> Result<Json<Registro>, StatusCode> {
+) -> Result<Json<Registro>, (StatusCode, String)> {
     // Obtener configuración
     let hora_1 = get_config(&pool, "registro_hora_1").await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error config hora 1: {}", e)))?;
     let hora_2 = get_config(&pool, "registro_hora_2").await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error config hora 2: {}", e)))?;
     let tolerancia: i32 = get_config(&pool, "ventana_tolerancia_minutos").await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error config tolerancia: {}", e)))?
         .parse()
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Error parsing tolerancia".to_string()))?;
+    let restriccion_activa = get_config(&pool, "restriccion_ventana_activa").await.unwrap_or_else(|_| "0".to_string()) == "1";
 
     // Verificar que estamos en ventana horaria permitida
-    let ventana = determinar_ventana_actual(&hora_1, &hora_2, tolerancia)
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .ok_or(StatusCode::BAD_REQUEST)?;
+    let ventana = determinar_ventana_actual(&hora_1, &hora_2, tolerancia, restriccion_activa)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error determinando ventana: {}", e)))?
+        .ok_or((StatusCode::BAD_REQUEST, "No hay ventana horaria activa actualmente.".to_string()))?;
 
     // Obtener tipo de termómetro para validación
     let termometro: Termometro = sqlx::query_as("SELECT * FROM termometros WHERE id = ?")
         .bind(payload.termometro_id)
         .fetch_one(&pool)
         .await
-        .map_err(|_| StatusCode::NOT_FOUND)?;
+        .map_err(|_| (StatusCode::NOT_FOUND, "Termómetro no encontrado".to_string()))?;
 
     let tipo: TipoTermometro = sqlx::query_as("SELECT * FROM tipos_termometro WHERE id = ?")
         .bind(termometro.tipo_id)
         .fetch_one(&pool)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Error obteniendo tipo termómetro".to_string()))?;
 
     // Validar registro
     let (fuera_rango_operativo, _advertencias) = validar_registro(
@@ -216,10 +219,7 @@ pub async fn crear_registro(
         payload.humedad,
         &tipo,
     )
-    .map_err(|e| {
-        eprintln!("Error de validación: {}", e);
-        StatusCode::BAD_REQUEST
-    })?;
+    .map_err(|e| (StatusCode::BAD_REQUEST, format!("Error de validación: {}", e)))?;
 
     // Insertar registro
     let result = sqlx::query(
@@ -243,8 +243,13 @@ pub async fn crear_registro(
     .execute(&pool)
     .await
     .map_err(|e| {
-        eprintln!("Error al insertar registro: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        let msg = e.to_string();
+        if msg.contains("UNIQUE constraint failed") || msg.contains("constraint failed") {
+            (StatusCode::CONFLICT, "Ya existe un registro para este termómetro en el día de hoy.".to_string())
+        } else {
+            eprintln!("Error al insertar registro: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, format!("Error al guardar en base de datos: {}", e))
+        }
     })?;
 
     let registro_id = result.last_insert_rowid();
@@ -253,7 +258,7 @@ pub async fn crear_registro(
         .bind(registro_id)
         .fetch_one(&pool)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error recuperando registro: {}", e)))?;
 
     // Log de auditoría
     log_auditoria(
@@ -276,17 +281,17 @@ pub async fn actualizar_registro(
     State(pool): State<SqlitePool>,
     Path(id): Path<i64>,
     Json(payload): Json<ActualizarRegistroRequest>,
-) -> Result<StatusCode, StatusCode> {
+) -> Result<StatusCode, (StatusCode, String)> {
     // Obtener registro existente
     let registro: Registro = sqlx::query_as("SELECT * FROM registros WHERE id = ?")
         .bind(id)
         .fetch_one(&pool)
         .await
-        .map_err(|_| StatusCode::NOT_FOUND)?;
+        .map_err(|_| (StatusCode::NOT_FOUND, "Registro no encontrado".to_string()))?;
 
     // Si no es admin, solo puede editar sus propios registros
     if current_user.0.rol != "ADMINISTRADOR" && registro.usuario_id != current_user.0.id {
-        return Err(StatusCode::FORBIDDEN);
+        return Err((StatusCode::FORBIDDEN, "No tienes permiso para editar este registro".to_string()));
     }
 
     // Obtener tipo para validación
@@ -294,13 +299,13 @@ pub async fn actualizar_registro(
         .bind(registro.termometro_id)
         .fetch_one(&pool)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Error obteniendo termómetro".to_string()))?;
 
     let tipo: TipoTermometro = sqlx::query_as("SELECT * FROM tipos_termometro WHERE id = ?")
         .bind(termometro.tipo_id)
         .fetch_one(&pool)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Error obteniendo tipo".to_string()))?;
 
     // Usar valores actuales si no se proporcionan nuevos
     let temp_actual = payload.temp_actual.or(registro.temp_actual);
@@ -310,7 +315,7 @@ pub async fn actualizar_registro(
 
     // Validar
     let (fuera_rango_operativo, _) = validar_registro(temp_max, temp_min, humedad, &tipo)
-        .map_err(|_| StatusCode::BAD_REQUEST)?;
+        .map_err(|e| (StatusCode::BAD_REQUEST, format!("Error de validación: {}", e)))?;
 
     // Actualizar
     sqlx::query(
@@ -330,7 +335,7 @@ pub async fn actualizar_registro(
     .bind(id)
     .execute(&pool)
     .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error al actualizar: {}", e)))?;
 
     // Log de auditoría
     log_auditoria(

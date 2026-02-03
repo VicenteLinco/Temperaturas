@@ -50,6 +50,12 @@ pub async fn actualizar_configuracion(
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     }
 
+    if let Some(activa) = payload.restriccion_ventana_activa {
+        let valor = if activa { "1" } else { "0" };
+        set_config(&pool, "restriccion_ventana_activa", valor).await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    }
+
     log_auditoria(
         &pool,
         current_user.0.id,

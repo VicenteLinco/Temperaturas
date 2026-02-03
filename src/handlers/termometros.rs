@@ -21,6 +21,7 @@ pub async fn listar_termometros(
         SELECT
             t.id, t.area_id, a.nombre as area_nombre,
             t.tipo_id, ti.nombre as tipo_nombre, ti.tiene_humedad,
+            ti.temp_min_operativa, ti.temp_max_operativa,
             t.nombre, t.ubicacion, t.activo
         FROM termometros t
         JOIN areas a ON t.area_id = a.id
@@ -44,6 +45,7 @@ pub async fn obtener_termometro(
         SELECT
             t.id, t.area_id, a.nombre as area_nombre,
             t.tipo_id, ti.nombre as tipo_nombre, ti.tiene_humedad,
+            ti.temp_min_operativa, ti.temp_max_operativa,
             t.nombre, t.ubicacion, t.activo
         FROM termometros t
         JOIN areas a ON t.area_id = a.id

@@ -30,6 +30,10 @@ if %errorlevel% equ 0 (
 )
 
 echo.
+echo [INFO] Verificando respaldos automáticos...
+powershell -ExecutionPolicy Bypass -File "%~dp0auto_respaldo.ps1"
+
+echo.
 echo [1/4] Configurando ngrok...
 set NGROK_TOKEN=
 REM Intentar leer desde .env en la raiz
@@ -45,6 +49,8 @@ if "%NGROK_TOKEN%"=="" (
 
 if not "%NGROK_TOKEN%"=="" (
     echo [OK] Token encontrado, habilitando tunel publico.
+    echo [INFO] Verificando actualizaciones de ngrok...
+    "%~dp0ngrok.exe" update >nul 2>&1
     "%~dp0ngrok.exe" config add-authtoken %NGROK_TOKEN% >nul 2>&1
     set USE_NGROK=1
 ) else (
@@ -97,20 +103,11 @@ GOTO EndNgrokIf
 
 echo ════════════════════════════════════════════════════
 echo.
-echo Presiona cualquier tecla para abrir la URL en el navegador...
-pause >nul
+echo Abriendo URL en el navegador...
 
 REM Abrir la URL en el navegador
-if "%USE_NGROK%"=="1" GOTO OpenNgrokUrl
-GOTO OpenLocalUrl
-
-:OpenNgrokUrl
-    powershell -Command "$response = try { Invoke-RestMethod -Uri 'http://localhost:4040/api/tunnels' -ErrorAction SilentlyContinue } catch { $null }; if($response) { $url = $response.tunnels[0].public_url; Start-Process $url; echo 'Navegador abierto con URL publica.'; } else { echo 'ERROR: No se pudo obtener la URL de ngrok para abrir el navegador.'; }"
-GOTO EndOpenUrl
-
-:OpenLocalUrl
-    powershell -Command "Start-Process http://localhost:3000"
-    echo "Navegador abierto con URL local."
+powershell -Command "Start-Process http://localhost:3000"
+echo "Navegador abierto con URL local."
 GOTO EndOpenUrl
 
 :EndOpenUrl
@@ -118,21 +115,57 @@ GOTO EndOpenUrl
 echo.
 echo El navegador se ha abierto.
 echo.
-echo IMPORTANTE: Mantener esta ventana abierta.
-echo Si cierras esta ventana, los servicios se detendran.
-echo.
+echo ════════════════════════════════════════════════════
+echo   OPCIONES DE VISUALIZACION
 echo ════════════════════════════════════════════════════
 echo.
+echo [1] Mantener ventana minimizada en barra de tareas (Normal)
+echo [2] Ocultar en la bandeja del sistema (Reloj) - Recomendado
 echo.
-color 0C
-echo.
-echo Minimizando en 10 segundos...
-timeout /t 10 /nobreak >nul
+set /p "OPCION=Elige una opcion (1 o 2): "
 
-REM Minimizar la ventana usando PowerShell
-powershell -Command "$signature = '[DllImport(\"user32.dll\")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);'; $type = Add-Type -MemberDefinition $signature -Name Win32ShowWindow -Namespace Win32Functions -PassThru; $hwnd = (Get-Process -Id $PID).MainWindowHandle; if($hwnd -ne [IntPtr]::Zero) { $type::ShowWindow($hwnd, 6) }" 2>nul
+if "%OPCION%"=="2" GOTO MinimizeTray
+GOTO StandardMode
 
-REM Mantener el script corriendo en segundo plano
-:loop
-timeout /t 60 /nobreak >nul
-goto loop
+:MinimizeTray
+    echo.
+    echo [INFO] Configurando bandeja del sistema...
+    echo El servidor seguira corriendo oculto.
+    echo.
+    echo IMPORTANTE:
+    echo - Busca el icono de termometro en tu bandeja (cerca del reloj).
+    echo - Haz doble click en el icono para abrir el navegador.
+    echo - Click derecho para salir/cerrar todo.
+    echo.
+    echo Ocultando en 3 segundos...
+    timeout /t 3 /nobreak >nul
+    
+    REM Ejecutar el helper de bandeja que oculta las ventanas y maneja el icono
+    powershell -ExecutionPolicy Bypass -File "%~dp0tray_handler.ps1"
+    
+    REM Si el script de powershell termina (usuario da Salir), cerramos aqui tambien
+    GOTO EndScript
+
+:StandardMode
+    echo.
+    echo [INFO] Modo estandar seleccionado.
+    echo IMPORTANTE: Mantener esta ventana abierta (minimizarla, no cerrarla).
+    echo Si cierras esta ventana, los servicios se detendran.
+    echo.
+    echo ════════════════════════════════════════════════════
+    echo.
+    color 0C
+    echo.
+    echo Minimizando ventana en 5 segundos...
+    timeout /t 5 /nobreak >nul
+
+    REM Minimizar la ventana usando PowerShell (SW_MINIMIZE = 6)
+    powershell -Command "$signature = '[DllImport(\"user32.dll\")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);'; $type = Add-Type -MemberDefinition $signature -Name Win32ShowWindow -Namespace Win32Functions -PassThru; $hwnd = (Get-Process -Id $PID).MainWindowHandle; if($hwnd -ne [IntPtr]::Zero) { $type::ShowWindow($hwnd, 6) }" 2>nul
+
+    REM Mantener el script corriendo en segundo plano
+    :loop
+    timeout /t 60 /nobreak >nul
+    goto loop
+
+:EndScript
+    exit

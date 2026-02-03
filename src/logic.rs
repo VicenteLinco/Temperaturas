@@ -1,4 +1,4 @@
-use chrono::{NaiveTime, NaiveDate, Local};
+use chrono::{NaiveTime, NaiveDate, Local, Timelike, Duration};
 use anyhow::{Result, anyhow};
 use crate::models::TipoTermometro;
 
@@ -16,12 +16,36 @@ pub struct VentanaHoraria {
     pub es_turno_noche: bool, // true si es el turno 20pm-8am
 }
 
+/// Helper para verificar si una hora está dentro de un rango con tolerancia (en minutos)
+/// Maneja cruce de medianoche
+fn esta_en_rango(hora_central: NaiveTime, tolerancia_minutos: i32, ahora: NaiveTime) -> bool {
+    let minutos_central = hora_central.num_seconds_from_midnight() as i64 / 60;
+    let minutos_ahora = ahora.num_seconds_from_midnight() as i64 / 60;
+    
+    // Normalizar a un día de 1440 minutos
+    let diff = (minutos_ahora - minutos_central).abs();
+    
+    // Caso directo: diferencia menor a tolerancia
+    if diff <= tolerancia_minutos as i64 {
+        return true;
+    }
+    
+    // Caso cruce medianoche: (ej: central 02:00 (120m), ahora 23:00 (1380m))
+    // Diff directa: 1260m. Diff circular: 1440 - 1260 = 180m.
+    let diff_circular = 1440 - diff;
+    if diff_circular <= tolerancia_minutos as i64 {
+        return true;
+    }
+
+    false
+}
+
 /// Determina la ventana horaria actual basándose en la hora del sistema
-/// Con el nuevo sistema flexible, siempre devuelve una ventana dependiendo del turno
 pub fn determinar_ventana_actual(
     hora_1: &str,  // "14:00" turno día
     hora_2: &str,  // "02:00" turno noche
-    _tolerancia_minutos: i32, // No se usa en el nuevo sistema flexible
+    tolerancia_minutos: i32,
+    restriccion_activa: bool, // Nueva bandera
 ) -> Result<Option<VentanaHoraria>> {
     let ahora = Local::now().time();
 
@@ -29,31 +53,63 @@ pub fn determinar_ventana_actual(
     let hora_central_1 = NaiveTime::parse_from_str(hora_1, "%H:%M")?;
     let hora_central_2 = NaiveTime::parse_from_str(hora_2, "%H:%M")?;
 
-    // Determinar en qué turno estamos
-    // Turno día: 8:00 - 20:00 → ventana 14:00
-    // Turno noche: 20:00 - 8:00 → ventana 02:00
-
-    let hora_inicio_dia = NaiveTime::from_hms_opt(8, 0, 0).unwrap();
-    let hora_fin_dia = NaiveTime::from_hms_opt(20, 0, 0).unwrap();
-
-    if ahora >= hora_inicio_dia && ahora < hora_fin_dia {
-        // Turno día
-        Ok(Some(VentanaHoraria {
-            nombre: hora_1.to_string(),
-            hora_central: hora_central_1,
-            hora_inicio: hora_inicio_dia,
-            hora_fin: hora_fin_dia,
-            es_turno_noche: false,
-        }))
+    if restriccion_activa {
+        // Lógica Estricta: Solo dentro de central +/- tolerancia
+        if esta_en_rango(hora_central_1, tolerancia_minutos, ahora) {
+            // Asumimos turno día para hora 1
+             let hora_inicio_dia = NaiveTime::from_hms_opt(8, 0, 0).unwrap();
+             let hora_fin_dia = NaiveTime::from_hms_opt(20, 0, 0).unwrap();
+             
+             Ok(Some(VentanaHoraria {
+                nombre: hora_1.to_string(),
+                hora_central: hora_central_1,
+                hora_inicio: hora_inicio_dia,
+                hora_fin: hora_fin_dia,
+                es_turno_noche: false,
+            }))
+        } else if esta_en_rango(hora_central_2, tolerancia_minutos, ahora) {
+             // Asumimos turno noche para hora 2
+             let hora_inicio_dia = NaiveTime::from_hms_opt(8, 0, 0).unwrap();
+             let hora_fin_dia = NaiveTime::from_hms_opt(20, 0, 0).unwrap();
+             
+             Ok(Some(VentanaHoraria {
+                nombre: hora_2.to_string(),
+                hora_central: hora_central_2,
+                hora_inicio: hora_fin_dia,
+                hora_fin: hora_inicio_dia,
+                es_turno_noche: true,
+            }))
+        } else {
+            // Fuera de rango
+            Ok(None)
+        }
     } else {
-        // Turno noche
-        Ok(Some(VentanaHoraria {
-            nombre: hora_2.to_string(),
-            hora_central: hora_central_2,
-            hora_inicio: hora_fin_dia, // 20:00
-            hora_fin: hora_inicio_dia, // 8:00 (del día siguiente)
-            es_turno_noche: true,
-        }))
+        // Lógica Flexible (Original): 24h coverage
+        // Turno día: 8:00 - 20:00 → ventana 14:00
+        // Turno noche: 20:00 - 8:00 → ventana 02:00
+
+        let hora_inicio_dia = NaiveTime::from_hms_opt(8, 0, 0).unwrap();
+        let hora_fin_dia = NaiveTime::from_hms_opt(20, 0, 0).unwrap();
+
+        if ahora >= hora_inicio_dia && ahora < hora_fin_dia {
+            // Turno día
+            Ok(Some(VentanaHoraria {
+                nombre: hora_1.to_string(),
+                hora_central: hora_central_1,
+                hora_inicio: hora_inicio_dia,
+                hora_fin: hora_fin_dia,
+                es_turno_noche: false,
+            }))
+        } else {
+            // Turno noche
+            Ok(Some(VentanaHoraria {
+                nombre: hora_2.to_string(),
+                hora_central: hora_central_2,
+                hora_inicio: hora_fin_dia, // 20:00
+                hora_fin: hora_inicio_dia, // 8:00 (del día siguiente)
+                es_turno_noche: true,
+            }))
+        }
     }
 }
 

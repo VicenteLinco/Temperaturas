@@ -207,6 +207,7 @@ pub struct ActualizarConfiguracionRequest {
     pub registro_hora_1: Option<String>,
     pub registro_hora_2: Option<String>,
     pub ventana_tolerancia_minutos: Option<i32>,
+    pub restriccion_ventana_activa: Option<bool>,
 }
 
 // ===== DTOs PARA RESPONSES =====
@@ -234,6 +235,8 @@ pub struct TermometroConDetalles {
     pub tipo_id: i64,
     pub tipo_nombre: String,
     pub tiene_humedad: bool,
+    pub temp_min_operativa: f64,
+    pub temp_max_operativa: f64,
     pub nombre: Option<String>,
     pub ubicacion: Option<String>,
     pub activo: bool,
