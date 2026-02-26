@@ -134,13 +134,27 @@
     </div>
 
     <script>
-        // Obtener datos de URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const termometrosData = urlParams.get('data');
+        // Obtener datos (Primero intentar localStorage, luego URL params)
+        let termometrosData = null;
+        
+        try {
+            const localData = localStorage.getItem('temp_print_data');
+            if (localData) {
+                termometrosData = localData;
+                // Limpiar después de usar (opcional, pero buena práctica)
+                // localStorage.removeItem('temp_print_data'); 
+            }
+        } catch (e) { console.error('Error accediendo a localStorage', e); }
+
+        if (!termometrosData) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlData = urlParams.get('data');
+            if (urlData) termometrosData = decodeURIComponent(urlData);
+        }
 
         if (termometrosData) {
             try {
-                const termometros = JSON.parse(decodeURIComponent(termometrosData));
+                const termometros = JSON.parse(termometrosData);
                 renderQRCodes(termometros);
             } catch (error) {
                 console.error('Error parsing data:', error);
@@ -181,12 +195,9 @@
 
                 grid.appendChild(item);
 
-                // Generar QR code
-                const baseUrl = window.location.origin;
-                const qrUrl = `${baseUrl}/index.html?termometro=${termometro.id}`;
-
+                // Generar QR code (Solo ID numérico para lectura rápida y robusta)
                 new QRCode(qrContainer, {
-                    text: qrUrl,
+                    text: termometro.id.toString(),
                     width: 200,
                     height: 200,
                     colorDark: "#000000",

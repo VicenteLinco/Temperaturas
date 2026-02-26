@@ -127,11 +127,11 @@ pub async fn obtener_pendientes_area(
             t.id, t.area_id, a.nombre as area_nombre,
             t.tipo_id, ti.nombre as tipo_nombre, ti.tiene_humedad,
             ti.temp_min_operativa, ti.temp_max_operativa,
-            t.nombre, t.ubicacion, t.activo
+            t.nombre, t.ubicacion, t.activo, t.fuera_de_servicio
         FROM termometros t
         JOIN areas a ON t.area_id = a.id
         JOIN tipos_termometro ti ON t.tipo_id = ti.id
-        WHERE t.area_id = ? AND t.activo = 1
+        WHERE t.area_id = ? AND t.activo = 1 AND t.fuera_de_servicio = 0
         ORDER BY t.id
         "#
     )

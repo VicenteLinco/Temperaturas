@@ -7,141 +7,173 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
+        :root {
+            /* Paleta Térmica */
+            --color-cold: #0052D4;
+            --color-cool: #4364F7;
+            --color-warm: #f2994a;
+            --color-hot: #e53935;
+            
+            --sidebar-width: 260px;
+            --header-height: 60px;
+        }
+
         body {
-            background-color: #f8f9fa;
+            background-color: #f4f6f9;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            padding-top: 0;
         }
+
+        /* Navbar Térmico */
         .navbar {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .sidebar {
-            background-color: white;
-            min-height: calc(100vh - 56px);
-            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-        }
-        .sidebar .nav-link {
-            color: #495057;
-            padding: 12px 20px;
-            border-left: 3px solid transparent;
-            transition: all 0.3s;
-        }
-        .sidebar .nav-link:hover {
-            background-color: #f8f9fa;
-            border-left-color: #667eea;
-        }
-        .sidebar .nav-link.active {
-            background-color: #e7f1ff;
-            border-left-color: #667eea;
-            color: #667eea;
-            font-weight: 600;
-        }
-        .content-area {
-            padding: 30px;
-        }
-        .card {
-            border: none;
-            border-radius: 10px;
+            background: linear-gradient(90deg, var(--color-cold) 0%, var(--color-hot) 100%);
+            min-height: var(--header-height);
+            height: auto;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+            z-index: 1000;
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
         }
-        .btn-primary {
-            background: #667eea;
-            border: none;
+
+        /* Sidebar & Content (Desktop Default) */
+        .sidebar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 20px 0;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            background-color: #fff;
+            height: 100vh;
+            overflow-y: auto;
         }
-        .btn-primary:hover {
-            background: #5568d3;
+
+        .content-area {
+            padding: 20px;
+            min-height: calc(100vh - var(--header-height));
         }
-        .table-actions button {
+        
+        .content-section {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .nav-link {
+            color: #333;
+            padding: 10px 20px;
+            border-radius: 0 25px 25px 0;
+            margin-right: 15px;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover {
+            background-color: #e9ecef;
+            color: var(--color-cold);
+        }
+
+        .nav-link.active {
+            background: linear-gradient(90deg, var(--color-cold), var(--color-cool));
+            color: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .nav-link i {
+            margin-right: 10px;
+            font-size: 1.1em;
+        }
+        
+        .table-actions .btn {
             margin-right: 5px;
         }
 
-        /* Estilos responsive para móviles */
-        @media (max-width: 767px) {
-            body {
-                overflow-x: hidden;
+        /* Mobile Responsive Overrides */
+        @media (max-width: 768px) {
+            .navbar .container-fluid {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .navbar-brand {
+                font-size: 1rem;
+                margin-bottom: 0.5rem;
+                white-space: normal; /* Allow title to wrap */
+            }
+            .navbar .d-flex {
+                width: 100%;
+                justify-content: space-between;
+                align-items: center;
+            }
+            #security-bar {
+                font-size: 0.85rem;
+                padding: 5px !important;
+            }
+            #timer-display {
+                font-size: 1rem !important;
             }
             .sidebar {
-                min-height: auto;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-                margin-bottom: 10px;
-            }
-            .sidebar .nav {
-                display: flex;
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-            .sidebar .nav-link {
-                padding: 10px 12px;
-                font-size: 0.85rem;
-                border-left: none;
-                border-bottom: 3px solid transparent;
-                text-align: center;
-            }
-            .sidebar .nav-link.active {
-                border-left: none;
-                border-bottom: 3px solid #667eea;
+                position: static;
+                height: auto;
+                width: 100%;
+                box-shadow: none;
+                border-bottom: 1px solid #dee2e6;
             }
             .content-area {
                 padding: 10px;
-                width: 100%;
-                overflow-x: hidden;
-            }
-            .card {
-                margin-bottom: 15px;
-                overflow-x: hidden;
-            }
-            .card-body {
-                padding: 10px;
-            }
-            /* Hacer que el navbar sea sticky para que siempre esté visible */
-            .navbar {
-                position: sticky;
-                top: 0;
-                z-index: 1000;
-            }
-            /* Tablas responsive con scroll horizontal */
-            .table-responsive {
-                display: block;
-                width: 100%;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-            }
-            .table {
-                min-width: 600px;
-                font-size: 0.85rem;
-            }
-            .table th,
-            .table td {
-                padding: 8px;
-                white-space: nowrap;
-            }
-            /* Botones más compactos en tablas */
-            .table-actions button {
-                padding: 4px 8px;
-                font-size: 0.75rem;
-                margin-right: 3px;
-            }
-            /* Formularios más compactos */
-            .form-label {
-                font-size: 0.9rem;
-                margin-bottom: 4px;
-            }
-            .form-control,
-            .form-select {
-                font-size: 0.9rem;
-                padding: 6px 10px;
-            }
-            .btn {
-                padding: 6px 12px;
-                font-size: 0.9rem;
-            }
-            /* Ocultar columnas menos importantes en móviles */
-            .mobile-hide {
-                display: none;
             }
         }
     </style>
 </head>
 <body style="display: none;">
+    <!-- BARRA DE SEGURIDAD -->
+    <div id="security-bar" style="position:relative; width:100%; background:#1a1a1a; color:#fff; text-align:center; padding:10px; font-family:sans-serif; border-bottom: 3px solid #e53935; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">
+        <i class="bi bi-shield-exclamation"></i> MODO SEGURO: El acceso remoto se cerrará en <span id="timer-display" style="color:#e53935; font-weight:bold; font-family:monospace; font-size:1.2em; margin: 0 5px;">40:00</span>
+    </div>
+    <script>
+        (function(){
+            const duration = 40 * 60; // 40 minutos en segundos
+            const display = document.getElementById('timer-display');
+            
+            // Guardar hora de inicio en sessionStorage para que no se resetee al recargar
+            let startTime = sessionStorage.getItem('server_start_time');
+            if (!startTime) {
+                startTime = Date.now();
+                sessionStorage.setItem('server_start_time', startTime);
+            }
+
+            function updateTimer() {
+                const now = Date.now();
+                const elapsed = Math.floor((now - parseInt(startTime)) / 1000);
+                let remaining = duration - elapsed;
+
+                if (remaining < 0) remaining = 0;
+
+                const minutes = Math.floor(remaining / 60);
+                const seconds = remaining % 60;
+
+                display.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+                if (remaining <= 60) { // Último minuto
+                   display.style.animation = "blink 1s infinite"; 
+                }
+
+                if (remaining <= 0) {
+                    document.getElementById('security-bar').style.background = '#e53935';
+                    document.getElementById('security-bar').innerHTML = '<i class="bi bi-x-octagon"></i> TIEMPO AGOTADO: Acceso remoto cerrado (Solo Local).';
+                }
+            }
+
+            // Estilo para parpadeo
+            const style = document.createElement('style');
+            style.innerHTML = '@keyframes blink { 50% { opacity: 0; } }';
+            document.head.appendChild(style);
+
+            setInterval(updateTimer, 1000);
+            updateTimer();
+        })();
+    </script>
+
     <nav class="navbar navbar-dark">
         <div class="container-fluid">
             <span class="navbar-brand mb-0 h1">
@@ -159,8 +191,9 @@
             <!-- Sidebar -->
             <div class="col-md-3 col-lg-2 p-0 sidebar">
                 <nav class="nav flex-column pt-3">
-                    <a class="nav-link active" href="#" onclick="showSection('dashboard')">
-                        <i class="bi bi-speedometer2"></i> Dashboard
+                    <!-- Dashboard Eliminado por seguridad -->
+                    <a class="nav-link active" href="#" onclick="showSection('registros')">
+                        <i class="bi bi-clipboard-data"></i> Gestión de Registros
                     </a>
                     <a class="nav-link" href="#" onclick="showSection('usuarios')">
                         <i class="bi bi-people"></i> Usuarios
@@ -177,9 +210,6 @@
                     <a class="nav-link" href="#" onclick="showSection('impresion')">
                         <i class="bi bi-printer"></i> Impresión de QR
                     </a>
-                    <a class="nav-link" href="#" onclick="showSection('registros')">
-                        <i class="bi bi-clipboard-data"></i> Gestión de Registros
-                    </a>
                     <a class="nav-link" href="#" onclick="showSection('configuracion')">
                         <i class="bi bi-sliders"></i> Configuración
                     </a>
@@ -191,72 +221,7 @@
 
             <!-- Content Area -->
             <div class="col-md-9 col-lg-10 content-area">
-                <!-- Dashboard Section -->
-                <div id="section-dashboard" class="content-section">
-                    <h2 class="mb-4">Dashboard de Estado</h2>
-                    
-                    <div class="row mb-4">
-                        <div class="col-md-3">
-                            <div class="card bg-primary text-white">
-                                <div class="card-body">
-                                    <h6 class="card-title">Total Registros (7d)</h6>
-                                    <h2 id="dash-total-registros">-</h2>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card bg-warning text-dark">
-                                <div class="card-body">
-                                    <h6 class="card-title">Fuera de Rango (7d)</h6>
-                                    <h2 id="dash-fuera-rango">-</h2>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card bg-success text-white">
-                                <div class="card-body">
-                                    <h6 class="card-title">Áreas Activas</h6>
-                                    <h2 id="dash-total-areas">-</h2>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card bg-info text-white">
-                                <div class="card-body">
-                                    <h6 class="card-title">Termómetros</h6>
-                                    <h2 id="dash-total-termometros">-</h2>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-lg-8 mb-4">
-                            <div class="card h-100">
-                                <div class="card-header bg-white">
-                                    <h5 class="mb-0">Tendencia de Temperaturas (Últimos 100 registros)</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div style="position: relative; height: 300px; width: 100%;">
-                                        <canvas id="tempChart"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-4 mb-4">
-                            <div class="card h-100">
-                                <div class="card-header bg-white">
-                                    <h5 class="mb-0">Registros por Área (7d)</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div style="position: relative; height: 300px; width: 100%;">
-                                        <canvas id="areaChart"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <!-- Dashboard Eliminado -->
 
                 <!-- Usuarios Section -->
                 <div id="section-usuarios" class="content-section">
@@ -955,11 +920,10 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js eliminado -->
     <script>
         let currentUser = null;
-        let mainChart = null;
-
+        
         // Verificar autenticación
         async function checkAuth() {
             try {
@@ -981,8 +945,8 @@
                 // Mostrar el cuerpo solo después de confirmar que es administrador
                 document.body.style.display = 'block';
 
-                cargarDashboard();
-                cargarConfiguracion();
+                // Cargar sección por defecto (Registros)
+                showSection('registros');
             } catch (error) {
                 window.location.href = '/login.html';
             }
@@ -1016,145 +980,18 @@
 
             // Cargar datos según sección
             switch(section) {
-                case 'dashboard': cargarDashboard(); break;
+                case 'registros': cargarFiltrosRegistros(); break; // Registros es ahora el default
                 case 'usuarios': cargarUsuarios(); break;
                 case 'areas': cargarAreas(); break;
                 case 'tipos': cargarTipos(); break;
                 case 'termometros': cargarTermometros(); break;
                 case 'impresion': cargarSeccionImpresion(); break;
-                case 'registros': cargarFiltrosRegistros(); break;
                 case 'reportes': inicializarReportes(); break;
                 case 'configuracion': cargarConfiguracion(); break;
             }
         }
 
-        // === DASHBOARD ===
-        async function cargarDashboard() {
-            try {
-                // 1. Obtener datos básicos
-                const areasResp = await fetch('/api/areas');
-                const areas = await areasResp.json();
-                document.getElementById('dash-total-areas').textContent = areas.filter(a => a.activa).length;
-
-                const termResp = await fetch('/api/termometros');
-                const termometros = await termResp.json();
-                document.getElementById('dash-total-termometros').textContent = termometros.length;
-
-                // 2. Obtener registros de los últimos 7 días
-                const hoy = new Date();
-                const hace7d = new Date();
-                hace7d.setDate(hoy.getDate() - 7);
-                
-                const fecha_desde = hace7d.toISOString().split('T')[0];
-                const registrosResp = await fetch(`/api/admin/registros?fecha_desde=${fecha_desde}`);
-                const registros = await registrosResp.json();
-
-                document.getElementById('dash-total-registros').textContent = registros.length;
-                document.getElementById('dash-fuera-rango').textContent = registros.filter(r => r.fuera_rango_operativo).length;
-
-                // 3. Renderizar Gráfico de Tendencia (últimos 100 registros)
-                renderizarGraficoTendencia(registros.slice(0, 100).reverse());
-
-                // 4. Renderizar Gráfico por Área
-                renderizarGraficoAreas(registros, areas);
-
-            } catch (error) {
-                console.error('Error al cargar dashboard:', error);
-            }
-        }
-
-        function renderizarGraficoTendencia(registros) {
-            const ctx = document.getElementById('tempChart').getContext('2d');
-            
-            if (window.trendChart) window.trendChart.destroy();
-
-            const labels = registros.map(r => new Date(r.fecha_registro).toLocaleDateString('es-ES', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'}));
-            const dataMax = registros.map(r => r.temp_maxima);
-            const dataMin = registros.map(r => r.temp_minima);
-            const dataActual = registros.map(r => r.temp_actual);
-
-            window.trendChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'T. Máxima',
-                            data: dataMax,
-                            borderColor: '#ff6384',
-                            backgroundColor: 'transparent',
-                            tension: 0.3,
-                            pointRadius: 2
-                        },
-                        {
-                            label: 'T. Mínima',
-                            data: dataMin,
-                            borderColor: '#36a2eb',
-                            backgroundColor: 'transparent',
-                            tension: 0.3,
-                            pointRadius: 2
-                        },
-                        {
-                            label: 'T. Actual',
-                            data: dataActual,
-                            borderColor: '#ffce56',
-                            backgroundColor: 'transparent',
-                            borderDash: [5, 5],
-                            tension: 0.3,
-                            pointRadius: 0
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom' }
-                    },
-                    scales: {
-                        y: { title: { display: true, text: 'Temperatura (°C)' } },
-                        x: { ticks: { maxRotation: 45, minRotation: 45, font: { size: 10 } } }
-                    }
-                }
-            });
-        }
-
-        function renderizarGraficoAreas(registros, areas) {
-            const ctx = document.getElementById('areaChart').getContext('2d');
-            
-            if (window.pieChart) window.pieChart.destroy();
-
-            const conteoPorArea = {};
-            areas.forEach(a => conteoPorArea[a.nombre] = 0);
-            registros.forEach(r => {
-                if (conteoPorArea[r.area_nombre] !== undefined) {
-                    conteoPorArea[r.area_nombre]++;
-                }
-            });
-
-            const labels = Object.keys(conteoPorArea).filter(k => conteoPorArea[k] > 0);
-            const data = labels.map(k => conteoPorArea[k]);
-
-            window.pieChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: [
-                            '#4bc0c0', '#ff6384', '#36a2eb', '#ffce56', '#9966ff', '#ff9f40', '#c9cbcf'
-                        ]
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom' }
-                    }
-                }
-            });
-        }
+        // === DASHBOARD ELIMINADO ===
 
         // === USUARIOS ===
         async function cargarUsuarios() {
@@ -1467,27 +1304,34 @@
                 todosLosTermometros = termometros; // Guardar para impresión
 
                 const tbody = document.getElementById('termometrosTable');
-                tbody.innerHTML = termometros.map(t => `
-                    <tr>
-                        <td><input type="checkbox" class="termometro-checkbox" value="${t.id}" data-termometro='${JSON.stringify(t)}'></td>
-                        <td>${t.id}</td>
-                        <td>${t.nombre || '-'}</td>
-                        <td>${t.area_nombre || t.area_id}</td>
-                        <td>${t.tipo_nombre || t.tipo_id}</td>
-                        <td><span class="badge bg-${t.activo ? 'success' : 'secondary'}">${t.activo ? 'Activo' : 'Inactivo'}</span></td>
-                        <td class="table-actions">
-                            <button class="btn btn-sm btn-info" onclick="imprimirQRIndividual(${t.id})" title="Imprimir QR">
-                                <i class="bi bi-printer"></i>
-                            </button>
-                            <button class="btn btn-sm btn-warning" onclick="editarTermometro(${t.id})" title="Editar">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                            <button class="btn btn-sm btn-danger" onclick="eliminarTermometro(${t.id})" title="Eliminar">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `).join('');
+                tbody.innerHTML = termometros.map(t => {
+                    let estadoBadge = `<span class="badge bg-${t.activo ? 'success' : 'secondary'}">${t.activo ? 'Activo' : 'Inactivo'}</span>`;
+                    if (t.fuera_de_servicio) {
+                        estadoBadge += ` <span class="badge bg-danger">Fuera de Servicio</span>`;
+                    }
+                    
+                    return `
+                        <tr>
+                            <td><input type="checkbox" class="termometro-checkbox" value="${t.id}" data-termometro='${JSON.stringify(t)}'></td>
+                            <td>${t.id}</td>
+                            <td>${t.nombre || '-'}</td>
+                            <td>${t.area_nombre || t.area_id}</td>
+                            <td>${t.tipo_nombre || t.tipo_id}</td>
+                            <td>${estadoBadge}</td>
+                            <td class="table-actions">
+                                <button class="btn btn-sm btn-info" onclick="imprimirQRIndividual(${t.id})" title="Imprimir QR">
+                                    <i class="bi bi-printer"></i>
+                                </button>
+                                <button class="btn btn-sm btn-warning" onclick="editarTermometro(${t.id})" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="eliminarTermometro(${t.id})" title="Eliminar">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
             } catch (error) {
                 alert('Error al cargar termómetros: ' + error.message);
             }
@@ -1762,12 +1606,17 @@
                 tipo_nombre: t.tipo_nombre || 'N/A'
             }));
 
-            // Codificar datos
-            const encodedData = encodeURIComponent(JSON.stringify(data));
-
-            // Abrir ventana de impresión
-            const url = `/imprimir_qr.html?data=${encodedData}`;
-            window.open(url, '_blank', 'width=1200,height=800');
+            // Guardar datos en localStorage para evitar límites de longitud de URL
+            try {
+                localStorage.setItem('temp_print_data', JSON.stringify(data));
+                
+                // Abrir ventana de impresión
+                const url = '/imprimir_qr.html';
+                window.open(url, '_blank', 'width=1200,height=800');
+            } catch (e) {
+                alert('Error al preparar la impresión: ' + e.message);
+                console.error(e);
+            }
         }
 
         // === FUNCIONES ESPECÍFICAS DE LA SECCIÓN DE IMPRESIÓN ===

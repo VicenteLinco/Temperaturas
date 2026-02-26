@@ -95,10 +95,34 @@ async fn create_tables(pool: &SqlitePool) -> Result<()> {
             nombre TEXT,
             ubicacion TEXT,
             activo BOOLEAN NOT NULL DEFAULT 1,
+            fuera_de_servicio BOOLEAN NOT NULL DEFAULT 0,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (area_id) REFERENCES areas(id),
             FOREIGN KEY (tipo_id) REFERENCES tipos_termometro(id)
+        )
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    // Tabla de mantenimiento de termómetros
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS mantenimiento_termometros (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            termometro_id INTEGER NOT NULL,
+            usuario_reporta_id INTEGER NOT NULL,
+            fecha_reporte DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            motivo TEXT NOT NULL,
+            comentarios_reporte TEXT,
+            fecha_reparacion DATETIME,
+            usuario_repara_id INTEGER,
+            detalle_reparacion TEXT,
+            estado TEXT NOT NULL DEFAULT 'PENDIENTE' CHECK(estado IN ('PENDIENTE', 'REPARADO')),
+            FOREIGN KEY (termometro_id) REFERENCES termometros(id),
+            FOREIGN KEY (usuario_reporta_id) REFERENCES usuarios(id),
+            FOREIGN KEY (usuario_repara_id) REFERENCES usuarios(id)
         )
         "#,
     )
@@ -258,33 +282,15 @@ async fn create_tables(pool: &SqlitePool) -> Result<()> {
     .await?;
 
     // ✅ MIGRACIÓN: Agregar campo temp_actual si no existe
-    sqlx::query(
-        r#"
-        ALTER TABLE registros ADD COLUMN IF NOT EXISTS temp_actual REAL
-        "#,
-    )
-    .execute(pool)
-    .await
-    .ok(); // Ignorar si ya existe
+    sqlx::query("ALTER TABLE registros ADD COLUMN temp_actual REAL").execute(pool).await.ok();
+
+    // ✅ MIGRACIÓN: Agregar campo fuera_de_servicio a termometros
+    sqlx::query("ALTER TABLE termometros ADD COLUMN fuera_de_servicio BOOLEAN NOT NULL DEFAULT 0").execute(pool).await.ok();
 
     // Agregar campos a tabla areas si no existen
-    sqlx::query(
-        r#"
-        ALTER TABLE areas ADD COLUMN IF NOT EXISTS responsable TEXT
-        "#,
-    )
-    .execute(pool)
-    .await
-    .ok(); // Ignorar si ya existe
-
-    sqlx::query(
-        r#"
-        ALTER TABLE areas ADD COLUMN IF NOT EXISTS email_notificacion TEXT
-        "#,
-    )
-    .execute(pool)
-    .await
-    .ok(); // Ignorar si ya existe
+    sqlx::query("ALTER TABLE areas ADD COLUMN descripcion TEXT").execute(pool).await.ok();
+    sqlx::query("ALTER TABLE areas ADD COLUMN responsable TEXT").execute(pool).await.ok();
+    sqlx::query("ALTER TABLE areas ADD COLUMN email_notificacion TEXT").execute(pool).await.ok();
 
     // Obtener valores de configuración de variables de entorno o usar defaults
     let reg_hora_1 = std::env::var("REGISTRO_HORA_1").unwrap_or_else(|_| "14:00".to_string());

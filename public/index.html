@@ -34,6 +34,22 @@
             border: 3px solid #667eea;
             border-radius: 15px;
             overflow: hidden;
+            min-height: 300px;
+            position: relative;
+            background-color: #000;
+        }
+        .scanner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
         }
         .scanner-status {
             margin-top: 15px;
@@ -131,7 +147,17 @@
     <div class="main-container">
         <!-- Scanner Section -->
         <div class="scanner-section">
-            <div id="qr-reader"></div>
+            <div style="position: relative; max-width: 400px; margin: 0 auto;">
+                <div id="qr-reader"></div>
+                <div id="scannerOverlay" class="scanner-overlay">
+                    <i class="bi bi-camera-video mb-3" style="font-size: 3rem; color: #667eea;"></i>
+                    <h5 class="mb-3">Scanner de QR</h5>
+                    <button class="btn btn-primary btn-lg" onclick="inicializarScanner()">
+                        <i class="bi bi-power"></i> Activar Cámara
+                    </button>
+                    <p class="text-muted mt-2 small">Permite el acceso a la cámara</p>
+                </div>
+            </div>
             <div id="scannerStatus" class="scanner-status d-none"></div>
         </div>
 
@@ -146,6 +172,11 @@
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="global-tab" data-bs-toggle="tab" data-bs-target="#resumen-global" type="button" role="tab">
                         <i class="bi bi-globe"></i> Global
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="reparaciones-tab" data-bs-toggle="tab" data-bs-target="#reparaciones-content" type="button" role="tab" onclick="cargarReparaciones()">
+                        <i class="bi bi-tools"></i> Reparaciones
                     </button>
                 </li>
             </ul>
@@ -169,10 +200,24 @@
             <div class="tab-pane fade" id="resumen-global" role="tabpanel">
                 <div class="container">
                     <div class="mb-3">
-                        <p class="text-muted small">Ventana: <strong id="ventanaGlobal">-</strong></p>
+                        <p class="text-muted small"><strong id="ventanaGlobal">-</strong></p>
                     </div>
                     <div id="resumenGlobalContent">
                         <!-- ... -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reparaciones Tab -->
+            <div class="tab-pane fade" id="reparaciones-content" role="tabpanel">
+                <div class="container">
+                    <div class="py-3">
+                        <h5><i class="bi bi-tools text-danger"></i> Termómetros por Reparar</h5>
+                        <p class="text-muted small">Lista de equipos fuera de servicio que requieren atención.</p>
+                        <hr>
+                        <div id="reparacionesLista">
+                            <!-- Se carga dinámicamente -->
+                        </div>
                     </div>
                 </div>
             </div>
@@ -236,9 +281,78 @@
                         </div>
                     </form>
                 </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-outline-danger btn-sm" id="btnFueraServicio" onclick="abrirModalFueraServicio()">
+                        <i class="bi bi-exclamation-triangle"></i> Reportar fuera de servicio
+                    </button>
+                    <div>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                        <button type="button" class="btn btn-primary" id="btnGuardar" onclick="guardarRegistro()">Guardar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Fuera de Servicio -->
+    <div class="modal fade" id="fueraServicioModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Reportar Termómetro Fuera de Servicio</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Motivo</label>
+                        <select class="form-select" id="fs_motivo">
+                            <option value="Cambio de pila">Cambio de pila</option>
+                            <option value="Pantalla rota">Pantalla rota</option>
+                            <option value="Error de lectura">Error de lectura</option>
+                            <option value="Calibración pendiente">Calibración pendiente</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Comentarios adicionales</label>
+                        <textarea class="form-control" id="fs_comentarios" rows="3" placeholder="Opcional..."></textarea>
+                    </div>
+                </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                    <button type="button" class="btn btn-primary" id="btnGuardar" onclick="guardarRegistro()">Guardar</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmarFueraServicio()">Enviar Reporte</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Reparación -->
+    <div class="modal fade" id="repararModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Reparar Termómetro</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">¿Qué se hizo para repararlo?</label>
+                        <select class="form-select" id="rep_detalle">
+                            <option value="Se cambió la pila">Se cambió la pila</option>
+                            <option value="Se reemplazó el equipo">Se reemplazó el equipo</option>
+                            <option value="Se recalibró">Se recalibró</option>
+                            <option value="Limpieza de contactos">Limpieza de contactos</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción detallada</label>
+                        <textarea class="form-control" id="rep_descripcion" rows="3" placeholder="Opcional..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success" onclick="confirmarReparacion()">Marcar como Reparado</button>
                 </div>
             </div>
         </div>
@@ -295,33 +409,111 @@
         async function checkAuth() {
             try {
                 const response = await fetch('/api/me');
-                if (!response.ok) { window.location.href = '/login.html'; return; }
+                if (!response.ok) { 
+                    const currentUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                    window.location.href = `/login.html?redirect=${currentUrl}`; 
+                    return; 
+                }
                 currentUser = await response.json();
                 document.getElementById('username').textContent = currentUser.username;
                 document.body.style.display = 'block';
                 await inicializarApp();
-            } catch (error) { window.location.href = '/login.html'; }
+            } catch (error) { 
+                const currentUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                window.location.href = `/login.html?redirect=${currentUrl}`; 
+            }
         }
 
         async function inicializarApp() {
             await cargarTodasLasAreas();
-            inicializarScanner();
+            // inicializarScanner(); // Ya no iniciamos automáticamente
+
+            // Verificar si viene un ID por URL (cuando se abre escaneando con la cámara del celular)
+            const urlParams = new URLSearchParams(window.location.search);
+            const termId = urlParams.get('termometro');
+            if (termId) {
+                const id = parseInt(termId);
+                if (!isNaN(id)) {
+                    // Pequeño delay para asegurar que todo cargó y el usuario está autenticado
+                    setTimeout(() => procesarTermometro(id), 500);
+                }
+            }
         }
 
         function inicializarScanner() {
-            html5QrCode = new Html5Qrcode("qr-reader");
+            // Mostrar estado de carga en el botón
+            const btn = document.querySelector('#scannerOverlay button');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Iniciando...';
+
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("qr-reader");
+            }
+
             const config = { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 1.0 };
+            
             html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanError)
-                .catch(err => console.error('Error scanner:', err));
+                .then(() => {
+                    // Ocultar overlay al tener éxito
+                    document.getElementById('scannerOverlay').style.display = 'none';
+                })
+                .catch(err => {
+                    console.error('Error scanner:', err);
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    mostrarEstado('Error al acceder a la cámara. Verifique permisos.', 'danger');
+                });
         }
 
         // ===== LOGICA PRINCIPAL =====
 
         async function onScanSuccess(decodedText, decodedResult) {
-            const termometroId = parseInt(decodedText);
-            if (isNaN(termometroId)) { mostrarEstado('QR no válido', 'warning'); return; }
+            console.log('QR detectado:', decodedText);
+            let termometroId = NaN;
+            
+            // Limpiar el texto de espacios o caracteres extraños
+            const cleanText = decodedText.trim();
+
+            // 1. Intentar como URL usando el objeto URL
+            if (cleanText.includes('termometro=')) {
+                try {
+                    // Si es una URL completa
+                    if (cleanText.startsWith('http')) {
+                        const url = new URL(cleanText);
+                        const paramId = url.searchParams.get('termometro');
+                        if (paramId) termometroId = parseInt(paramId);
+                    } else {
+                        // Si por alguna razón el escáner solo devuelve parte de la query string
+                        const match = cleanText.match(/termometro=(\d+)/);
+                        if (match) termometroId = parseInt(match[1]);
+                    }
+                } catch (e) {
+                    console.error('Error parseando URL:', e);
+                }
+            }
+
+            // 2. Si sigue siendo NaN, intentar parsear el texto limpio directamente como número
+            if (isNaN(termometroId)) {
+                termometroId = parseInt(cleanText);
+            }
+
+            // 3. Fallback: buscar cualquier número en el texto si nada funcionó
+            if (isNaN(termometroId)) {
+                const genericMatch = cleanText.match(/(\d+)/);
+                if (genericMatch) termometroId = parseInt(genericMatch[0]);
+            }
+
+            if (isNaN(termometroId)) { 
+                mostrarEstado(`QR no válido: ${cleanText.substring(0, 15)}...`, 'warning'); 
+                return; 
+            }
+
             try { await procesarTermometro(termometroId); }
-            catch (error) { console.error(error); mostrarEstado('Error procesando termómetro', 'danger'); }
+            catch (error) { 
+                console.error(error); 
+                mostrarEstado('Error procesando termómetro', 'danger'); 
+            }
         }
 
         function onScanError(errorMessage) {}
@@ -341,7 +533,13 @@
                     await cambiarAreaActual(termometro.area_id);
                 }
 
-                // Modo Edición Normal
+                // Caso 1: Fuera de servicio
+                if (termometro.fuera_de_servicio) {
+                    await abrirModalRegistro(termometro, null, true);
+                    return;
+                }
+
+                // Caso 2: Modo Edición Normal (Ya existe registro)
                 if (registro) {
                     // Ya existe: preguntar si editar
                     const editar = await mostrarConfirmacion(
@@ -399,7 +597,7 @@
              let html = `
                 <div class="area-header-card">
                     <div class="d-flex justify-content-between">
-                        <div><h4 class="mb-1">${data.area.nombre}</h4><small>Ventana: ${data.ventana}</small></div>
+                        <div><h4 class="mb-1">${data.area.nombre}</h4><small>${formatearTextoVentana(data.ventana)}</small></div>
                         <div class="badge bg-light text-dark">${completados}/${total}</div>
                     </div>
                     <div class="progress-bar-custom mt-2"><div class="progress-fill" style="width: ${progreso}%"></div></div>
@@ -456,6 +654,16 @@
             await seleccionarTermometro(id);
         }
 
+        function formatearTextoVentana(horaVentana) {
+            if (!horaVentana || horaVentana === '-') return '-';
+            const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+            const hoy = new Date();
+            const dia = hoy.getDate();
+            const mes = meses[hoy.getMonth()];
+            const anio = hoy.getFullYear();
+            return `Estás registrando en la ventana de ${horaVentana} del día ${dia} de ${mes} ${anio}`;
+        }
+
         function renderizarResumenGlobal() {
              // (Simplificado para brevedad, misma lógica que antes)
              const container = document.getElementById('resumenGlobalContent');
@@ -471,7 +679,7 @@
                     <div class="d-flex justify-content-between"><strong>${data.area.nombre}</strong><span>${c}/${c+p}</span></div>
                  </div>`;
              }
-             document.getElementById('ventanaGlobal').textContent = Object.values(areasData)[0]?.ventana || '-';
+             document.getElementById('ventanaGlobal').textContent = formatearTextoVentana(Object.values(areasData)[0]?.ventana);
              container.innerHTML = `<div class="mb-3 text-center"><h5>Total: ${totalC} listos / ${totalP} pendientes</h5></div>` + html;
         }
 
@@ -483,6 +691,7 @@
             // Elementos
             const form = document.getElementById('registroForm');
             const btnGuardar = document.getElementById('btnGuardar');
+            const btnFueraServicio = document.getElementById('btnFueraServicio');
             const inputs = form.querySelectorAll('input, textarea');
             const banner = document.getElementById('statusBanner');
             
@@ -500,12 +709,48 @@
             
             // Configurar Banner Estado
             banner.style.display = 'block';
-            if (registro) {
+            
+            // Limpiar botones dinámicos previos en el footer
+            const footer = document.querySelector('#registroModal .modal-footer');
+            const btnRepararExistente = document.getElementById('btnReparar');
+            const btnMantenerExistente = document.getElementById('btnMantenerDeshabilitado');
+            if (btnRepararExistente) btnRepararExistente.remove();
+            if (btnMantenerExistente) btnMantenerExistente.remove();
+
+            if (termometro.fuera_de_servicio) {
+                banner.className = 'alert alert-danger text-center fw-bold mb-3';
+                banner.textContent = 'ESTADO: FUERA DE SERVICIO';
+                btnGuardar.style.display = 'none';
+                btnFueraServicio.style.display = 'none';
+                
+                // Opción 1: Reparar
+                const btnReparar = document.createElement('button');
+                btnReparar.id = 'btnReparar';
+                btnReparar.className = 'btn btn-success';
+                btnReparar.innerHTML = '<i class="bi bi-tools"></i> Reparar';
+                btnReparar.onclick = () => abrirModalReparacion();
+                
+                // Opción 2: Mantener deshabilitado
+                const btnMantener = document.createElement('button');
+                btnMantener.id = 'btnMantenerDeshabilitado';
+                btnMantener.className = 'btn btn-outline-secondary';
+                btnMantener.innerHTML = '<i class="bi bi-pause-circle"></i> Mantener deshabilitado';
+                btnMantener.onclick = () => {
+                    bootstrap.Modal.getInstance(document.getElementById('registroModal')).hide();
+                    mostrarToast('El termómetro sigue fuera de servicio', 'info');
+                };
+
+                footer.insertBefore(btnMantener, footer.firstChild);
+                footer.insertBefore(btnReparar, footer.firstChild);
+                
+            } else if (registro) {
                 banner.className = 'alert alert-success text-center fw-bold mb-3';
                 banner.textContent = 'ESTADO: COMPLETO';
+                btnFueraServicio.style.display = 'inline-block';
             } else {
                 banner.className = 'alert alert-warning text-center fw-bold mb-3';
                 banner.textContent = 'ESTADO: PENDIENTE';
+                btnFueraServicio.style.display = 'inline-block';
             }
 
             // Resetear y llenar datos
@@ -529,8 +774,8 @@
             document.getElementById('humedad').required = termometro.tiene_humedad;
 
             // MODO LECTURA vs EDICION
-            if (soloLectura) {
-                document.getElementById('registroModalTitle').textContent = 'Detalle (Solo Lectura)';
+            if (soloLectura || termometro.fuera_de_servicio) {
+                document.getElementById('registroModalTitle').textContent = termometro.fuera_de_servicio ? 'Termómetro Fuera de Servicio' : 'Detalle (Solo Lectura)';
                 btnGuardar.style.display = 'none';
                 inputs.forEach(input => input.disabled = true);
             } else {
@@ -540,6 +785,151 @@
             }
 
             new bootstrap.Modal(document.getElementById('registroModal')).show();
+        }
+
+        // --- FUNCIONES FUERA DE SERVICIO Y REPARACION ---
+
+        async function abrirModalFueraServicio() {
+            if (!termometroSeleccionado) return;
+            
+            const seguro = await mostrarConfirmacion(
+                'Desactivar Termómetro',
+                `¿Seguro que deseas iniciar el proceso de reporte y deshabilitar el termómetro <strong>${termometroSeleccionado.nombre || termometroSeleccionado.id}</strong>?`
+            );
+            
+            if (seguro) {
+                bootstrap.Modal.getInstance(document.getElementById('registroModal')).hide();
+                new bootstrap.Modal(document.getElementById('fueraServicioModal')).show();
+            }
+        }
+
+        async function confirmarFueraServicio() {
+            if (!termometroSeleccionado) {
+                alert('Error: No hay un termómetro seleccionado');
+                return;
+            }
+
+            const motivo = document.getElementById('fs_motivo').value;
+            const comentarios = document.getElementById('fs_comentarios').value;
+            
+            const btn = document.querySelector('#fueraServicioModal .btn-danger');
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enviando...';
+
+            try {
+                const res = await fetch('/api/termometros/reportar-fuera-servicio', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        termometro_id: termometroSeleccionado.id,
+                        motivo: motivo,
+                        comentarios: comentarios
+                    })
+                });
+                
+                if (res.ok) {
+                    mostrarToast('Termómetro puesto fuera de servicio', 'warning');
+                    bootstrap.Modal.getInstance(document.getElementById('fueraServicioModal')).hide();
+                    await cargarTodasLasAreas();
+                    renderizarAreaActual();
+                } else {
+                    const errText = await res.text();
+                    alert('Error al reportar fuera de servicio: ' + errText);
+                }
+            } catch (e) {
+                alert('Error de red: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        function abrirModalReparacion() {
+            bootstrap.Modal.getInstance(document.getElementById('registroModal')).hide();
+            new bootstrap.Modal(document.getElementById('repararModal')).show();
+        }
+
+        async function confirmarReparacion() {
+            const detalle = document.getElementById('rep_detalle').value;
+            const descripcion = document.getElementById('rep_descripcion').value;
+            const fullDetalle = descripcion ? `${detalle}: ${descripcion}` : detalle;
+
+            try {
+                const res = await fetch(`/api/termometros/${termometroSeleccionado.id}/reparar`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        detalle_reparacion: fullDetalle
+                    })
+                });
+                
+                if (res.ok) {
+                    mostrarToast('Termómetro reparado exitosamente', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('repararModal')).hide();
+                    await cargarTodasLasAreas();
+                    renderizarAreaActual();
+                    cargarReparaciones(); // Recargar pestaña de reparaciones
+                    
+                    // Volver a abrir el modal de registro para que pueda registrar ahora que está activo
+                    const response = await fetch(`/api/termometros/${termometroSeleccionado.id}`);
+                    const termometro = await response.json();
+                    abrirModalRegistro(termometro, null, false);
+                } else {
+                    alert('Error al marcar como reparado');
+                }
+            } catch (e) {
+                alert('Error de red: ' + e.message);
+            }
+        }
+
+        async function cargarReparaciones() {
+            const container = document.getElementById('reparacionesLista');
+            container.innerHTML = '<div class="text-center p-4"><div class="spinner-border text-danger"></div><p class="mt-2">Buscando equipos...</p></div>';
+            
+            try {
+                const response = await fetch('/api/termometros');
+                const termometros = await response.json();
+                const fueraDeServicio = termometros.filter(t => t.fuera_de_servicio && t.activo);
+                
+                if (fueraDeServicio.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-5 text-muted">
+                            <i class="bi bi-check2-circle" style="font-size: 3rem; color: #198754;"></i>
+                            <p class="mt-3">No hay termómetros fuera de servicio actualmente.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = '<div class="list-group">';
+                fueraDeServicio.forEach(t => {
+                    html += `
+                        <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3 border-danger-subtle">
+                            <div>
+                                <h6 class="mb-1 fw-bold text-danger">${t.nombre || 'ID: '+t.id}</h6>
+                                <p class="mb-0 small text-muted">Área: ${t.area_nombre} | Tipo: ${t.tipo_nombre}</p>
+                                <p class="mb-0 small"><i class="bi bi-geo-alt"></i> ${t.ubicacion || 'Sin ubicación'}</p>
+                            </div>
+                            <button class="btn btn-success btn-sm" onclick="abrirReparacionDesdeLista(${t.id})">
+                                <i class="bi bi-tools"></i> Reparar
+                            </button>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = '<div class="alert alert-danger">Error al cargar la lista de reparaciones</div>';
+            }
+        }
+
+        async function abrirReparacionDesdeLista(id) {
+            const response = await fetch(`/api/termometros/${id}`);
+            const termometro = await response.json();
+            termometroSeleccionado = termometro;
+            abrirModalReparacion();
         }
 
         async function guardarRegistro() {
@@ -598,6 +988,39 @@
         function mostrarToast(m,t){const d=document.createElement('div');d.className=`alert alert-${t} fixed-top m-3`;d.textContent=m;document.body.appendChild(d);setTimeout(()=>d.remove(),3000)}
         async function logout(){ await fetch('/api/logout',{method:'POST'}); window.location.href='/login.html';}
         
+        // ===== EVENTOS DEL SCANNER =====
+        // Estrategia: Detener completamente el scanner al abrir el modal y reiniciarlo al cerrar.
+        // Esto es más seguro que pausar/reanudar para evitar problemas de "pantalla negra" en móviles.
+        
+        document.getElementById('registroModal').addEventListener('show.bs.modal', () => {
+            if (html5QrCode) {
+                // Intentamos detener. Si falla (p.ej. ya estaba detenido), no pasa nada.
+                html5QrCode.stop().then(() => {
+                    console.log('Scanner detenido correctamente');
+                    // Mostrar overlay para que se vea "bonito" mientras está detenido (opcional)
+                    document.getElementById('scannerOverlay').style.display = 'flex';
+                    // Pero cambiamos el texto o botón si queremos
+                }).catch(err => {
+                    console.log('El scanner ya estaba detenido o error:', err);
+                });
+            }
+        });
+
+        document.getElementById('registroModal').addEventListener('hidden.bs.modal', () => {
+            // FIX CRÍTICO: Eliminar manualmente cualquier backdrop fantasma que oscurezca la pantalla
+            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+
+            // Al cerrar el modal, reiniciamos el scanner automáticamente
+            console.log('Modal cerrado, reiniciando scanner...');
+            // Pequeño delay para dejar que el modal termine su animación
+            setTimeout(() => {
+                inicializarScanner();
+            }, 300);
+        });
+
         checkAuth();
     </script>
 </body>

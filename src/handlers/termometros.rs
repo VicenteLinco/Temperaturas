@@ -22,7 +22,7 @@ pub async fn listar_termometros(
             t.id, t.area_id, a.nombre as area_nombre,
             t.tipo_id, ti.nombre as tipo_nombre, ti.tiene_humedad,
             ti.temp_min_operativa, ti.temp_max_operativa,
-            t.nombre, t.ubicacion, t.activo
+            t.nombre, t.ubicacion, t.activo, t.fuera_de_servicio
         FROM termometros t
         JOIN areas a ON t.area_id = a.id
         JOIN tipos_termometro ti ON t.tipo_id = ti.id
@@ -46,7 +46,7 @@ pub async fn obtener_termometro(
             t.id, t.area_id, a.nombre as area_nombre,
             t.tipo_id, ti.nombre as tipo_nombre, ti.tiene_humedad,
             ti.temp_min_operativa, ti.temp_max_operativa,
-            t.nombre, t.ubicacion, t.activo
+            t.nombre, t.ubicacion, t.activo, t.fuera_de_servicio
         FROM termometros t
         JOIN areas a ON t.area_id = a.id
         JOIN tipos_termometro ti ON t.tipo_id = ti.id
@@ -60,6 +60,103 @@ pub async fn obtener_termometro(
 
     Ok(Json(termometro))
 }
+
+pub async fn reportar_fuera_de_servicio(
+    current_user: CurrentUser,
+    State(pool): State<SqlitePool>,
+    Json(payload): Json<ReportarFueraServicioRequest>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    let mut tx = pool.begin().await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    // Actualizar termómetro
+    sqlx::query("UPDATE termometros SET fuera_de_servicio = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+        .bind(payload.termometro_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    // Crear registro de mantenimiento
+    sqlx::query(
+        r#"
+        INSERT INTO mantenimiento_termometros (termometro_id, usuario_reporta_id, motivo, comentarios_reporte)
+        VALUES (?, ?, ?, ?)
+        "#
+    )
+    .bind(payload.termometro_id)
+    .bind(current_user.0.id)
+    .bind(&payload.motivo)
+    .bind(&payload.comentarios)
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    tx.commit().await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    log_auditoria(
+        &pool,
+        current_user.0.id,
+        "REPORT_OUT_OF_SERVICE",
+        "termometros",
+        Some(payload.termometro_id),
+        None,
+        Some(&serde_json::to_string(&payload).unwrap_or_default()),
+    )
+    .await
+    .ok();
+
+    Ok(StatusCode::OK)
+}
+
+pub async fn reparar_termometro(
+    current_user: CurrentUser,
+    State(pool): State<SqlitePool>,
+    Path(id): Path<i64>,
+    Json(payload): Json<RepararTermometroRequest>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    let mut tx = pool.begin().await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    // Actualizar termómetro
+    sqlx::query("UPDATE termometros SET fuera_de_servicio = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+        .bind(id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    // Actualizar registro de mantenimiento pendiente
+    sqlx::query(
+        r#"
+        UPDATE mantenimiento_termometros
+        SET estado = 'REPARADO',
+            fecha_reparacion = CURRENT_TIMESTAMP,
+            usuario_repara_id = ?,
+            detalle_reparacion = ?
+        WHERE termometro_id = ? AND estado = 'PENDIENTE'
+        "#
+    )
+    .bind(current_user.0.id)
+    .bind(&payload.detalle_reparacion)
+    .bind(id)
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    tx.commit().await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    log_auditoria(
+        &pool,
+        current_user.0.id,
+        "REPAIR",
+        "termometros",
+        Some(id),
+        None,
+        Some(&serde_json::to_string(&payload).unwrap_or_default()),
+    )
+    .await
+    .ok();
+
+    Ok(StatusCode::OK)
+}
+
 
 pub async fn crear_termometro(
     current_user: CurrentUser,
@@ -112,6 +209,7 @@ pub async fn actualizar_termometro(
     if payload.nombre.is_some() { sets.push("nombre = ?"); }
     if payload.ubicacion.is_some() { sets.push("ubicacion = ?"); }
     if payload.activo.is_some() { sets.push("activo = ?"); }
+    if payload.fuera_de_servicio.is_some() { sets.push("fuera_de_servicio = ?"); }
 
     let query = format!("UPDATE termometros SET {} WHERE id = ?", sets.join(", "));
 
@@ -122,6 +220,7 @@ pub async fn actualizar_termometro(
     if let Some(v) = &payload.nombre { q = q.bind(v); }
     if let Some(v) = &payload.ubicacion { q = q.bind(v); }
     if let Some(v) = payload.activo { q = q.bind(v); }
+    if let Some(v) = payload.fuera_de_servicio { q = q.bind(v); }
 
     q = q.bind(id);
 

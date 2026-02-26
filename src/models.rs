@@ -58,8 +58,23 @@ pub struct Termometro {
     pub nombre: Option<String>,
     pub ubicacion: Option<String>,
     pub activo: bool,
+    pub fuera_de_servicio: bool,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct MantenimientoTermometro {
+    pub id: i64,
+    pub termometro_id: i64,
+    pub usuario_reporta_id: i64,
+    pub fecha_reporte: NaiveDateTime,
+    pub motivo: String,
+    pub comentarios_reporte: Option<String>,
+    pub fecha_reparacion: Option<NaiveDateTime>,
+    pub usuario_repara_id: Option<i64>,
+    pub detalle_reparacion: Option<String>,
+    pub estado: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
@@ -181,6 +196,19 @@ pub struct ActualizarTermometroRequest {
     pub nombre: Option<String>,
     pub ubicacion: Option<String>,
     pub activo: Option<bool>,
+    pub fuera_de_servicio: Option<bool>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ReportarFueraServicioRequest {
+    pub termometro_id: i64,
+    pub motivo: String,
+    pub comentarios: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RepararTermometroRequest {
+    pub detalle_reparacion: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -240,6 +268,7 @@ pub struct TermometroConDetalles {
     pub nombre: Option<String>,
     pub ubicacion: Option<String>,
     pub activo: bool,
+    pub fuera_de_servicio: bool,
 }
 
 #[derive(Debug, Serialize, FromRow)]
