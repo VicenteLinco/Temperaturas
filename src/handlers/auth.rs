@@ -64,12 +64,12 @@ pub async fn logout_handler(session: Session) -> Result<StatusCode, StatusCode> 
 /// Handler para obtener información del usuario actual
 pub async fn me_handler(
     session: Session,
-) -> Result<Json<Option<UsuarioResponse>>, StatusCode> {
-    let user = auth::get_current_user(&session).await;
-    Ok(Json(user.map(|u| UsuarioResponse {
-        id: u.id,
-        username: u.username,
-        rol: u.rol,
+) -> Result<Json<UsuarioResponse>, StatusCode> {
+    let user = auth::get_current_user(&session).await.ok_or(StatusCode::UNAUTHORIZED)?;
+    Ok(Json(UsuarioResponse {
+        id: user.id,
+        username: user.username,
+        rol: user.rol,
         activo: true,
-    })))
+    }))
 }

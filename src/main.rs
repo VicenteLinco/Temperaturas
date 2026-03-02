@@ -61,7 +61,7 @@ async fn main() -> anyhow::Result<()> {
 
     let session_layer = SessionManagerLayer::new(session_store)
         .with_secure(cfg!(not(debug_assertions))) // ✅ Secure en producción, permite HTTP en desarrollo
-        .with_same_site(SameSite::Strict) // ✅ Protección CSRF mejorada
+        .with_same_site(SameSite::Lax) // ✅ Permite que las cookies se envíen al abrir enlaces externos (QR)
         .with_http_only(true) // ✅ Previene acceso desde JavaScript
         .with_expiry(Expiry::OnInactivity(time::Duration::hours(8)));
 

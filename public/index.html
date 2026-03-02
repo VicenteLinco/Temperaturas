@@ -474,6 +474,11 @@
                     return; 
                 }
                 currentUser = await response.json();
+                
+                if (!currentUser || !currentUser.username) {
+                    throw new Error('Sesión inválida');
+                }
+
                 document.getElementById('username').textContent = currentUser.username;
                 document.body.style.display = 'block';
                 await inicializarApp();
