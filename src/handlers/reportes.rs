@@ -147,14 +147,21 @@ fn generar_csv_diario(rows: Vec<PgRow>, _fecha: &str) -> Result<(StatusCode, Vec
         let humedad: Option<f64> = row.try_get::<Option<f64>, _>("humedad").unwrap_or(None);
         let observaciones: Option<String> = row.try_get::<Option<String>, _>("observaciones").unwrap_or(None);
         let fecha_registro: chrono::DateTime<chrono::Utc> = row.get("fecha_registro");
+        
+        let termometro_id: i32 = row.get("termometro_id");
+        let termometro_nombre: String = row.try_get::<String, _>("termometro_nombre").unwrap_or_default();
+        let termo_display = if !termometro_nombre.is_empty() {
+            format!("{}({})", termometro_id, termometro_nombre)
+        } else {
+            termometro_id.to_string()
+        };
 
         wtr.write_record(&[
             row.get::<i32, _>("id").to_string(),
             fecha_registro.to_rfc3339(),
             row.get::<String, _>("ventana_horaria"),
             row.get::<String, _>("area_nombre"),
-            row.try_get::<String, _>("termometro_nombre")
-                .unwrap_or_else(|_| format!("ID: {}", row.get::<i32, _>("termometro_id"))),
+            termo_display,
             row.get::<String, _>("tipo_nombre"),
             row.get::<f32, _>("temp_maxima").to_string(),
             row.get::<f32, _>("temp_minima").to_string(),
@@ -208,13 +215,30 @@ fn generar_pdf_diario(rows: Vec<PgRow>, fecha: &str) -> Result<(StatusCode, Vec<
 
     // Datos
     y_pos -= 10.0;
-    for row in rows.iter().take(40) {
+    for row in rows.iter().take(300) {
         let id: i32 = row.get("id");
         let fecha_registro: chrono::DateTime<chrono::Utc> = row.get("fecha_registro");
         let ventana: String = row.get("ventana_horaria");
         let area: String = row.get("area_nombre");
-        let termo: String = row.try_get::<String, _>("termometro_nombre")
-            .unwrap_or_else(|_| format!("ID: {}", row.get::<i32, _>("termometro_id")));
+        
+        let termometro_id: i32 = row.get("termometro_id");
+        let termometro_nombre: String = row.try_get::<String, _>("termometro_nombre").unwrap_or_default();
+        let mut termo = if !termometro_nombre.is_empty() {
+            format!("{}({})", termometro_id, termometro_nombre)
+        } else {
+            termometro_id.to_string()
+        };
+
+        // Truncar si es muy largo (aprox 25 caracteres para la columna de 40mm)
+        if termo.len() > 25 {
+            if termometro_nombre.len() > 15 {
+                termo = format!("{}({}...)", termometro_id, &termometro_nombre[..12]);
+            }
+            if termo.len() > 25 {
+                termo = format!("{}...", &termo[..22]);
+            }
+        }
+
         let tipo: String = row.get("tipo_nombre");
         let temp_max: f32 = row.get("temp_maxima");
         let temp_min: f32 = row.get("temp_minima");

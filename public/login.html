@@ -150,6 +150,23 @@
     </div>
 
     <script>
+        // Verificar si ya hay una sesión activa para redirigir automáticamente
+        async function checkSession() {
+            try {
+                const response = await fetch('/api/me');
+                if (response.ok) {
+                    const data = await response.json();
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const redirectUrl = urlParams.get('redirect');
+                    window.location.replace(redirectUrl ? decodeURIComponent(redirectUrl) : 
+                                         (data.rol === 'ADMINISTRADOR' ? '/admin.html' : '/index.html'));
+                }
+            } catch (err) {
+                console.error('Error verificando sesión:', err);
+            }
+        }
+        checkSession();
+
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('username').value;
@@ -205,8 +222,9 @@
                     setTimeout(() => {
                         const urlParams = new URLSearchParams(window.location.search);
                         const redirectUrl = urlParams.get('redirect');
-                        window.location.href = redirectUrl ? decodeURIComponent(redirectUrl) : 
-                                             (data.user.rol === 'ADMINISTRADOR' ? '/admin.html' : '/index.html');
+                        // Usamos replace para que no se pueda volver atrás al login
+                        window.location.replace(redirectUrl ? decodeURIComponent(redirectUrl) : 
+                                             (data.user.rol === 'ADMINISTRADOR' ? '/admin.html' : '/index.html'));
                     }, 300);
                 } else {
                     stopAnimation = true;
