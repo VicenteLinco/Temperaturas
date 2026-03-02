@@ -165,7 +165,10 @@ fn generar_csv_diario(rows: Vec<PgRow>, _fecha: &str) -> Result<(StatusCode, Vec
         ]).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     }
 
-    let data = wtr.into_inner().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let mut data = vec![0xEF, 0xBB, 0xBF]; // UTF-8 BOM
+    let csv_bytes = wtr.into_inner().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    data.extend_from_slice(&csv_bytes);
+    
     Ok((StatusCode::OK, data))
 }
 

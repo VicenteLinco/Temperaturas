@@ -165,65 +165,58 @@
             // Show loading overlay
             overlay.style.display = 'flex';
             
-            // Progress animation function
-            const animateProgress = (targetProgress, duration) => {
-                return new Promise((resolve) => {
-                    let start = parseFloat(progressBar.style.width) || 0;
-                    let startTime = null;
+            let currentProgress = 0;
+            let stopAnimation = false;
 
-                    const update = (timestamp) => {
-                        if (!startTime) startTime = timestamp;
-                        const elapsed = timestamp - startTime;
-                        const progress = Math.min(start + (targetProgress - start) * (elapsed / duration), targetProgress);
-                        
-                        progressBar.style.width = `${progress}%`;
-                        percentageText.textContent = `${Math.floor(progress)}%`;
-
-                        if (elapsed < duration && progress < targetProgress) {
-                            requestAnimationFrame(update);
-                        } else {
-                            resolve();
-                        }
-                    };
-                    requestAnimationFrame(update);
-                });
+            // Animación orgánica: Avanza rápido al principio y luego más lento
+            const runAnimation = async () => {
+                while (!stopAnimation && currentProgress < 98) {
+                    // Cuanto más cerca del 100, más pequeños son los pasos
+                    let step = (100 - currentProgress) / 25;
+                    currentProgress += Math.max(step, 0.1); 
+                    
+                    progressBar.style.width = `${currentProgress}%`;
+                    percentageText.textContent = `${Math.floor(currentProgress)}%`;
+                    
+                    // Velocidad variable para que parezca "pensando"
+                    await new Promise(r => setTimeout(r, 50 + Math.random() * 50));
+                }
             };
 
             try {
-                // Iniciar animación hasta el 90% (simulación de carga activa)
-                const animationPromise = animateProgress(90, 800);
+                // Iniciar la animación en segundo plano
+                runAnimation();
 
-                // Realizar la petición al servidor en paralelo
-                const fetchPromise = fetch('/api/login', {
+                // Realizar la petición al servidor
+                const response = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password }),
                 });
 
-                // Esperar a que la animación llegue al 90% Y que la petición responda
-                const [_, response] = await Promise.all([animationPromise, fetchPromise]);
-                
                 const data = await response.json();
 
                 if (data.success) {
-                    // Completar al 100% rápido antes de redirigir
-                    await animateProgress(100, 200);
+                    // Al tener éxito, completamos al 100% rápido
+                    stopAnimation = true;
+                    progressBar.style.width = '100%';
+                    percentageText.textContent = '100%';
                     
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const redirectUrl = urlParams.get('redirect');
-                    window.location.href = redirectUrl ? decodeURIComponent(redirectUrl) : 
-                                         (data.user.rol === 'ADMINISTRADOR' ? '/admin.html' : '/index.html');
+                    setTimeout(() => {
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const redirectUrl = urlParams.get('redirect');
+                        window.location.href = redirectUrl ? decodeURIComponent(redirectUrl) : 
+                                             (data.user.rol === 'ADMINISTRADOR' ? '/admin.html' : '/index.html');
+                    }, 300);
                 } else {
+                    stopAnimation = true;
                     overlay.style.display = 'none';
-                    progressBar.style.width = '0%';
-                    percentageText.textContent = '0%';
                     errorDiv.textContent = data.message || 'Credenciales incorrectas';
                     errorDiv.classList.remove('d-none');
                 }
             } catch (err) {
+                stopAnimation = true;
                 overlay.style.display = 'none';
-                progressBar.style.width = '0%';
-                percentageText.textContent = '0%';
                 errorDiv.textContent = 'Error de conexión';
                 errorDiv.classList.remove('d-none');
             }
