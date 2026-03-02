@@ -68,7 +68,8 @@ pub async fn listar_registros(
         .fetch_all(&pool)
         .await
         .map_err(|e| {
-            tracing::error!("Error al cargar registros: {:?}", e);
+            tracing::error!("DETALLE ERROR SQL listar_registros: {:?}", e);
+            tracing::error!("QUERY INTENTADA: {}", query);
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
