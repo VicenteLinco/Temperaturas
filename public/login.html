@@ -166,23 +166,23 @@
             overlay.style.display = 'flex';
             
             // Progress animation function
-            const animateProgress = () => {
+            const animateProgress = (targetProgress, duration) => {
                 return new Promise((resolve) => {
-                    let progress = 0;
-                    const startTime = Date.now();
-                    const duration = 3000; // 3 seconds
+                    let start = parseFloat(progressBar.style.width) || 0;
+                    let startTime = null;
 
-                    const update = () => {
-                        const elapsed = Date.now() - startTime;
-                        progress = Math.min((elapsed / duration) * 100, 100);
+                    const update = (timestamp) => {
+                        if (!startTime) startTime = timestamp;
+                        const elapsed = timestamp - startTime;
+                        const progress = Math.min(start + (targetProgress - start) * (elapsed / duration), targetProgress);
                         
                         progressBar.style.width = `${progress}%`;
                         percentageText.textContent = `${Math.floor(progress)}%`;
 
-                        if (progress < 100) {
+                        if (elapsed < duration && progress < targetProgress) {
                             requestAnimationFrame(update);
                         } else {
-                            setTimeout(resolve, 200); // Small buffer at 100%
+                            resolve();
                         }
                     };
                     requestAnimationFrame(update);
@@ -190,18 +190,25 @@
             };
 
             try {
-                // Wait for the 3-second animation
-                await animateProgress();
+                // Iniciar animación hasta el 90% (simulación de carga activa)
+                const animationPromise = animateProgress(90, 800);
 
-                const response = await fetch('/api/login', {
+                // Realizar la petición al servidor en paralelo
+                const fetchPromise = fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password }),
                 });
 
+                // Esperar a que la animación llegue al 90% Y que la petición responda
+                const [_, response] = await Promise.all([animationPromise, fetchPromise]);
+                
                 const data = await response.json();
 
                 if (data.success) {
+                    // Completar al 100% rápido antes de redirigir
+                    await animateProgress(100, 200);
+                    
                     const urlParams = new URLSearchParams(window.location.search);
                     const redirectUrl = urlParams.get('redirect');
                     window.location.href = redirectUrl ? decodeURIComponent(redirectUrl) : 

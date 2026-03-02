@@ -48,13 +48,13 @@ pub async fn listar_registros(
     if let Some(f) = &filtros.fecha_desde {
         if !f.is_empty() {
             i += 1;
-            conditions.push(format!("(CAST(r.fecha_registro AT TIME ZONE 'UTC' AS DATE)) >= ${}", i));
+            conditions.push(format!("(CAST(r.fecha_registro AT TIME ZONE 'UTC' AS DATE)) >= ${}::date", i));
         }
     }
     if let Some(f) = &filtros.fecha_hasta {
         if !f.is_empty() {
             i += 1;
-            conditions.push(format!("(CAST(r.fecha_registro AT TIME ZONE 'UTC' AS DATE)) <= ${}", i));
+            conditions.push(format!("(CAST(r.fecha_registro AT TIME ZONE 'UTC' AS DATE)) <= ${}::date", i));
         }
     }
     if let Some(area_id) = filtros.area_id {
