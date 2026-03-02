@@ -53,7 +53,7 @@ pub async fn generar_reporte_diario(
         query.push_str(" AND t.area_id = $2");
     }
 
-    query.push_str(" ORDER BY a.nombre, t.id, r.ventana_horaria");
+    query.push_str(" ORDER BY a.nombre, t.nombre, r.ventana_horaria");
 
     let mut q = sqlx::query(&query).bind(&filtros.fecha);
 
@@ -106,7 +106,13 @@ pub async fn generar_reporte_mensual(
         query.push_str(" AND t.area_id = $3");
     }
 
-    query.push_str(" ORDER BY r.fecha_registro, a.nombre, t.id, r.ventana_horaria");
+    query.push_str(" ORDER BY r.fecha_registro, 
+        CASE 
+            WHEN r.ventana_horaria = '02:00' THEN 1 
+            WHEN r.ventana_horaria = '14:00' THEN 2 
+            ELSE 3 
+        END, 
+        a.nombre, t.nombre");
 
     let mut q = sqlx::query(&query)
         .bind(filtros.anio as f64)
@@ -201,17 +207,17 @@ fn generar_pdf_diario(rows: Vec<PgRow>, fecha: &str) -> Result<(StatusCode, Vec<
     // Encabezados de tabla
     let mut y_pos = 175.0;
     current_layer.use_text("ID", 9.0, Mm(5.0), Mm(y_pos), &font_bold);
-    current_layer.use_text("Fecha", 9.0, Mm(15.0), Mm(y_pos), &font_bold);
-    current_layer.use_text("Ventana", 9.0, Mm(50.0), Mm(y_pos), &font_bold);
-    current_layer.use_text("Área", 9.0, Mm(70.0), Mm(y_pos), &font_bold);
-    current_layer.use_text("Termómetro", 9.0, Mm(105.0), Mm(y_pos), &font_bold);
-    current_layer.use_text("Tipo", 9.0, Mm(145.0), Mm(y_pos), &font_bold);
-    current_layer.use_text("T.Máx", 9.0, Mm(170.0), Mm(y_pos), &font_bold);
-    current_layer.use_text("T.Mín", 9.0, Mm(185.0), Mm(y_pos), &font_bold);
-    current_layer.use_text("Hum.", 9.0, Mm(200.0), Mm(y_pos), &font_bold);
-    current_layer.use_text("Estado", 9.0, Mm(215.0), Mm(y_pos), &font_bold);
-    current_layer.use_text("Usuario", 9.0, Mm(235.0), Mm(y_pos), &font_bold);
-    current_layer.use_text("Obs.", 9.0, Mm(260.0), Mm(y_pos), &font_bold);
+    current_layer.use_text("Fecha", 9.0, Mm(12.0), Mm(y_pos), &font_bold);
+    current_layer.use_text("Ventana", 9.0, Mm(32.0), Mm(y_pos), &font_bold);
+    current_layer.use_text("Área", 9.0, Mm(47.0), Mm(y_pos), &font_bold);
+    current_layer.use_text("Termómetro", 9.0, Mm(80.0), Mm(y_pos), &font_bold);
+    current_layer.use_text("Tipo", 9.0, Mm(140.0), Mm(y_pos), &font_bold);
+    current_layer.use_text("T.Máx", 9.0, Mm(165.0), Mm(y_pos), &font_bold);
+    current_layer.use_text("T.Mín", 9.0, Mm(180.0), Mm(y_pos), &font_bold);
+    current_layer.use_text("Hum.", 9.0, Mm(195.0), Mm(y_pos), &font_bold);
+    current_layer.use_text("Estado", 9.0, Mm(210.0), Mm(y_pos), &font_bold);
+    current_layer.use_text("Usuario", 9.0, Mm(230.0), Mm(y_pos), &font_bold);
+    current_layer.use_text("Obs.", 9.0, Mm(255.0), Mm(y_pos), &font_bold);
 
     // Datos
     y_pos -= 10.0;
@@ -229,14 +235,9 @@ fn generar_pdf_diario(rows: Vec<PgRow>, fecha: &str) -> Result<(StatusCode, Vec<
             termometro_id.to_string()
         };
 
-        // Truncar si es muy largo (aprox 25 caracteres para la columna de 40mm)
-        if termo.len() > 25 {
-            if termometro_nombre.len() > 15 {
-                termo = format!("{}({}...)", termometro_id, &termometro_nombre[..12]);
-            }
-            if termo.len() > 25 {
-                termo = format!("{}...", &termo[..22]);
-            }
+        // Truncar solo si es extremadamente largo (para una columna de ~60mm)
+        if termo.len() > 45 {
+            termo = format!("{}...", &termo[..42]);
         }
 
         let tipo: String = row.get("tipo_nombre");
@@ -249,26 +250,26 @@ fn generar_pdf_diario(rows: Vec<PgRow>, fecha: &str) -> Result<(StatusCode, Vec<
 
         let fecha_str = fecha_registro.format("%Y-%m-%d").to_string();
         let obs_corta = observaciones
-            .map(|o| if o.len() > 15 { format!("{}...", &o[..12]) } else { o.clone() })
+            .map(|o| if o.len() > 30 { format!("{}...", &o[..27]) } else { o.clone() })
             .unwrap_or_else(|| "-".to_string());
 
         let estado = if fuera_rango { "⚠ Alert" } else { "✓ OK" };
 
         current_layer.use_text(&id.to_string(), 8.0, Mm(5.0), Mm(y_pos), &font_regular);
-        current_layer.use_text(&fecha_str, 8.0, Mm(15.0), Mm(y_pos), &font_regular);
-        current_layer.use_text(&ventana, 8.0, Mm(50.0), Mm(y_pos), &font_regular);
-        current_layer.use_text(&area, 8.0, Mm(70.0), Mm(y_pos), &font_regular);
-        current_layer.use_text(&termo, 8.0, Mm(105.0), Mm(y_pos), &font_regular);
-        current_layer.use_text(&tipo, 7.0, Mm(145.0), Mm(y_pos), &font_regular);
-        current_layer.use_text(&format!("{:.1}°C", temp_max), 8.0, Mm(170.0), Mm(y_pos), &font_regular);
-        current_layer.use_text(&format!("{:.1}°C", temp_min), 8.0, Mm(185.0), Mm(y_pos), &font_regular);
+        current_layer.use_text(&fecha_str, 8.0, Mm(12.0), Mm(y_pos), &font_regular);
+        current_layer.use_text(&ventana, 8.0, Mm(32.0), Mm(y_pos), &font_regular);
+        current_layer.use_text(&area, 8.0, Mm(47.0), Mm(y_pos), &font_regular);
+        current_layer.use_text(&termo, 8.0, Mm(80.0), Mm(y_pos), &font_regular);
+        current_layer.use_text(&tipo, 7.0, Mm(140.0), Mm(y_pos), &font_regular);
+        current_layer.use_text(&format!("{:.1}°C", temp_max), 8.0, Mm(165.0), Mm(y_pos), &font_regular);
+        current_layer.use_text(&format!("{:.1}°C", temp_min), 8.0, Mm(180.0), Mm(y_pos), &font_regular);
         current_layer.use_text(
             &humedad.map(|h| format!("{:.1}%", h)).unwrap_or_else(|| "-".to_string()),
-            8.0, Mm(200.0), Mm(y_pos), &font_regular
+            8.0, Mm(195.0), Mm(y_pos), &font_regular
         );
-        current_layer.use_text(estado, 8.0, Mm(215.0), Mm(y_pos), &font_regular);
-        current_layer.use_text(&usuario, 8.0, Mm(235.0), Mm(y_pos), &font_regular);
-        current_layer.use_text(&obs_corta, 7.0, Mm(260.0), Mm(y_pos), &font_regular);
+        current_layer.use_text(estado, 8.0, Mm(210.0), Mm(y_pos), &font_regular);
+        current_layer.use_text(&usuario, 8.0, Mm(230.0), Mm(y_pos), &font_regular);
+        current_layer.use_text(&obs_corta, 7.0, Mm(255.0), Mm(y_pos), &font_regular);
 
         y_pos -= 5.5;
         if y_pos < 15.0 { break; }

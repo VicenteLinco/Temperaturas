@@ -618,17 +618,19 @@
 
         // ... (cargarTodasLasAreas, cambiarAreaActual, renderizarAreaActual, seleccionarTermometro, editarRegistro, renderizarResumenGlobal iguales) ...
         
-        async function cargarTodasLasAreas() {
+        async function cargarTodasLasAreas(silencioso = true) {
             const overlay = document.getElementById('loadingOverlay');
             const progressBar = document.getElementById('loadingProgressBar');
             const statusText = document.getElementById('loadingStatus');
             
             try {
-                // Mostrar overlay si no está visible
-                overlay.style.display = 'flex';
-                overlay.style.opacity = '1';
-                progressBar.style.width = '5%';
-                statusText.textContent = 'Obteniendo lista de áreas...';
+                // Mostrar overlay solo si NO es silencioso
+                if (!silencioso) {
+                    overlay.style.display = 'flex';
+                    overlay.style.opacity = '1';
+                    progressBar.style.width = '5%';
+                    statusText.textContent = 'Obteniendo lista de áreas...';
+                }
 
                 const response = await fetch('/api/areas');
                 const areas = await response.json();
@@ -638,7 +640,7 @@
                 let procesadas = 0;
 
                 if (total === 0) {
-                    progressBar.style.width = '100%';
+                    if (!silencioso) progressBar.style.width = '100%';
                     statusText.textContent = 'No hay áreas activas.';
                 } else {
                     // Cargar datos de todas las áreas en paralelo
@@ -656,26 +658,32 @@
                             console.error(`Error cargando área ${area.id}:`, e);
                         } finally {
                             procesadas++;
-                            const porcentaje = 5 + Math.round((procesadas / total) * 95);
-                            progressBar.style.width = `${porcentaje}%`;
-                            statusText.textContent = `Cargando: ${area.nombre} (${procesadas}/${total})`;
+                            if (!silencioso) {
+                                const porcentaje = 5 + Math.round((procesadas / total) * 95);
+                                progressBar.style.width = `${porcentaje}%`;
+                                statusText.textContent = `Cargando: ${area.nombre} (${procesadas}/${total})`;
+                            }
                         }
                     }));
                 }
 
                 renderizarResumenGlobal();
                 
-                // Pequeño delay para que el usuario vea el 100%
-                statusText.textContent = '¡Listo!';
-                setTimeout(() => {
-                    overlay.style.opacity = '0';
-                    setTimeout(() => { overlay.style.display = 'none'; }, 300);
-                }, 500);
+                if (!silencioso) {
+                    // Pequeño delay para que el usuario vea el 100%
+                    statusText.textContent = '¡Listo!';
+                    setTimeout(() => {
+                        overlay.style.opacity = '0';
+                        setTimeout(() => { overlay.style.display = 'none'; }, 300);
+                    }, 500);
+                }
 
             } catch (e) {
                 console.error('Error global en carga:', e);
-                statusText.textContent = 'Error al conectar con el servidor.';
-                statusText.className = 'text-danger small mt-2';
+                if (!silencioso) {
+                    statusText.textContent = 'Error al conectar con el servidor.';
+                    statusText.className = 'text-danger small mt-2';
+                }
             }
         }
 
