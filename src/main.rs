@@ -20,8 +20,17 @@ use tower_http::{
 use tower_sessions::{
     cookie::SameSite, Expiry, SessionManagerLayer,
 };
-use tower_sessions_sqlx_store::SqliteStore;
+use tower_sessions_sqlx_store::PostgresStore;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use axum::response::Redirect;
+
+async fn root_handler(session: tower_sessions::Session) -> Redirect {
+    if crate::auth::get_current_user(&session).await.is_some() {
+        Redirect::temporary("/index.html")
+    } else {
+        Redirect::temporary("/login.html")
+    }
+}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -38,16 +47,16 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     // Obtener configuración
-    let database_url = env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite:datos.db".to_string());
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let port = env::var("PORT").unwrap_or_else(|_| "3000".to_string());
     let host = env::var("HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
 
     // Inicializar base de datos
-    tracing::info!("Conectando a base de datos: {}", database_url);
+    tracing::info!("Conectando a base de datos PostgreSQL...");
     let pool = db::init_db(&database_url).await?;
 
     // Configurar session store
-    let session_store = SqliteStore::new(pool.clone());
+    let session_store = PostgresStore::new(pool.clone());
     session_store.migrate().await?;
 
     let session_layer = SessionManagerLayer::new(session_store)
@@ -106,6 +115,7 @@ async fn main() -> anyhow::Result<()> {
 
     // Combinar todas las rutas
     let app = Router::new()
+        .route("/", get(root_handler))
         .merge(public_routes)
         .merge(auth_routes)
         .merge(registrador_routes)

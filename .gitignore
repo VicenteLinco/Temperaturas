@@ -8,8 +8,20 @@ Cargo.lock
 *.db-shm
 *.db-wal
 
-# Variables de entorno
+# Variables de entorno y secretos
 .env
+Scripts/token.txt
+
+# Carpetas de respaldo y archivos locales (INNECESARIOS EN GITHUB)
+Backups/
+Archive/
+Limpieza_*/
+.claude/
+
+# Accesos Directos de Windows (Solo locales)
+*.lnk
+*.url
+INSTALAR_EN_ESCRITORIO.bat
 
 # IDE
 .vscode/
@@ -27,3 +39,5 @@ Thumbs.db
 
 # Utilidades temporales
 fix_password.rs
+test_*.rs
+*.tmp

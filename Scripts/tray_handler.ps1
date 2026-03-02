@@ -105,7 +105,7 @@ $itemExit.Add_Click({
     Show-All
     # Matar procesos
     Stop-Process -Name "cargo" -ErrorAction SilentlyContinue
-    Stop-Process -Name "ngrok" -ErrorAction SilentlyContinue
+    Stop-Process -Name "sistema-temperaturas" -ErrorAction SilentlyContinue
     # Cerrar app
     $appContext.ExitThread()
     [Environment]::Exit(0) 

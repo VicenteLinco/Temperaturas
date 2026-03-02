@@ -3,7 +3,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 
 use crate::{
     auth::CurrentUser,
@@ -15,7 +15,7 @@ use crate::{
 
 pub async fn obtener_configuracion(
     _current_user: CurrentUser,
-    State(pool): State<SqlitePool>,
+    State(pool): State<PgPool>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     let configs: Vec<Configuracion> = sqlx::query_as("SELECT * FROM configuracion")
         .fetch_all(&pool)
@@ -32,7 +32,7 @@ pub async fn obtener_configuracion(
 
 pub async fn actualizar_configuracion(
     current_user: CurrentUser,
-    State(pool): State<SqlitePool>,
+    State(pool): State<PgPool>,
     Json(payload): Json<ActualizarConfiguracionRequest>,
 ) -> Result<StatusCode, StatusCode> {
     if let Some(hora) = &payload.registro_hora_1 {
@@ -58,7 +58,7 @@ pub async fn actualizar_configuracion(
 
     log_auditoria(
         &pool,
-        current_user.0.id,
+        current_user.0.id.try_into().unwrap_or(0),
         "UPDATE",
         "configuracion",
         None,

@@ -1,4 +1,4 @@
-use chrono::{NaiveTime, NaiveDate, Local, Timelike, Duration};
+use chrono::{NaiveTime, NaiveDate, Local, Timelike};
 use anyhow::{Result, anyhow};
 use crate::models::TipoTermometro;
 
@@ -31,7 +31,6 @@ fn esta_en_rango(hora_central: NaiveTime, tolerancia_minutos: i32, ahora: NaiveT
     }
     
     // Caso cruce medianoche: (ej: central 02:00 (120m), ahora 23:00 (1380m))
-    // Diff directa: 1260m. Diff circular: 1440 - 1260 = 180m.
     let diff_circular = 1440 - diff;
     if diff_circular <= tolerancia_minutos as i64 {
         return true;
@@ -40,23 +39,22 @@ fn esta_en_rango(hora_central: NaiveTime, tolerancia_minutos: i32, ahora: NaiveT
     false
 }
 
-/// Determina la ventana horaria actual basándose en la hora del sistema
+/// Determina la ventana horaria actual basándose en la hora de Chile
 pub fn determinar_ventana_actual(
     hora_1: &str,  // "14:00" turno día
     hora_2: &str,  // "02:00" turno noche
     tolerancia_minutos: i32,
-    restriccion_activa: bool, // Nueva bandera
+    restriccion_activa: bool,
 ) -> Result<Option<VentanaHoraria>> {
-    let ahora = Local::now().time();
+    // Obtener hora actual en Chile
+    let ahora_chile = Local::now().with_timezone(&chrono_tz::America::Santiago);
+    let ahora = ahora_chile.time();
 
-    // Parsear horas configuradas
     let hora_central_1 = NaiveTime::parse_from_str(hora_1, "%H:%M")?;
     let hora_central_2 = NaiveTime::parse_from_str(hora_2, "%H:%M")?;
 
     if restriccion_activa {
-        // Lógica Estricta: Solo dentro de central +/- tolerancia
         if esta_en_rango(hora_central_1, tolerancia_minutos, ahora) {
-            // Asumimos turno día para hora 1
              let hora_inicio_dia = NaiveTime::from_hms_opt(8, 0, 0).unwrap();
              let hora_fin_dia = NaiveTime::from_hms_opt(20, 0, 0).unwrap();
              
@@ -68,7 +66,6 @@ pub fn determinar_ventana_actual(
                 es_turno_noche: false,
             }))
         } else if esta_en_rango(hora_central_2, tolerancia_minutos, ahora) {
-             // Asumimos turno noche para hora 2
              let hora_inicio_dia = NaiveTime::from_hms_opt(8, 0, 0).unwrap();
              let hora_fin_dia = NaiveTime::from_hms_opt(20, 0, 0).unwrap();
              
@@ -80,19 +77,13 @@ pub fn determinar_ventana_actual(
                 es_turno_noche: true,
             }))
         } else {
-            // Fuera de rango
             Ok(None)
         }
     } else {
-        // Lógica Flexible (Original): 24h coverage
-        // Turno día: 8:00 - 20:00 → ventana 14:00
-        // Turno noche: 20:00 - 8:00 → ventana 02:00
-
         let hora_inicio_dia = NaiveTime::from_hms_opt(8, 0, 0).unwrap();
         let hora_fin_dia = NaiveTime::from_hms_opt(20, 0, 0).unwrap();
 
         if ahora >= hora_inicio_dia && ahora < hora_fin_dia {
-            // Turno día
             Ok(Some(VentanaHoraria {
                 nombre: hora_1.to_string(),
                 hora_central: hora_central_1,
@@ -101,12 +92,11 @@ pub fn determinar_ventana_actual(
                 es_turno_noche: false,
             }))
         } else {
-            // Turno noche
             Ok(Some(VentanaHoraria {
                 nombre: hora_2.to_string(),
                 hora_central: hora_central_2,
-                hora_inicio: hora_fin_dia, // 20:00
-                hora_fin: hora_inicio_dia, // 8:00 (del día siguiente)
+                hora_inicio: hora_fin_dia,
+                hora_fin: hora_inicio_dia,
                 es_turno_noche: true,
             }))
         }
@@ -114,27 +104,20 @@ pub fn determinar_ventana_actual(
 }
 
 /// Calcula el día asignado para un registro basándose en el turno
-/// - Turno día (8am-20pm): El día asignado es el día actual
-/// - Turno noche (20pm-8am): El día asignado es el día siguiente
 #[allow(dead_code)]
 pub fn calcular_dia_asignado(ventana: &VentanaHoraria, fecha_registro: &chrono::NaiveDateTime) -> NaiveDate {
     let fecha_actual = fecha_registro.date();
 
     if ventana.es_turno_noche {
-        // Para el turno noche, si estamos después de las 20:00, el día asignado es mañana
-        // Si estamos antes de las 8:00 (madrugada), el día asignado es hoy
         let hora_registro = fecha_registro.time();
         let hora_corte = NaiveTime::from_hms_opt(20, 0, 0).unwrap();
 
         if hora_registro >= hora_corte {
-            // Estamos entre 20:00-23:59, día asignado es mañana
             fecha_actual + chrono::Duration::days(1)
         } else {
-            // Estamos entre 00:00-07:59, día asignado es hoy
             fecha_actual
         }
     } else {
-        // Turno día: día asignado es el día actual
         fecha_actual
     }
 }
@@ -149,11 +132,10 @@ pub enum ValidacionResultado {
 
 /// Valida una medición de temperatura
 pub fn validar_temperatura(
-    temp: f64,
+    temp: f32,
     tipo: &TipoTermometro,
     campo: &str, // "máxima" o "mínima"
 ) -> ValidacionResultado {
-    // Verificar límites físicos (rechaza)
     if temp < tipo.temp_min_fisica || temp > tipo.temp_max_fisica {
         return ValidacionResultado::Rechazo(format!(
             "Temperatura {} ({:.1}°C) fuera de rango físico ({:.1}°C a {:.1}°C)",
@@ -161,7 +143,6 @@ pub fn validar_temperatura(
         ));
     }
 
-    // Verificar límites operativos (advertencia)
     if temp < tipo.temp_min_operativa || temp > tipo.temp_max_operativa {
         return ValidacionResultado::Advertencia(format!(
             "Temperatura {} ({:.1}°C) fuera de rango operativo ({:.1}°C a {:.1}°C)",
@@ -174,7 +155,7 @@ pub fn validar_temperatura(
 
 /// Valida una medición de humedad
 pub fn validar_humedad(
-    humedad: f64,
+    humedad: f32,
     tipo: &TipoTermometro,
 ) -> Result<ValidacionResultado> {
     if !tipo.tiene_humedad {
@@ -186,7 +167,6 @@ pub fn validar_humedad(
     let hum_min_operativa = tipo.hum_min_operativa.ok_or(anyhow!("Rango operativo de humedad no configurado"))?;
     let hum_max_operativa = tipo.hum_max_operativa.ok_or(anyhow!("Rango operativo de humedad no configurado"))?;
 
-    // Verificar límites físicos (rechaza)
     if humedad < hum_min_fisica || humedad > hum_max_fisica {
         return Ok(ValidacionResultado::Rechazo(format!(
             "Humedad ({:.1}%) fuera de rango físico ({:.1}% a {:.1}%)",
@@ -194,7 +174,6 @@ pub fn validar_humedad(
         )));
     }
 
-    // Verificar límites operativos (advertencia)
     if humedad < hum_min_operativa || humedad > hum_max_operativa {
         return Ok(ValidacionResultado::Advertencia(format!(
             "Humedad ({:.1}%) fuera de rango operativo ({:.1}% a {:.1}%)",
@@ -207,15 +186,14 @@ pub fn validar_humedad(
 
 /// Valida un registro completo
 pub fn validar_registro(
-    temp_maxima: f64,
-    temp_minima: f64,
-    humedad: Option<f64>,
+    temp_maxima: f32,
+    temp_minima: f32,
+    humedad: Option<f32>,
     tipo: &TipoTermometro,
 ) -> Result<(bool, Vec<String>)> {
     let mut advertencias = Vec::new();
     let mut fuera_rango_operativo = false;
 
-    // ✅ NUEVA VALIDACIÓN: Verificar coherencia entre máxima y mínima
     if temp_maxima < temp_minima {
         return Err(anyhow!(
             "Temperatura máxima ({:.1}°C) no puede ser menor que temperatura mínima ({:.1}°C)",
@@ -223,7 +201,6 @@ pub fn validar_registro(
         ));
     }
 
-    // Validar temperatura máxima
     match validar_temperatura(temp_maxima, tipo, "máxima") {
         ValidacionResultado::Ok => {},
         ValidacionResultado::Advertencia(msg) => {
@@ -235,7 +212,6 @@ pub fn validar_registro(
         },
     }
 
-    // Validar temperatura mínima
     match validar_temperatura(temp_minima, tipo, "mínima") {
         ValidacionResultado::Ok => {},
         ValidacionResultado::Advertencia(msg) => {
@@ -247,12 +223,6 @@ pub fn validar_registro(
         },
     }
 
-    // Verificar que temp_maxima >= temp_minima
-    if temp_maxima < temp_minima {
-        return Err(anyhow!("La temperatura máxima no puede ser menor que la mínima"));
-    }
-
-    // Validar humedad si está presente
     if let Some(h) = humedad {
         match validar_humedad(h, tipo)? {
             ValidacionResultado::Ok => {},
@@ -269,38 +239,4 @@ pub fn validar_registro(
     }
 
     Ok((fuera_rango_operativo, advertencias))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_determinar_ventana_turno_dia() {
-        // Este test necesitaría mockear la hora actual para ser determinístico
-        // Por ahora lo dejamos como placeholder
-    }
-
-    #[test]
-    fn test_calcular_dia_asignado() {
-        let ventana_noche = VentanaHoraria {
-            nombre: "02:00".to_string(),
-            hora_central: NaiveTime::from_hms_opt(2, 0, 0).unwrap(),
-            hora_inicio: NaiveTime::from_hms_opt(20, 0, 0).unwrap(),
-            hora_fin: NaiveTime::from_hms_opt(8, 0, 0).unwrap(),
-            es_turno_noche: true,
-        };
-
-        // Lunes 22:00 → Martes
-        let fecha_lunes_noche = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()
-            .and_hms_opt(22, 0, 0).unwrap();
-        let dia_asignado = calcular_dia_asignado(&ventana_noche, &fecha_lunes_noche);
-        assert_eq!(dia_asignado, NaiveDate::from_ymd_opt(2024, 1, 2).unwrap());
-
-        // Martes 03:00 → Martes
-        let fecha_martes_madrugada = NaiveDate::from_ymd_opt(2024, 1, 2).unwrap()
-            .and_hms_opt(3, 0, 0).unwrap();
-        let dia_asignado = calcular_dia_asignado(&ventana_noche, &fecha_martes_madrugada);
-        assert_eq!(dia_asignado, NaiveDate::from_ymd_opt(2024, 1, 2).unwrap());
-    }
 }

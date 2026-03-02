@@ -3,7 +3,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 
 use crate::{
     auth::CurrentUser,
@@ -14,7 +14,7 @@ use crate::{
 // ===== ÁREAS CRUD =====
 
 pub async fn listar_areas(
-    State(pool): State<SqlitePool>,
+    State(pool): State<PgPool>,
 ) -> Result<Json<Vec<Area>>, StatusCode> {
     let areas: Vec<Area> = sqlx::query_as("SELECT * FROM areas ORDER BY nombre")
         .fetch_all(&pool)
@@ -26,30 +26,27 @@ pub async fn listar_areas(
 
 pub async fn crear_area(
     current_user: CurrentUser,
-    State(pool): State<SqlitePool>,
+    State(pool): State<PgPool>,
     Json(payload): Json<CrearAreaRequest>,
 ) -> Result<Json<Area>, StatusCode> {
-    let result = sqlx::query(
-        "INSERT INTO areas (nombre, descripcion) VALUES (?, ?)"
+    let area: Area = sqlx::query_as(
+        "INSERT INTO areas (nombre, descripcion) VALUES ($1, $2) RETURNING *"
     )
     .bind(&payload.nombre)
     .bind(&payload.descripcion)
-    .execute(&pool)
+    .fetch_one(&pool)
     .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    .map_err(|e| {
+        tracing::error!("Error creando área: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
-    let area_id = result.last_insert_rowid();
-
-    let area: Area = sqlx::query_as("SELECT * FROM areas WHERE id = ?")
-        .bind(area_id)
-        .fetch_one(&pool)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let area_id = area.id;
 
     // Log de auditoría
     log_auditoria(
         &pool,
-        current_user.0.id,
+        current_user.0.id.try_into().unwrap_or(0),
         "CREATE",
         "areas",
         Some(area_id),
@@ -64,35 +61,24 @@ pub async fn crear_area(
 
 pub async fn actualizar_area(
     current_user: CurrentUser,
-    State(pool): State<SqlitePool>,
+    State(pool): State<PgPool>,
     Path(id): Path<i64>,
     Json(payload): Json<ActualizarAreaRequest>,
 ) -> Result<StatusCode, StatusCode> {
     let mut query = String::from("UPDATE areas SET updated_at = CURRENT_TIMESTAMP");
-    let mut params: Vec<String> = Vec::new();
+    let mut i = 1;
+    
+    if payload.nombre.is_some() { i += 1; query.push_str(&format!(", nombre = ${}", i)); }
+    if payload.descripcion.is_some() { i += 1; query.push_str(&format!(", descripcion = ${}", i)); }
+    if payload.activa.is_some() { i += 1; query.push_str(&format!(", activa = ${}", i)); }
 
-    if let Some(nombre) = &payload.nombre {
-        query.push_str(", nombre = ?");
-        params.push(nombre.clone());
-    }
+    query.push_str(&format!(" WHERE id = $1"));
 
-    if let Some(descripcion) = &payload.descripcion {
-        query.push_str(", descripcion = ?");
-        params.push(descripcion.clone());
-    }
-
-    if let Some(activa) = payload.activa {
-        query.push_str(", activa = ?");
-        params.push(activa.to_string());
-    }
-
-    query.push_str(" WHERE id = ?");
-
-    let mut q = sqlx::query(&query);
-    for param in params {
-        q = q.bind(param);
-    }
-    q = q.bind(id);
+    let mut q = sqlx::query(&query).bind(id as i32);
+    
+    if let Some(nombre) = &payload.nombre { q = q.bind(nombre); }
+    if let Some(descripcion) = &payload.descripcion { q = q.bind(descripcion); }
+    if let Some(activa) = payload.activa { q = q.bind(activa); }
 
     q.execute(&pool)
         .await
@@ -100,10 +86,10 @@ pub async fn actualizar_area(
 
     log_auditoria(
         &pool,
-        current_user.0.id,
+        current_user.0.id.try_into().unwrap_or(0),
         "UPDATE",
         "areas",
-        Some(id),
+        Some(id as i32),
         None,
         Some(&serde_json::to_string(&payload).unwrap_or_default()),
     )
@@ -115,21 +101,21 @@ pub async fn actualizar_area(
 
 pub async fn eliminar_area(
     current_user: CurrentUser,
-    State(pool): State<SqlitePool>,
+    State(pool): State<PgPool>,
     Path(id): Path<i64>,
 ) -> Result<StatusCode, StatusCode> {
-    sqlx::query("DELETE FROM areas WHERE id = ?")
-        .bind(id)
+    sqlx::query("DELETE FROM areas WHERE id = $1")
+        .bind(id as i32)
         .execute(&pool)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     log_auditoria(
         &pool,
-        current_user.0.id,
+        current_user.0.id.try_into().unwrap_or(0),
         "DELETE",
         "areas",
-        Some(id),
+        Some(id as i32),
         None,
         None,
     )

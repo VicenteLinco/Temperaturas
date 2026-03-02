@@ -1,5 +1,5 @@
 use axum::{extract::State, http::StatusCode, Json};
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 use tower_sessions::Session;
 
 use crate::{
@@ -10,12 +10,12 @@ use crate::{
 /// Handler para login de usuarios
 pub async fn login_handler(
     session: Session,
-    State(pool): State<SqlitePool>,
+    State(pool): State<PgPool>,
     Json(payload): Json<LoginRequest>,
 ) -> Result<Json<LoginResponse>, StatusCode> {
     // Buscar usuario
     let usuario: Option<Usuario> = sqlx::query_as(
-        "SELECT * FROM usuarios WHERE username = ? AND activo = 1"
+        "SELECT * FROM usuarios WHERE username = $1 AND activo = TRUE"
     )
     .bind(&payload.username)
     .fetch_optional(&pool)

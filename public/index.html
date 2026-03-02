@@ -125,9 +125,55 @@
             margin-bottom: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
+
+        /* LOADING OVERLAY */
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease;
+        }
+        .loading-box {
+            width: 80%;
+            max-width: 300px;
+            text-align: center;
+        }
+        .spinner-custom {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body style="display: none;">
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay">
+        <div class="loading-box">
+            <div class="spinner-custom"></div>
+            <h5 id="loadingTitle">Cargando Sistema...</h5>
+            <div class="progress mt-3" style="height: 10px;">
+                <div id="loadingProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+            </div>
+            <p id="loadingStatus" class="text-muted small mt-2">Iniciando conexión...</p>
+        </div>
+    </div>
+
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top shadow">
         <div class="container-fluid">
             <span class="navbar-brand mb-0 h1">
@@ -560,24 +606,64 @@
         // ... (cargarTodasLasAreas, cambiarAreaActual, renderizarAreaActual, seleccionarTermometro, editarRegistro, renderizarResumenGlobal iguales) ...
         
         async function cargarTodasLasAreas() {
+            const overlay = document.getElementById('loadingOverlay');
+            const progressBar = document.getElementById('loadingProgressBar');
+            const statusText = document.getElementById('loadingStatus');
+            
             try {
+                // Mostrar overlay si no está visible
+                overlay.style.display = 'flex';
+                overlay.style.opacity = '1';
+                progressBar.style.width = '5%';
+                statusText.textContent = 'Obteniendo lista de áreas...';
+
                 const response = await fetch('/api/areas');
                 const areas = await response.json();
-                for (const area of areas) {
-                    if (!area.activa) continue;
-                    try {
-                        const pendResp = await fetch(`/api/areas/${area.id}/pendientes`);
-                        const pendData = await pendResp.json();
-                        areasData[area.id] = {
-                            area: area,
-                            ventana: pendData.ventana_horaria,
-                            pendientes: pendData.pendientes || [],
-                            completados: pendData.completados || []
-                        };
-                    } catch (e) { console.error(e); }
+                const areasActivas = areas.filter(a => a.activa);
+                
+                const total = areasActivas.length;
+                let procesadas = 0;
+
+                if (total === 0) {
+                    progressBar.style.width = '100%';
+                    statusText.textContent = 'No hay áreas activas.';
+                } else {
+                    // Cargar datos de todas las áreas en paralelo
+                    await Promise.all(areasActivas.map(async (area) => {
+                        try {
+                            const pendResp = await fetch(`/api/areas/${area.id}/pendientes`);
+                            const pendData = await pendResp.json();
+                            areasData[area.id] = {
+                                area: area,
+                                ventana: pendData.ventana_horaria,
+                                pendientes: pendData.pendientes || [],
+                                completados: pendData.completados || []
+                            };
+                        } catch (e) {
+                            console.error(`Error cargando área ${area.id}:`, e);
+                        } finally {
+                            procesadas++;
+                            const porcentaje = 5 + Math.round((procesadas / total) * 95);
+                            progressBar.style.width = `${porcentaje}%`;
+                            statusText.textContent = `Cargando: ${area.nombre} (${procesadas}/${total})`;
+                        }
+                    }));
                 }
+
                 renderizarResumenGlobal();
-            } catch (e) { console.error(e); }
+                
+                // Pequeño delay para que el usuario vea el 100%
+                statusText.textContent = '¡Listo!';
+                setTimeout(() => {
+                    overlay.style.opacity = '0';
+                    setTimeout(() => { overlay.style.display = 'none'; }, 300);
+                }, 500);
+
+            } catch (e) {
+                console.error('Error global en carga:', e);
+                statusText.textContent = 'Error al conectar con el servidor.';
+                statusText.className = 'text-danger small mt-2';
+            }
         }
 
         async function cambiarAreaActual(areaId) {

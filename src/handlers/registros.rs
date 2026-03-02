@@ -5,7 +5,7 @@ use axum::{
 };
 use chrono::Local;
 use serde::Deserialize;
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 
 use crate::{
     auth::CurrentUser,
@@ -24,7 +24,7 @@ pub struct FiltrosRegistros {
 
 pub async fn listar_registros(
     _current_user: CurrentUser,
-    State(pool): State<SqlitePool>,
+    State(pool): State<PgPool>,
     Query(filtros): Query<FiltrosRegistros>,
 ) -> Result<Json<Vec<RegistroConDetalles>>, StatusCode> {
     let mut query = String::from(
@@ -42,20 +42,13 @@ pub async fn listar_registros(
         "#
     );
 
+    let mut i = 0;
     let mut conditions = Vec::new();
 
-    if filtros.fecha_desde.is_some() {
-        conditions.push("DATE(r.fecha_registro) >= ?");
-    }
-    if filtros.fecha_hasta.is_some() {
-        conditions.push("DATE(r.fecha_registro) <= ?");
-    }
-    if filtros.area_id.is_some() {
-        conditions.push("t.area_id = ?");
-    }
-    if filtros.ventana_horaria.is_some() {
-        conditions.push("r.ventana_horaria = ?");
-    }
+    if filtros.fecha_desde.is_some() { i += 1; conditions.push(format!("(r.fecha_registro::date) >= ${}", i)); }
+    if filtros.fecha_hasta.is_some() { i += 1; conditions.push(format!("(r.fecha_registro::date) <= ${}", i)); }
+    if filtros.area_id.is_some() { i += 1; conditions.push(format!("t.area_id = ${}", i)); }
+    if filtros.ventana_horaria.is_some() { i += 1; conditions.push(format!("r.ventana_horaria = ${}", i)); }
 
     if !conditions.is_empty() {
         query.push_str(" AND ");
@@ -66,18 +59,10 @@ pub async fn listar_registros(
 
     let mut q = sqlx::query_as(&query);
 
-    if let Some(fecha) = &filtros.fecha_desde {
-        q = q.bind(fecha);
-    }
-    if let Some(fecha) = &filtros.fecha_hasta {
-        q = q.bind(fecha);
-    }
-    if let Some(area) = filtros.area_id {
-        q = q.bind(area);
-    }
-    if let Some(ventana) = &filtros.ventana_horaria {
-        q = q.bind(ventana);
-    }
+    if let Some(fecha) = &filtros.fecha_desde { q = q.bind(fecha); }
+    if let Some(fecha) = &filtros.fecha_hasta { q = q.bind(fecha); }
+    if let Some(area) = filtros.area_id { q = q.bind(area as i32); }
+    if let Some(ventana) = &filtros.ventana_horaria { q = q.bind(ventana); }
 
     let registros = q
         .fetch_all(&pool)
@@ -92,35 +77,30 @@ pub async fn listar_registros(
 
 pub async fn obtener_pendientes_area(
     _current_user: CurrentUser,
-    State(pool): State<SqlitePool>,
+    State(pool): State<PgPool>,
     Path(area_id): Path<i64>,
 ) -> Result<Json<PendientesResponse>, StatusCode> {
-    // Obtener configuración
-    let hora_1 = get_config(&pool, "registro_hora_1").await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    let hora_2 = get_config(&pool, "registro_hora_2").await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    let tolerancia: i32 = get_config(&pool, "ventana_tolerancia_minutos").await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .parse()
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    let restriccion_activa = get_config(&pool, "restriccion_ventana_activa").await.unwrap_or_else(|_| "0".to_string()) == "1";
-
-    // Determinar ventana actual
-    let ventana = determinar_ventana_actual(&hora_1, &hora_2, tolerancia, restriccion_activa)
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .ok_or(StatusCode::BAD_REQUEST)?; // Fuera de ventana permitida
-
-    let fecha_hoy = Local::now().format("%Y-%m-%d").to_string();
-
-    // Obtener área
-    let area: Area = sqlx::query_as("SELECT * FROM areas WHERE id = ?")
-        .bind(area_id)
+    // 1. Obtener área (Simple)
+    let area: Area = sqlx::query_as("SELECT * FROM areas WHERE id = $1")
+        .bind(area_id as i32)
         .fetch_one(&pool)
         .await
-        .map_err(|_| StatusCode::NOT_FOUND)?;
+        .map_err(|e| {
+            tracing::error!("Error buscando área {}: {:?}", area_id, e);
+            StatusCode::NOT_FOUND
+        })?;
 
-    // Obtener todos los termómetros activos del área
+    // 2. Obtener configuración
+    let hora_1 = get_config(&pool, "registro_hora_1").await.unwrap_or_else(|_| "14:00".to_string());
+    let hora_2 = get_config(&pool, "registro_hora_2").await.unwrap_or_else(|_| "02:00".to_string());
+    let tolerancia: i32 = get_config(&pool, "ventana_tolerancia_minutos").await.unwrap_or_else(|_| "119".to_string()).parse().unwrap_or(119);
+    
+    // Determinar ventana (Usa lógica de Rust, no de DB)
+    let ventana = determinar_ventana_actual(&hora_1, &hora_2, tolerancia, false)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::BAD_REQUEST)?;
+
+    // 3. Obtener termómetros
     let termometros: Vec<TermometroConDetalles> = sqlx::query_as(
         r#"
         SELECT
@@ -131,17 +111,20 @@ pub async fn obtener_pendientes_area(
         FROM termometros t
         JOIN areas a ON t.area_id = a.id
         JOIN tipos_termometro ti ON t.tipo_id = ti.id
-        WHERE t.area_id = ? AND t.activo = 1 AND t.fuera_de_servicio = 0
+        WHERE t.area_id = $1 AND t.activo = TRUE
         ORDER BY t.id
         "#
     )
-    .bind(area_id)
+    .bind(area_id as i32)
     .fetch_all(&pool)
     .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    .map_err(|e| {
+        tracing::error!("Error SQL Termómetros: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
-    // Obtener registros del día actual para esta ventana
-    let registros: Vec<RegistroConDetalles> = sqlx::query_as(
+    // 4. Obtener registros de hoy (Comparación de fecha ultra simple)
+    let registros_result: Result<Vec<RegistroConDetalles>, _> = sqlx::query_as(
         r#"
         SELECT
             r.id, r.termometro_id, t.nombre as termometro_nombre,
@@ -152,21 +135,23 @@ pub async fn obtener_pendientes_area(
         JOIN termometros t ON r.termometro_id = t.id
         JOIN areas a ON t.area_id = a.id
         JOIN usuarios u ON r.usuario_id = u.id
-        WHERE t.area_id = ? AND DATE(r.fecha_registro) = ? AND r.ventana_horaria = ?
+        WHERE t.area_id = $1 
+          AND r.ventana_horaria = $2
+          AND r.fecha_registro::date = CURRENT_DATE
         "#
     )
-    .bind(area_id)
-    .bind(&fecha_hoy)
+    .bind(area_id as i32)
     .bind(&ventana.nombre)
     .fetch_all(&pool)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    .await;
 
-    // Separar en pendientes y completados
-    let registrados_ids: Vec<i64> = registros.iter().map(|r| r.termometro_id).collect();
+    let registros = registros_result.unwrap_or_default();
+
+    let registrados_ids: Vec<i32> = registros.iter().map(|r| r.termometro_id).collect();
     let pendientes: Vec<TermometroConDetalles> = termometros
+        .clone()
         .into_iter()
-        .filter(|t| !registrados_ids.contains(&t.id))
+        .filter(|t| !t.fuera_de_servicio && !registrados_ids.contains(&t.id))
         .collect();
 
     Ok(Json(PendientesResponse {
@@ -180,39 +165,37 @@ pub async fn obtener_pendientes_area(
 
 pub async fn crear_registro(
     current_user: CurrentUser,
-    State(pool): State<SqlitePool>,
+    State(pool): State<PgPool>,
     Json(payload): Json<CrearRegistroRequest>,
 ) -> Result<Json<Registro>, (StatusCode, String)> {
     // Obtener configuración
-    let hora_1 = get_config(&pool, "registro_hora_1").await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error config hora 1: {}", e)))?;
-    let hora_2 = get_config(&pool, "registro_hora_2").await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error config hora 2: {}", e)))?;
+    let hora_1 = get_config(&pool, "registro_hora_1").await.unwrap_or_else(|_| "14:00".to_string());
+    let hora_2 = get_config(&pool, "registro_hora_2").await.unwrap_or_else(|_| "02:00".to_string());
     let tolerancia: i32 = get_config(&pool, "ventana_tolerancia_minutos").await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error config tolerancia: {}", e)))?
+        .unwrap_or_else(|_| "119".to_string())
         .parse()
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Error parsing tolerancia".to_string()))?;
+        .unwrap_or(119);
     let restriccion_activa = get_config(&pool, "restriccion_ventana_activa").await.unwrap_or_else(|_| "0".to_string()) == "1";
 
-    // Verificar que estamos en ventana horaria permitida
+    // Verificar ventana
     let ventana = determinar_ventana_actual(&hora_1, &hora_2, tolerancia, restriccion_activa)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error determinando ventana: {}", e)))?
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error ventana: {}", e)))?
         .ok_or((StatusCode::BAD_REQUEST, "No hay ventana horaria activa actualmente.".to_string()))?;
 
     // Obtener tipo de termómetro para validación
-    let termometro: Termometro = sqlx::query_as("SELECT * FROM termometros WHERE id = ?")
-        .bind(payload.termometro_id)
+    let termometro: Termometro = sqlx::query_as("SELECT * FROM termometros WHERE id = $1")
+        .bind(payload.termometro_id as i32)
         .fetch_one(&pool)
         .await
         .map_err(|_| (StatusCode::NOT_FOUND, "Termómetro no encontrado".to_string()))?;
 
-    let tipo: TipoTermometro = sqlx::query_as("SELECT * FROM tipos_termometro WHERE id = ?")
-        .bind(termometro.tipo_id)
+    let tipo: TipoTermometro = sqlx::query_as("SELECT * FROM tipos_termometro WHERE id = $1")
+        .bind(termometro.tipo_id as i32)
         .fetch_one(&pool)
         .await
         .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Error obteniendo tipo termómetro".to_string()))?;
 
-    // Validar registro
+    // Validar
     let (fuera_rango_operativo, _advertencias) = validar_registro(
         payload.temp_maxima,
         payload.temp_minima,
@@ -221,18 +204,19 @@ pub async fn crear_registro(
     )
     .map_err(|e| (StatusCode::BAD_REQUEST, format!("Error de validación: {}", e)))?;
 
-    // Insertar registro
-    let result = sqlx::query(
+    // Insertar y obtener registro completo
+    let registro: Registro = sqlx::query_as(
         r#"
         INSERT INTO registros (
             termometro_id, usuario_id, ventana_horaria,
             temp_actual, temp_maxima, temp_minima, humedad,
             fuera_rango_operativo, observaciones
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING *
         "#
     )
-    .bind(payload.termometro_id)
-    .bind(current_user.0.id)
+    .bind(payload.termometro_id as i32)
+    .bind(current_user.0.id as i32)
     .bind(&ventana.nombre)
     .bind(payload.temp_actual)
     .bind(payload.temp_maxima)
@@ -240,30 +224,23 @@ pub async fn crear_registro(
     .bind(payload.humedad)
     .bind(fuera_rango_operativo)
     .bind(&payload.observaciones)
-    .execute(&pool)
+    .fetch_one(&pool)
     .await
     .map_err(|e| {
         let msg = e.to_string();
-        if msg.contains("UNIQUE constraint failed") || msg.contains("constraint failed") {
+        if msg.contains("unique_per_day") {
             (StatusCode::CONFLICT, "Ya existe un registro para este termómetro en el día de hoy.".to_string())
         } else {
-            eprintln!("Error al insertar registro: {}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, format!("Error al guardar en base de datos: {}", e))
+            (StatusCode::INTERNAL_SERVER_ERROR, format!("Error al guardar: {}", e))
         }
     })?;
 
-    let registro_id = result.last_insert_rowid();
-
-    let registro: Registro = sqlx::query_as("SELECT * FROM registros WHERE id = ?")
-        .bind(registro_id)
-        .fetch_one(&pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error recuperando registro: {}", e)))?;
+    let registro_id = registro.id as i32;
 
     // Log de auditoría
     log_auditoria(
         &pool,
-        current_user.0.id,
+        current_user.0.id.try_into().unwrap_or(0),
         "CREATE",
         "registros",
         Some(registro_id),
@@ -278,31 +255,31 @@ pub async fn crear_registro(
 
 pub async fn actualizar_registro(
     current_user: CurrentUser,
-    State(pool): State<SqlitePool>,
+    State(pool): State<PgPool>,
     Path(id): Path<i64>,
     Json(payload): Json<ActualizarRegistroRequest>,
 ) -> Result<StatusCode, (StatusCode, String)> {
     // Obtener registro existente
-    let registro: Registro = sqlx::query_as("SELECT * FROM registros WHERE id = ?")
-        .bind(id)
+    let registro: Registro = sqlx::query_as("SELECT * FROM registros WHERE id = $1")
+        .bind(id as i32)
         .fetch_one(&pool)
         .await
         .map_err(|_| (StatusCode::NOT_FOUND, "Registro no encontrado".to_string()))?;
 
     // Si no es admin, solo puede editar sus propios registros
-    if current_user.0.rol != "ADMINISTRADOR" && registro.usuario_id != current_user.0.id {
+    if current_user.0.rol != "ADMINISTRADOR" && registro.usuario_id != current_user.0.id as i32 {
         return Err((StatusCode::FORBIDDEN, "No tienes permiso para editar este registro".to_string()));
     }
 
     // Obtener tipo para validación
-    let termometro: Termometro = sqlx::query_as("SELECT * FROM termometros WHERE id = ?")
-        .bind(registro.termometro_id)
+    let termometro: Termometro = sqlx::query_as("SELECT * FROM termometros WHERE id = $1")
+        .bind(registro.termometro_id as i32)
         .fetch_one(&pool)
         .await
         .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Error obteniendo termómetro".to_string()))?;
 
-    let tipo: TipoTermometro = sqlx::query_as("SELECT * FROM tipos_termometro WHERE id = ?")
-        .bind(termometro.tipo_id)
+    let tipo: TipoTermometro = sqlx::query_as("SELECT * FROM tipos_termometro WHERE id = $1")
+        .bind(termometro.tipo_id as i32)
         .fetch_one(&pool)
         .await
         .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Error obteniendo tipo".to_string()))?;
@@ -321,9 +298,9 @@ pub async fn actualizar_registro(
     sqlx::query(
         r#"
         UPDATE registros SET
-            temp_actual = ?, temp_maxima = ?, temp_minima = ?, humedad = ?,
-            fuera_rango_operativo = ?, observaciones = ?
-        WHERE id = ?
+            temp_actual = $1, temp_maxima = $2, temp_minima = $3, humedad = $4,
+            fuera_rango_operativo = $5, observaciones = $6
+        WHERE id = $7
         "#
     )
     .bind(temp_actual)
@@ -332,7 +309,7 @@ pub async fn actualizar_registro(
     .bind(humedad)
     .bind(fuera_rango_operativo)
     .bind(&payload.observaciones)
-    .bind(id)
+    .bind(id as i32)
     .execute(&pool)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error al actualizar: {}", e)))?;
@@ -340,10 +317,10 @@ pub async fn actualizar_registro(
     // Log de auditoría
     log_auditoria(
         &pool,
-        current_user.0.id,
+        current_user.0.id.try_into().unwrap_or(0),
         "UPDATE",
         "registros",
-        Some(id),
+        Some(id as i32),
         Some(&serde_json::to_string(&registro).unwrap_or_default()),
         Some(&serde_json::to_string(&payload).unwrap_or_default()),
     )
@@ -355,7 +332,7 @@ pub async fn actualizar_registro(
 
 pub async fn eliminar_registro(
     current_user: CurrentUser,
-    State(pool): State<SqlitePool>,
+    State(pool): State<PgPool>,
     Path(id): Path<i64>,
 ) -> Result<StatusCode, StatusCode> {
     // Solo admin puede eliminar registros
@@ -363,18 +340,18 @@ pub async fn eliminar_registro(
         return Err(StatusCode::FORBIDDEN);
     }
 
-    sqlx::query("DELETE FROM registros WHERE id = ?")
-        .bind(id)
+    sqlx::query("DELETE FROM registros WHERE id = $1")
+        .bind(id as i32)
         .execute(&pool)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     log_auditoria(
         &pool,
-        current_user.0.id,
+        current_user.0.id.try_into().unwrap_or(0),
         "DELETE",
         "registros",
-        Some(id),
+        Some(id as i32),
         None,
         None,
     )

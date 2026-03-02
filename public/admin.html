@@ -126,54 +126,6 @@
     </style>
 </head>
 <body style="display: none;">
-    <!-- BARRA DE SEGURIDAD -->
-    <div id="security-bar" style="position:relative; width:100%; background:#1a1a1a; color:#fff; text-align:center; padding:10px; font-family:sans-serif; border-bottom: 3px solid #e53935; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">
-        <i class="bi bi-shield-exclamation"></i> MODO SEGURO: El acceso remoto se cerrará en <span id="timer-display" style="color:#e53935; font-weight:bold; font-family:monospace; font-size:1.2em; margin: 0 5px;">40:00</span>
-    </div>
-    <script>
-        (function(){
-            const duration = 40 * 60; // 40 minutos en segundos
-            const display = document.getElementById('timer-display');
-            
-            // Guardar hora de inicio en sessionStorage para que no se resetee al recargar
-            let startTime = sessionStorage.getItem('server_start_time');
-            if (!startTime) {
-                startTime = Date.now();
-                sessionStorage.setItem('server_start_time', startTime);
-            }
-
-            function updateTimer() {
-                const now = Date.now();
-                const elapsed = Math.floor((now - parseInt(startTime)) / 1000);
-                let remaining = duration - elapsed;
-
-                if (remaining < 0) remaining = 0;
-
-                const minutes = Math.floor(remaining / 60);
-                const seconds = remaining % 60;
-
-                display.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-
-                if (remaining <= 60) { // Último minuto
-                   display.style.animation = "blink 1s infinite"; 
-                }
-
-                if (remaining <= 0) {
-                    document.getElementById('security-bar').style.background = '#e53935';
-                    document.getElementById('security-bar').innerHTML = '<i class="bi bi-x-octagon"></i> TIEMPO AGOTADO: Acceso remoto cerrado (Solo Local).';
-                }
-            }
-
-            // Estilo para parpadeo
-            const style = document.createElement('style');
-            style.innerHTML = '@keyframes blink { 50% { opacity: 0; } }';
-            document.head.appendChild(style);
-
-            setInterval(updateTimer, 1000);
-            updateTimer();
-        })();
-    </script>
-
     <nav class="navbar navbar-dark">
         <div class="container-fluid">
             <span class="navbar-brand mb-0 h1">

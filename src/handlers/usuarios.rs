@@ -3,7 +3,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 
 use crate::{
     auth::{hash_password, CurrentUser},
@@ -15,7 +15,7 @@ use crate::{
 
 pub async fn listar_usuarios(
     _current_user: CurrentUser,
-    State(pool): State<SqlitePool>,
+    State(pool): State<PgPool>,
 ) -> Result<Json<Vec<UsuarioResponse>>, StatusCode> {
     let usuarios: Vec<Usuario> = sqlx::query_as("SELECT * FROM usuarios ORDER BY username")
         .fetch_all(&pool)
@@ -27,7 +27,7 @@ pub async fn listar_usuarios(
 
 pub async fn crear_usuario(
     current_user: CurrentUser,
-    State(pool): State<SqlitePool>,
+    State(pool): State<PgPool>,
     Json(payload): Json<CrearUsuarioRequest>,
 ) -> Result<Json<UsuarioResponse>, StatusCode> {
     // Validar rol
@@ -36,8 +36,8 @@ pub async fn crear_usuario(
     }
 
     // ✅ NUEVA VALIDACIÓN: Verificar que el username no exista
-    let existe: Option<(i64,)> = sqlx::query_as(
-        "SELECT id FROM usuarios WHERE username = ?"
+    let existe: Option<(i32,)> = sqlx::query_as(
+        "SELECT id FROM usuarios WHERE username = $1"
     )
     .bind(&payload.username)
     .fetch_optional(&pool)
@@ -52,23 +52,23 @@ pub async fn crear_usuario(
     let password_hash = hash_password(&payload.password)
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    // Insertar usuario
-    let result = sqlx::query(
-        "INSERT INTO usuarios (username, password_hash, rol) VALUES (?, ?, ?)"
+    // Insertar usuario y obtener ID
+    let row: (i32,) = sqlx::query_as(
+        "INSERT INTO usuarios (username, password_hash, rol) VALUES ($1, $2, $3) RETURNING id"
     )
     .bind(&payload.username)
     .bind(&password_hash)
     .bind(&payload.rol)
-    .execute(&pool)
+    .fetch_one(&pool)
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let usuario_id = result.last_insert_rowid();
+    let usuario_id = row.0;
 
     // Log de auditoría
     log_auditoria(
         &pool,
-        current_user.0.id,
+        current_user.0.id.try_into().unwrap_or(0),
         "CREATE",
         "usuarios",
         Some(usuario_id),
@@ -79,7 +79,7 @@ pub async fn crear_usuario(
     .ok();
 
     Ok(Json(UsuarioResponse {
-        id: usuario_id,
+        id: usuario_id as i64,
         username: payload.username,
         rol: payload.rol,
         activo: true,
@@ -88,49 +88,36 @@ pub async fn crear_usuario(
 
 pub async fn actualizar_usuario(
     current_user: CurrentUser,
-    State(pool): State<SqlitePool>,
+    State(pool): State<PgPool>,
     Path(id): Path<i64>,
     Json(payload): Json<ActualizarUsuarioRequest>,
 ) -> Result<StatusCode, StatusCode> {
     // Obtener datos anteriores
-    let anterior: Option<Usuario> = sqlx::query_as("SELECT * FROM usuarios WHERE id = ?")
-        .bind(id)
+    let anterior: Option<Usuario> = sqlx::query_as("SELECT * FROM usuarios WHERE id = $1")
+        .bind(id as i32)
         .fetch_optional(&pool)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let mut query = String::from("UPDATE usuarios SET updated_at = CURRENT_TIMESTAMP");
-    let mut params: Vec<String> = Vec::new();
+    let mut i = 1;
+    
+    if payload.username.is_some() { i += 1; query.push_str(&format!(", username = ${}", i)); }
+    if payload.password.is_some() { i += 1; query.push_str(&format!(", password_hash = ${}", i)); }
+    if payload.rol.is_some() { i += 1; query.push_str(&format!(", rol = ${}", i)); }
+    if payload.activo.is_some() { i += 1; query.push_str(&format!(", activo = ${}", i)); }
 
-    if let Some(username) = &payload.username {
-        query.push_str(", username = ?");
-        params.push(username.clone());
-    }
+    query.push_str(&format!(" WHERE id = $1"));
 
+    let mut q = sqlx::query(&query).bind(id as i32);
+    
+    if let Some(username) = &payload.username { q = q.bind(username); }
     if let Some(password) = &payload.password {
-        let hash = hash_password(password)
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-        query.push_str(", password_hash = ?");
-        params.push(hash);
+        let hash = hash_password(password).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        q = q.bind(hash);
     }
-
-    if let Some(rol) = &payload.rol {
-        query.push_str(", rol = ?");
-        params.push(rol.clone());
-    }
-
-    if let Some(activo) = payload.activo {
-        query.push_str(", activo = ?");
-        params.push(activo.to_string());
-    }
-
-    query.push_str(" WHERE id = ?");
-
-    let mut q = sqlx::query(&query);
-    for param in params {
-        q = q.bind(param);
-    }
-    q = q.bind(id);
+    if let Some(rol) = &payload.rol { q = q.bind(rol); }
+    if let Some(activo) = payload.activo { q = q.bind(activo); }
 
     q.execute(&pool)
         .await
@@ -139,10 +126,10 @@ pub async fn actualizar_usuario(
     // Log de auditoría
     log_auditoria(
         &pool,
-        current_user.0.id,
+        current_user.0.id.try_into().unwrap_or(0),
         "UPDATE",
         "usuarios",
-        Some(id),
+        Some(id as i32),
         anterior.as_ref().and_then(|a| serde_json::to_string(a).ok()).as_deref(),
         Some(&serde_json::to_string(&payload).unwrap_or_default()),
     )
@@ -154,7 +141,7 @@ pub async fn actualizar_usuario(
 
 pub async fn eliminar_usuario(
     current_user: CurrentUser,
-    State(pool): State<SqlitePool>,
+    State(pool): State<PgPool>,
     Path(id): Path<i64>,
 ) -> Result<StatusCode, StatusCode> {
     // No permitir eliminar al propio usuario
@@ -162,8 +149,8 @@ pub async fn eliminar_usuario(
         return Err(StatusCode::BAD_REQUEST);
     }
 
-    sqlx::query("DELETE FROM usuarios WHERE id = ?")
-        .bind(id)
+    sqlx::query("DELETE FROM usuarios WHERE id = $1")
+        .bind(id as i32)
         .execute(&pool)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -171,10 +158,10 @@ pub async fn eliminar_usuario(
     // Log de auditoría
     log_auditoria(
         &pool,
-        current_user.0.id,
+        current_user.0.id.try_into().unwrap_or(0),
         "DELETE",
         "usuarios",
-        Some(id),
+        Some(id as i32),
         None,
         None,
     )

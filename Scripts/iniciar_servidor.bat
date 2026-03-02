@@ -53,21 +53,13 @@ echo     - Puerto 3000 LIBRE.
 taskkill /F /IM "ngrok.exe" >nul 2>&1
 taskkill /F /IM "cargo.exe" >nul 2>&1
 
-REM --- 2. RED Y SEGURIDAD ---
-set "NGROK_TOKEN="
-if exist "%~dp0..\.env" for /f "tokens=2 delims==" %%a in ('findstr "NGROK_AUTHTOKEN=" "%~dp0..\.env"') do set "NGROK_TOKEN=%%a"
-if "%NGROK_TOKEN%"=="" if exist "%~dp0token.txt" set /p NGROK_TOKEN=<"%~dp0token.txt"
-
-echo [2/4] Configurando red...
-if not "%NGROK_TOKEN%"=="" (
-    echo     - Iniciando Ngrok...
-    start "Ngrok Tunnel" /MIN "%~dp0ngrok.exe" http 3000
-    echo     - Seguridad: Acceso remoto se cortara en 40 min.
-    start /B powershell -Command "Start-Sleep -Seconds 2400; Stop-Process -Name ngrok -ErrorAction SilentlyContinue"
-    set "MODO=REMOTO"
+REM --- 2. CONFIGURACION ---
+echo [2/4] Configurando entorno...
+set "MODO=LOCAL"
+if not "%PORT%"=="" (
+    echo     - Puerto configurado: %PORT%
 ) else (
-    echo     - Modo LOCAL.
-    set "MODO=LOCAL"
+    set "PORT=3000"
 )
 
 REM --- 3. EJECUCION DIRECTA ---
