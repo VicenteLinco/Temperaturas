@@ -35,9 +35,9 @@ pub async fn listar_registros(
             r.ventana_horaria, r.temp_actual, r.temp_maxima, r.temp_minima, r.humedad,
             r.fuera_rango_operativo, r.observaciones, r.fecha_registro
         FROM registros r
-        JOIN termometros t ON r.termometro_id = t.id
-        JOIN areas a ON t.area_id = a.id
-        JOIN usuarios u ON r.usuario_id = u.id
+        LEFT JOIN termometros t ON r.termometro_id = t.id
+        LEFT JOIN areas a ON t.area_id = a.id
+        LEFT JOIN usuarios u ON r.usuario_id = u.id
         WHERE 1=1
         "#
     );
@@ -45,33 +45,53 @@ pub async fn listar_registros(
     let mut i = 0;
     let mut conditions = Vec::new();
 
-    if filtros.fecha_desde.is_some() { i += 1; conditions.push(format!("(r.fecha_registro::date) >= ${}", i)); }
-    if filtros.fecha_hasta.is_some() { i += 1; conditions.push(format!("(r.fecha_registro::date) <= ${}", i)); }
-    if filtros.area_id.is_some() { i += 1; conditions.push(format!("t.area_id = ${}", i)); }
-    if filtros.ventana_horaria.is_some() { i += 1; conditions.push(format!("r.ventana_horaria = ${}", i)); }
+    if let Some(f) = &filtros.fecha_desde {
+        if !f.is_empty() {
+            i += 1;
+            conditions.push(format!("(CAST(r.fecha_registro AT TIME ZONE 'UTC' AS DATE)) >= ${}", i));
+        }
+    }
+    if let Some(f) = &filtros.fecha_hasta {
+        if !f.is_empty() {
+            i += 1;
+            conditions.push(format!("(CAST(r.fecha_registro AT TIME ZONE 'UTC' AS DATE)) <= ${}", i));
+        }
+    }
+    if let Some(area_id) = filtros.area_id {
+        i += 1;
+        conditions.push(format!("t.area_id = ${}", i));
+    }
+    if let Some(ventana) = &filtros.ventana_horaria {
+        if !ventana.is_empty() {
+            i += 1;
+            conditions.push(format!("r.ventana_horaria = ${}", i));
+        }
+    }
 
     if !conditions.is_empty() {
         query.push_str(" AND ");
         query.push_str(&conditions.join(" AND "));
     }
 
-    query.push_str(&format!(" ORDER BY r.fecha_registro DESC, r.id DESC LIMIT {}", super::MAX_REGISTROS_POR_PAGINA));
+    query.push_str(&format!(" ORDER BY r.fecha_registro DESC, r.id DESC LIMIT {}", crate::handlers::MAX_REGISTROS_POR_PAGINA));
 
     let mut q = sqlx::query_as(&query);
 
-    if let Some(fecha) = &filtros.fecha_desde { q = q.bind(fecha); }
-    if let Some(fecha) = &filtros.fecha_hasta { q = q.bind(fecha); }
+    if let Some(f) = &filtros.fecha_desde { if !f.is_empty() { q = q.bind(f); } }
+    if let Some(f) = &filtros.fecha_hasta { if !f.is_empty() { q = q.bind(f); } }
     if let Some(area) = filtros.area_id { q = q.bind(area as i32); }
-    if let Some(ventana) = &filtros.ventana_horaria { q = q.bind(ventana); }
+    if let Some(ventana) = &filtros.ventana_horaria { if !ventana.is_empty() { q = q.bind(ventana); } }
 
     let registros = q
         .fetch_all(&pool)
         .await
         .map_err(|e| {
-            tracing::error!("DETALLE ERROR SQL listar_registros: {:?}", e);
-            tracing::error!("QUERY INTENTADA: {}", query);
+            tracing::error!("Error SQL listar_registros: {:?}", e);
+            tracing::error!("Query: {}", query);
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
+
+    tracing::debug!("listar_registros encontró {} registros", registros.len());
 
     Ok(Json(registros))
 }

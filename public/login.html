@@ -65,9 +65,63 @@
             box-shadow: none;
             border-color: #ced4da;
         }
+
+        /* Loading Overlay */
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            color: white;
+            backdrop-filter: blur(5px);
+        }
+        .loader-container {
+            width: 300px;
+            text-align: center;
+        }
+        .progress {
+            height: 10px;
+            background-color: rgba(255,255,255,0.2);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+        .progress-bar {
+            background: linear-gradient(90deg, #4364F7, #e53935);
+            transition: width 0.1s linear;
+        }
+        .loader-text {
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        .percentage-text {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay">
+        <div class="loader-container">
+            <div class="percentage-text" id="percentageText">0%</div>
+            <div class="progress">
+                <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%"></div>
+            </div>
+            <div class="loader-text">Iniciando sesión...</div>
+            <div class="small text-muted">Por favor, espere un momento</div>
+        </div>
+    </div>
+
     <div class="login-card">
         <div class="login-header">
             <i class="bi bi-thermometer-half thermo-icon"></i>
@@ -101,8 +155,44 @@
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const errorDiv = document.getElementById('errorMessage');
+            const overlay = document.getElementById('loadingOverlay');
+            const progressBar = document.getElementById('progressBar');
+            const percentageText = document.getElementById('percentageText');
+
+            // Reset error
+            errorDiv.classList.add('d-none');
+
+            // Show loading overlay
+            overlay.style.display = 'flex';
+            
+            // Progress animation function
+            const animateProgress = () => {
+                return new Promise((resolve) => {
+                    let progress = 0;
+                    const startTime = Date.now();
+                    const duration = 3000; // 3 seconds
+
+                    const update = () => {
+                        const elapsed = Date.now() - startTime;
+                        progress = Math.min((elapsed / duration) * 100, 100);
+                        
+                        progressBar.style.width = `${progress}%`;
+                        percentageText.textContent = `${Math.floor(progress)}%`;
+
+                        if (progress < 100) {
+                            requestAnimationFrame(update);
+                        } else {
+                            setTimeout(resolve, 200); // Small buffer at 100%
+                        }
+                    };
+                    requestAnimationFrame(update);
+                });
+            };
 
             try {
+                // Wait for the 3-second animation
+                await animateProgress();
+
                 const response = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -117,10 +207,16 @@
                     window.location.href = redirectUrl ? decodeURIComponent(redirectUrl) : 
                                          (data.user.rol === 'ADMINISTRADOR' ? '/admin.html' : '/index.html');
                 } else {
+                    overlay.style.display = 'none';
+                    progressBar.style.width = '0%';
+                    percentageText.textContent = '0%';
                     errorDiv.textContent = data.message || 'Credenciales incorrectas';
                     errorDiv.classList.remove('d-none');
                 }
             } catch (err) {
+                overlay.style.display = 'none';
+                progressBar.style.width = '0%';
+                percentageText.textContent = '0%';
                 errorDiv.textContent = 'Error de conexión';
                 errorDiv.classList.remove('d-none');
             }
