@@ -96,6 +96,26 @@ async fn create_tables(pool: &PgPool) -> Result<()> {
     .execute(pool)
     .await?;
 
+    // Tabla de mantenimiento de termómetros
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS mantenimiento_termometros (
+            id SERIAL PRIMARY KEY,
+            termometro_id INTEGER NOT NULL REFERENCES termometros(id),
+            usuario_reporta_id INTEGER NOT NULL REFERENCES usuarios(id),
+            fecha_reporte TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            motivo TEXT NOT NULL,
+            comentarios_reporte TEXT,
+            fecha_reparacion TIMESTAMP WITH TIME ZONE,
+            usuario_repara_id INTEGER REFERENCES usuarios(id),
+            detalle_reparacion TEXT,
+            estado TEXT NOT NULL DEFAULT 'PENDIENTE' CHECK (estado IN ('PENDIENTE', 'REPARADO'))
+        )
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
     // Tabla de registros de temperatura
     sqlx::query(
         r#"
