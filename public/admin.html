@@ -1708,13 +1708,13 @@
                             <td>${r.id}</td>
                             <td>${fecha}</td>
                             <td>${r.ventana_horaria}</td>
-                            <td>${r.area_nombre}</td>
+                            <td>${r.area_nombre || '<span class="text-muted">Desconocida</span>'}</td>
                             <td>${r.termometro_nombre || 'ID: ' + r.termometro_id}</td>
                             <td>${tempActual}</td>
                             <td>${r.temp_maxima}°C</td>
                             <td>${r.temp_minima}°C</td>
                             <td>${humedad}</td>
-                            <td>${r.usuario_nombre}</td>
+                            <td>${r.usuario_nombre || '<span class="text-muted">Sistema</span>'}</td>
                             <td>${estado}</td>
                             <td class="table-actions">
                                 <button class="btn btn-sm btn-danger" onclick="eliminarRegistro(${r.id})" title="Eliminar">

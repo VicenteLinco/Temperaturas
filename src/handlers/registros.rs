@@ -153,9 +153,9 @@ pub async fn obtener_pendientes_area(
             r.ventana_horaria, r.temp_actual, r.temp_maxima, r.temp_minima, r.humedad,
             r.fuera_rango_operativo, r.observaciones, r.fecha_registro
         FROM registros r
-        JOIN termometros t ON r.termometro_id = t.id
-        JOIN areas a ON t.area_id = a.id
-        JOIN usuarios u ON r.usuario_id = u.id
+        LEFT JOIN termometros t ON r.termometro_id = t.id
+        LEFT JOIN areas a ON t.area_id = a.id
+        LEFT JOIN usuarios u ON r.usuario_id = u.id
         WHERE t.area_id = $1 
           AND r.ventana_horaria = $2
           AND r.fecha_registro::date = CURRENT_DATE
