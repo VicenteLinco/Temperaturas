@@ -52,7 +52,7 @@ function Show-All {
 
 # --- Configuración del Icono de Bandeja ---
 $notifyIcon = New-Object System.Windows.Forms.NotifyIcon
-$iconPath = "$PSScriptRoot\icons8-peligro-de-alta-temperatura-windows-11-color-16.png"
+$iconPath = "$PSScriptRoot\app_icon_16.png"
 
 # Setup Icon
 if (Test-Path $iconPath) {

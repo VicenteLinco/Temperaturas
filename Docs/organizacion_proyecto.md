@@ -19,17 +19,20 @@ Temperaturas/
 ├── Archivos esenciales:
 │   ├── README.md               - Documentación principal
 │   ├── Cargo.toml / Cargo.lock - Configuración y versiones de dependencias Rust
+│   ├── Dockerfile              - Configuración multi-stage Docker para Render
+│   ├── render.yaml             - Especificación de despliegue en Render
 │   ├── .env.example            - Variables de entorno de ejemplo
+│   ├── .dockerignore           - Exclusiones de contexto para Docker
 │   ├── .gitignore              - Reglas de Git
 │   └── .gitattributes          - Atributos de Git
-├── Docs/                       - Documentación activa
-│   ├── INICIO_RAPIDO.md                 - Guía de inicio rápido
-│   ├── INSTRUCCIONES_BANDEJA_SISTEMA.md - Manual de bandeja del sistema
-│   ├── ORGANIZACION_PROYECTO.md         - Estructura del repositorio
-│   └── historial_fixes/                 - 16 archivos de fixes y parches históricos
+├── Docs/                       - Documentación técnica
+│   ├── inicio_rapido.md                 - Guía de inicio rápido
+│   ├── instrucciones_bandeja_sistema.md - Manual de bandeja del sistema
+│   ├── organizacion_proyecto.md         - Estructura del repositorio
+│   └── historial_fixes/                 - Archivos de fixes y parches históricos (snake_case)
 ├── sql/                        - Volcados y scripts SQL
 │   └── REGISTROS_MIGRACION.sql          - Registros históricos de migración
-├── Scripts/                    - Scripts de ejecución y respaldos
+├── Scripts/                    - Scripts de ejecución y respaldos (app_icon_*.png, crear_acceso_directo.bat)
 ├── src/                        - Código fuente en Rust (Axum + PostgreSQL)
 └── public/                     - Frontend HTML/JS/CSS
 ```

@@ -123,15 +123,15 @@ Al iniciar por primera vez, el sistema configura un usuario administrador inicia
 
 | Documento | Descripción |
 |-----------|-------------|
-| [INICIO_RAPIDO.md](Docs/INICIO_RAPIDO.md) | ⭐ Guía de inicio rápido |
-| [ACCESOS_DIRECTOS.md](Docs/ACCESOS_DIRECTOS.md) | Uso de accesos directos .lnk |
-| [INSTRUCCIONES_BANDEJA_SISTEMA.md](Docs/INSTRUCCIONES_BANDEJA_SISTEMA.md) | Manual del sistema de bandeja |
-| [REFACTORIZACION_COMPLETA.md](Docs/REFACTORIZACION_COMPLETA.md) | Refactorización de handlers en módulos |
-| [ORGANIZACION_PROYECTO.md](Docs/ORGANIZACION_PROYECTO.md) | Reorganización de carpetas v2.1 |
-| [MEJORAS_IMPLEMENTADAS.md](Docs/MEJORAS_IMPLEMENTADAS.md) | 9 mejoras críticas v2.0 |
-| [RESUMEN_MEJORAS_COMPLETO.md](Docs/RESUMEN_MEJORAS_COMPLETO.md) | Resumen completo de todas las mejoras |
-| [MEJORA_BANDEJA_SISTEMA.md](Docs/MEJORA_BANDEJA_SISTEMA.md) | Detalle técnico sistema de bandeja |
-| [RECOMENDACIONES_MEJORAS.md](Docs/RECOMENDACIONES_MEJORAS.md) | Code review + 20 recomendaciones |
+| [inicio_rapido.md](Docs/inicio_rapido.md) | Guía de inicio rápido |
+| [accesos_directos.md](Docs/historial_fixes/accesos_directos.md) | Uso de accesos directos .lnk |
+| [instrucciones_bandeja_sistema.md](Docs/instrucciones_bandeja_sistema.md) | Manual del sistema de bandeja |
+| [refactorizacion_completa.md](Docs/historial_fixes/refactorizacion_completa.md) | Refactorización de handlers en módulos |
+| [organizacion_proyecto.md](Docs/organizacion_proyecto.md) | Reorganización de carpetas v3.0 |
+| [mejoras_implementadas.md](Docs/historial_fixes/mejoras_implementadas.md) | Mejoras críticas v2.0 |
+| [resumen_mejoras_completo.md](Docs/historial_fixes/resumen_mejoras_completo.md) | Resumen técnico de mejoras |
+| [mejora_bandeja_sistema.md](Docs/historial_fixes/mejora_bandeja_sistema.md) | Detalle técnico sistema de bandeja |
+| [recomendaciones_mejoras.md](Docs/historial_fixes/recomendaciones_mejoras.md) | Revisión de código y arquitectura |
 
 ## Estructura del Proyecto
 
@@ -159,20 +159,21 @@ Temperaturas/
 │   ├── login.html        # Página de inicio de sesión
 │   ├── index.html        # Interfaz del registrador (con QR mejorado)
 │   └── admin.html        # Panel de administración
-├── Scripts/              # Scripts de ejecución (inicio en bandeja, backups)
-│   ├── iniciar_servidor_oculto.vbs      # ⭐ Inicio en bandeja (recomendado)
+├── Scripts/              # Scripts de ejecución y respaldos
+│   ├── iniciar_servidor_oculto.vbs      # Inicio en bandeja (recomendado)
 │   ├── iniciar_servidor.bat             # Script tradicional
 │   ├── detener_servidor.bat             # Detener servidor
+│   ├── crear_acceso_directo.bat         # Crear acceso directo
 │   └── respaldo_db.ps1                  # Backup automático
 ├── Docs/                 # Documentación activa del proyecto
-│   ├── INICIO_RAPIDO.md                 # Guía de inicio rápido
-│   ├── INSTRUCCIONES_BANDEJA_SISTEMA.md # Guía de tray system
-│   ├── ORGANIZACION_PROYECTO.md         # Organización del repositorio
-│   └── historial_fixes/                 # Historial de parches y mejoras anteriores
+│   ├── inicio_rapido.md                 # Guía de inicio rápido
+│   ├── instrucciones_bandeja_sistema.md # Guía de tray system
+│   ├── organizacion_proyecto.md         # Organización del repositorio
+│   └── historial_fixes/                 # Historial de parches y mejoras
+├── Dockerfile            # Construcción multi-stage optimizada para producción
+├── render.yaml           # Especificación de servicio para Render.com
 ├── sql/                  # Scripts SQL y volcados de datos
 │   └── REGISTROS_MIGRACION.sql          # Registros históricos de migración
-├── src/                  # Código fuente Rust (main, handlers, db, models)
-├── public/               # Interfaz Frontend (HTML, CSS, JS)
 ├── Cargo.toml            # Configuración de dependencias de Rust
 ├── .env.example          # Plantilla de variables de entorno
 └── README.md             # Documentación principal
@@ -275,6 +276,21 @@ Cada tipo de termómetro define:
    - Configuración Global
    - Reportes (diario/mensual con exportación)
    - Gestión de Registros (CRUD completo)
+
+## Despliegue en Render (Render.com)
+
+El proyecto incluye una configuración optimizada mediante **Multi-Stage Dockerfile** y **Blueprint (`render.yaml`)**.
+
+### Optimización de Build (Reducción de 1.2 GB a ~35 MB)
+Originalmente, las compilaciones nativas de Rust en Render descargan el toolchain completo, índices de crates y artefactos de compilación pesados (~1.2 GB). Mediante el `Dockerfile` multi-etapa:
+1. **Etapa de Compilación (`builder`)**: Utiliza `rust:1.77-slim-bookworm` para compilar el binario en modo release con optimizaciones de tamaño (`strip`, `lto`, `panic = "abort"`).
+2. **Etapa de Ejecución (`runner`)**: Transfiere únicamente el ejecutable binario y los archivos estáticos (`public/`) a una imagen delgada `debian:bookworm-slim`.
+3. **Resultado**: El contenedor final desplegado ocupa solo **~35 MB** y aprovecha el almacenamiento en caché de capas de Docker en Render.
+
+### Pasos para Desplegar en Render
+1. Conectar el repositorio de GitHub en Render Dashboard.
+2. Seleccionar **New Web Service** -> elegir la opción **Blueprint** (utilizará `render.yaml`).
+3. Definir la variable de entorno `DATABASE_URL` con las credenciales de PostgreSQL.
 
 ## Exposición a Internet con Cloudflare Tunnel
 

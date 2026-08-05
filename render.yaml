@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: sistema-temperaturas
+    env: docker
+    dockerfilePath: ./Dockerfile
+    region: oregon
+    plan: free
+    healthCheckPath: /public/login.html
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: HOST
+        value: 0.0.0.0
+      - key: DATABASE_URL
+        sync: false
+      - key: REGISTRO_HORA_1
+        value: "14:00"
+      - key: REGISTRO_HORA_2
+        value: "02:00"
+      - key: VENTANA_TOLERANCIA_MINUTOS
+        value: "119"
+      - key: SESSION_TIMEOUT_HORAS
+        value: "8"

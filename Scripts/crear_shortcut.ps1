@@ -5,7 +5,7 @@ try {
     # 1. Obtener rutas
     $ProjectDir = (Get-Item "$PSScriptRoot\..").FullName
     $TargetScript = "$ProjectDir\Scripts\iniciar_servidor.bat"
-    $IconPath = "$ProjectDir\Scripts\icons8-peligro-de-alta-temperatura-windows-11-color-96.png"
+    $IconPath = "$ProjectDir\Scripts\app_icon_96.png"
     $DesktopPath = [System.Environment]::GetFolderPath('Desktop')
     $ShortcutPath = "$DesktopPath\SISTEMA_TEMPERATURAS.lnk"
 

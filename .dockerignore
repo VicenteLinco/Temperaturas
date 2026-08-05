@@ -1,0 +1,17 @@
+target/
+.git/
+.codegraph/
+.claude/
+Docs/
+Scripts/
+sql/
+*.db
+*.db-shm
+*.db-wal
+.env
+.env.example
+*.bat
+*.ps1
+*.vbs
+*.lnk
+README.md
