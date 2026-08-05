@@ -17,6 +17,7 @@ Backups/
 Archive/
 Limpieza_*/
 .claude/
+.codegraph/
 
 # Accesos Directos de Windows (Solo locales)
 *.lnk

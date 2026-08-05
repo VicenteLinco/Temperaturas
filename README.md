@@ -159,25 +159,23 @@ Temperaturas/
 │   ├── login.html        # Página de inicio de sesión
 │   ├── index.html        # Interfaz del registrador (con QR mejorado)
 │   └── admin.html        # Panel de administración
-├── Scripts/              # Scripts de ejecución
+├── Scripts/              # Scripts de ejecución (inicio en bandeja, backups)
 │   ├── iniciar_servidor_oculto.vbs      # ⭐ Inicio en bandeja (recomendado)
-│   ├── iniciar_servidor_bandeja.bat     # Script de bandeja
-│   ├── detener_servidor_bandeja.vbs     # Detener servidor de bandeja
 │   ├── iniciar_servidor.bat             # Script tradicional
-│   ├── detener_servidor.bat             # Detener tradicional
-│   └── CREAR_ACCESO_DIRECTO.bat         # Crear icono en escritorio
-├── Docs/                 # Documentación del proyecto
+│   ├── detener_servidor.bat             # Detener servidor
+│   └── respaldo_db.ps1                  # Backup automático
+├── Docs/                 # Documentación activa del proyecto
 │   ├── INICIO_RAPIDO.md                 # Guía de inicio rápido
-│   ├── REFACTORIZACION_COMPLETA.md      # Documentación de refactorización
-│   ├── MEJORAS_IMPLEMENTADAS.md         # Mejoras v2.0
-│   ├── RESUMEN_MEJORAS_COMPLETO.md      # Resumen completo
-│   └── ... (ver tabla arriba)
-├── Tests/                # Tests y archivos de prueba
-├── Archive/              # Archivos archivados (logs, certificados, etc.)
-├── Cargo.toml            # Dependencias del proyecto
-├── .env.example          # Ejemplo de configuración
-├── datos.db              # Solo si aún no se migra: base SQLite antigua (origen de migración)
-└── README.md             # Este archivo
+│   ├── INSTRUCCIONES_BANDEJA_SISTEMA.md # Guía de tray system
+│   ├── ORGANIZACION_PROYECTO.md         # Organización del repositorio
+│   └── historial_fixes/                 # Historial de parches y mejoras anteriores
+├── sql/                  # Scripts SQL y volcados de datos
+│   └── REGISTROS_MIGRACION.sql          # Registros históricos de migración
+├── src/                  # Código fuente Rust (main, handlers, db, models)
+├── public/               # Interfaz Frontend (HTML, CSS, JS)
+├── Cargo.toml            # Configuración de dependencias de Rust
+├── .env.example          # Plantilla de variables de entorno
+└── README.md             # Documentación principal
 ```
 
 ## Modelo de Datos
@@ -427,7 +425,7 @@ cargo test
 ### v1.0
 - ✅ Sistema base funcional
 
-Ver: [RESUMEN_MEJORAS_COMPLETO.md](Docs/RESUMEN_MEJORAS_COMPLETO.md)
+Ver: [RESUMEN_MEJORAS_COMPLETO.md](Docs/historial_fixes/RESUMEN_MEJORAS_COMPLETO.md)
 
 ---
 

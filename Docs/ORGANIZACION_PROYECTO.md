@@ -1,50 +1,37 @@
-# Organización del Proyecto v2.1
+# Organización del Proyecto v3.0
 
-**Fecha**: 2026-01-08
-**Versión**: 2.1
-**Cambio**: Reorganización completa de estructura de carpetas
+**Fecha**: 2026-08-05
+**Versión**: 3.0
+**Cambio**: Limpieza profunda de archivos obsoletos y reorganización de carpetas
 
 ---
 
 ## 🎯 Objetivo
 
-Limpiar la carpeta raíz del proyecto moviendo archivos innecesarios a carpetas organizadas por tipo/función.
+Eliminar ejecutables y binarios obsoletos (ngrok/certificados), organizar volcados SQL y separar la documentación activa del historial de parches/fixes.
 
 ---
 
-## 📊 Antes vs Después
-
-### Antes ❌
-
-```
-Temperaturas/ (raíz)
-├── 30+ archivos mezclados
-├── Documentación dispersa (12 archivos .md)
-├── Scripts de ejecución (6 archivos)
-├── Archivos temporales (logs, cookies, etc.)
-├── Archivos de testing
-└── Difícil de navegar
-```
-
-### Después ✅
+## 📊 Estructura v3.0 ✅
 
 ```
 Temperaturas/
-├── Archivos esenciales (7):
-│   ├── README.md
-│   ├── Cargo.toml
-│   ├── Cargo.lock
-│   ├── .env.example
-│   ├── .gitignore
-│   ├── .gitattributes
-│   └── datos.db
-├── Docs/ - Documentación (12 archivos)
-├── Scripts/ - Scripts de ejecución (6 archivos)
-├── Tests/ - Tests y pruebas (2 archivos)
-├── Archive/ - Archivos archivados (9 archivos + README)
-├── src/ - Código fuente
-├── public/ - Frontend
-└── target/ - Binarios compilados
+├── Archivos esenciales:
+│   ├── README.md               - Documentación principal
+│   ├── Cargo.toml / Cargo.lock - Configuración y versiones de dependencias Rust
+│   ├── .env.example            - Variables de entorno de ejemplo
+│   ├── .gitignore              - Reglas de Git
+│   └── .gitattributes          - Atributos de Git
+├── Docs/                       - Documentación activa
+│   ├── INICIO_RAPIDO.md                 - Guía de inicio rápido
+│   ├── INSTRUCCIONES_BANDEJA_SISTEMA.md - Manual de bandeja del sistema
+│   ├── ORGANIZACION_PROYECTO.md         - Estructura del repositorio
+│   └── historial_fixes/                 - 16 archivos de fixes y parches históricos
+├── sql/                        - Volcados y scripts SQL
+│   └── REGISTROS_MIGRACION.sql          - Registros históricos de migración
+├── Scripts/                    - Scripts de ejecución y respaldos
+├── src/                        - Código fuente en Rust (Axum + PostgreSQL)
+└── public/                     - Frontend HTML/JS/CSS
 ```
 
 ---

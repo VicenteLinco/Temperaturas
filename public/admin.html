@@ -864,35 +864,132 @@
 
                 <!-- Gráficos Section -->
                 <div id="section-graficos" class="content-section" style="display: none;">
-                    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-                        <h2 class="mb-0">Gráficos y Tendencias</h2>
-                        <select class="form-select w-auto" id="graficos_dias" onchange="cargarGraficos()">
-                            <option value="7">Últimos 7 días</option>
-                            <option value="15">Últimos 15 días</option>
-                            <option value="30" selected>Últimos 30 días</option>
-                            <option value="90">Últimos 90 días</option>
-                            <option value="365">Último año</option>
-                        </select>
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                        <div>
+                            <h2 class="mb-0"><i class="bi bi-graph-up-arrow text-primary"></i> Análisis y Gráficos de Temperatura</h2>
+                            <p class="text-muted small mb-0">Filtra por área, termómetro y rango de fechas con límites operativos y alertas en tiempo real.</p>
+                        </div>
+                        <div class="d-flex gap-2 align-items-center">
+                            <button class="btn btn-outline-secondary btn-sm" onclick="exportarGraficoPNG()"><i class="bi bi-download"></i> Exportar PNG</button>
+                            <button class="btn btn-outline-success btn-sm" onclick="exportarGraficoCSV()"><i class="bi bi-file-earmark-spreadsheet"></i> Exportar CSV</button>
+                            <button class="btn btn-outline-danger btn-sm" onclick="resetearZoomGrafico()"><i class="bi bi-zoom-out"></i> Reset Zoom</button>
+                        </div>
+                    </div>
+
+                    <!-- Card de Filtros Avanzados -->
+                    <div class="card mb-4 shadow-sm border-0 bg-light">
+                        <div class="card-body">
+                            <form id="formFiltrosGraficos" onsubmit="event.preventDefault(); cargarGraficos();" class="row g-3 align-items-end">
+                                <!-- Área -->
+                                <div class="col-md-3 col-sm-6">
+                                    <label class="form-label fw-bold mb-1"><i class="bi bi-building"></i> Área</label>
+                                    <select class="form-select" id="graficos_area" onchange="alCambiarAreaGraficos()">
+                                        <option value="">Todas las Áreas</option>
+                                    </select>
+                                </div>
+
+                                <!-- Termómetro -->
+                                <div class="col-md-3 col-sm-6">
+                                    <label class="form-label fw-bold mb-1"><i class="bi bi-thermometer-half"></i> Termómetro / Sensor</label>
+                                    <select class="form-select" id="graficos_termometro" onchange="cargarGraficos()">
+                                        <option value="">Todos los Termómetros</option>
+                                    </select>
+                                </div>
+
+                                <!-- Período / Preset -->
+                                <div class="col-md-2 col-sm-6">
+                                    <label class="form-label fw-bold mb-1"><i class="bi bi-calendar-range"></i> Período Preset</label>
+                                    <select class="form-select" id="graficos_dias" onchange="alCambiarPresetFechas()">
+                                        <option value="7">Últimos 7 días</option>
+                                        <option value="15">Últimos 15 días</option>
+                                        <option value="30" selected>Últimos 30 días</option>
+                                        <option value="90">Últimos 90 días</option>
+                                        <option value="365">Último año</option>
+                                        <option value="custom">Personalizado...</option>
+                                    </select>
+                                </div>
+
+                                <!-- Fecha Desde -->
+                                <div class="col-md-2 col-sm-6" id="wrapper_fecha_desde" style="display: none;">
+                                    <label class="form-label fw-bold mb-1">Fecha Desde</label>
+                                    <input type="date" class="form-control" id="graficos_fecha_desde">
+                                </div>
+
+                                <!-- Fecha Hasta -->
+                                <div class="col-md-2 col-sm-6" id="wrapper_fecha_hasta" style="display: none;">
+                                    <label class="form-label fw-bold mb-1">Fecha Hasta</label>
+                                    <input type="date" class="form-control" id="graficos_fecha_hasta">
+                                </div>
+
+                                <!-- Botones de Acción -->
+                                <div class="col-md-2 col-sm-6 d-flex gap-2">
+                                    <button type="button" class="btn btn-primary w-100" onclick="cargarGraficos()">
+                                        <i class="bi bi-funnel-fill"></i> Filtrar
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="limpiarFiltrosGraficos()" title="Limpiar filtros">
+                                        <i class="bi bi-arrow-counterclockwise"></i>
+                                    </button>
+                                </div>
+                            </form>
+
+                            <!-- Modos de visualización y opciones -->
+                            <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top flex-wrap gap-2">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <input type="radio" class="btn-check" name="modoVistaGrafico" id="vistaDetallada" value="detallada" checked onchange="renderizarGraficoSegunModo()">
+                                    <label class="btn btn-outline-primary" for="vistaDetallada"><i class="bi bi-clock-history"></i> Lecturas Individuales (Detallado)</label>
+
+                                    <input type="radio" class="btn-check" name="modoVistaGrafico" id="vistaTendencia" value="tendencia" onchange="renderizarGraficoSegunModo()">
+                                    <label class="btn btn-outline-primary" for="vistaTendencia"><i class="bi bi-graph-up"></i> Promedios Diarios (Tendencia)</label>
+                                </div>
+
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" id="chkMostrarLimites" checked onchange="renderizarGraficoSegunModo()">
+                                        <label class="form-check-label text-danger fw-bold small" for="chkMostrarLimites">
+                                            <i class="bi bi-dash-lg"></i> Líneas de Límites Operativos (Mín/Máx)
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" id="chkResaltarAlertas" checked onchange="renderizarGraficoSegunModo()">
+                                        <label class="form-check-label text-warning fw-bold small" for="chkResaltarAlertas">
+                                            <i class="bi bi-exclamation-triangle-fill"></i> Resaltar Alertas Fuera de Rango
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- KPIs -->
                     <div class="row mb-3" id="graficos_kpis"></div>
 
-                    <!-- Tendencia de temperaturas -->
-                    <div class="card mb-3">
-                        <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0"><i class="bi bi-graph-up"></i> Tendencia de Temperaturas</h5>
+                    <!-- Banner Info Límites Seleccionados -->
+                    <div id="banner_limites_info" class="alert alert-info py-2 mb-3 d-flex justify-content-between align-items-center" style="display: none;">
+                        <div>
+                            <i class="bi bi-shield-check me-2"></i>
+                            <span id="txt_limites_info">Cargando límites...</span>
+                        </div>
+                        <span class="badge bg-danger">Límites Operativos de Control</span>
+                    </div>
+
+                    <!-- Tendencia / Lecturas Main Chart -->
+                    <div class="card mb-4 shadow-sm">
+                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-2">
+                            <h5 class="mb-0" id="titulo_grafico_principal"><i class="bi bi-graph-up"></i> Gráfico Principal de Temperatura</h5>
+                            <small class="text-white-50"><i class="bi bi-info-circle"></i> Usa la rueda del mouse para hacer Zoom</small>
                         </div>
                         <div class="card-body">
-                            <canvas id="chartTendencias" height="100"></canvas>
+                            <div style="position: relative; width: 100%; min-height: 380px;">
+                                <canvas id="chartTendencias" height="110"></canvas>
+                            </div>
                         </div>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <div class="card h-100">
-                                <div class="card-header bg-warning text-dark">
-                                    <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Alertas por Día</h5>
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-header bg-warning text-dark py-2">
+                                    <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Alertas Fuera de Rango por Día</h5>
                                 </div>
                                 <div class="card-body">
                                     <canvas id="chartAlertas" height="140"></canvas>
@@ -900,9 +997,9 @@
                             </div>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <div class="card h-100">
-                                <div class="card-header bg-info text-white">
-                                    <h5 class="mb-0"><i class="bi bi-building"></i> Registros por Área</h5>
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-header bg-info text-white py-2">
+                                    <h5 class="mb-0"><i class="bi bi-building"></i> Registros y Alertas por Área</h5>
                                 </div>
                                 <div class="card-body">
                                     <canvas id="chartAreas" height="140"></canvas>
@@ -1241,6 +1338,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
     <script src="lecturas.js"></script>
     <script>
         let currentUser = null;
@@ -1330,7 +1429,7 @@
                 case 'termometros': cargarTermometros(); break;
                 case 'impresion': cargarSeccionImpresion(); break;
                 case 'reportes': inicializarReportes(); break;
-                case 'graficos': cargarGraficos(); break;
+                case 'graficos': inicializarGraficos(); break;
                 case 'configuracion': cargarConfiguracion(); break;
             }
         }
@@ -2499,23 +2598,127 @@
             }
         }
 
-        // === GRÁFICOS ===
+        // === GRÁFICOS Y ANÁLISIS DE TEMPERATURAS ===
         let graficosCharts = [];
+        let ultimaDataGraficos = null;
+        let opcionesFiltrosCargadas = false;
+        let areasListaGraficos = [];
+        let termometrosListaGraficos = [];
 
         function destruirGraficos() {
             graficosCharts.forEach(c => { try { c.destroy(); } catch (e) {} });
             graficosCharts = [];
         }
 
+        async function inicializarGraficos() {
+            if (!opcionesFiltrosCargadas) {
+                await cargarOpcionesFiltrosGraficos();
+                opcionesFiltrosCargadas = true;
+            }
+            await cargarGraficos();
+        }
+
+        async function cargarOpcionesFiltrosGraficos() {
+            try {
+                const [resAreas, resTermometros] = await Promise.all([
+                    fetch('/api/areas'),
+                    fetch('/api/termometros')
+                ]);
+                if (resAreas.ok) {
+                    areasListaGraficos = await resAreas.json();
+                    const selectArea = document.getElementById('graficos_area');
+                    selectArea.innerHTML = '<option value="">Todas las Áreas</option>' +
+                        areasListaGraficos.map(a => `<option value="${a.id}">${a.nombre}</option>`).join('');
+                }
+                if (resTermometros.ok) {
+                    termometrosListaGraficos = await resTermometros.json();
+                    actualizarDropdownTermometrosGraficos();
+                }
+            } catch (e) {
+                console.error('Error cargando opciones de filtros para gráficos:', e);
+            }
+        }
+
+        function alCambiarAreaGraficos() {
+            actualizarDropdownTermometrosGraficos();
+            cargarGraficos();
+        }
+
+        function actualizarDropdownTermometrosGraficos() {
+            const areaId = document.getElementById('graficos_area').value;
+            const selectTermometro = document.getElementById('graficos_termometro');
+            const valorPrevio = selectTermometro.value;
+
+            let filtrados = termometrosListaGraficos;
+            if (areaId) {
+                filtrados = termometrosListaGraficos.filter(t => t.area_id == areaId);
+            }
+
+            selectTermometro.innerHTML = '<option value="">Todos los Termómetros (' + filtrados.length + ')</option>' +
+                filtrados.map(t => `<option value="${t.id}">${t.nombre || 'Termómetro #' + t.id} (${t.ubicacion || 'Sin ub.'})</option>`).join('');
+
+            if (filtrados.some(t => t.id == valorPrevio)) {
+                selectTermometro.value = valorPrevio;
+            } else {
+                selectTermometro.value = '';
+            }
+        }
+
+        function alCambiarPresetFechas() {
+            const preset = document.getElementById('graficos_dias').value;
+            const wrapDesde = document.getElementById('wrapper_fecha_desde');
+            const wrapHasta = document.getElementById('wrapper_fecha_hasta');
+
+            if (preset === 'custom') {
+                wrapDesde.style.display = 'block';
+                wrapHasta.style.display = 'block';
+            } else {
+                wrapDesde.style.display = 'none';
+                wrapHasta.style.display = 'none';
+                document.getElementById('graficos_fecha_desde').value = '';
+                document.getElementById('graficos_fecha_hasta').value = '';
+                cargarGraficos();
+            }
+        }
+
+        function limpiarFiltrosGraficos() {
+            document.getElementById('graficos_area').value = '';
+            actualizarDropdownTermometrosGraficos();
+            document.getElementById('graficos_dias').value = '30';
+            document.getElementById('graficos_fecha_desde').value = '';
+            document.getElementById('graficos_fecha_hasta').value = '';
+            document.getElementById('wrapper_fecha_desde').style.display = 'none';
+            document.getElementById('wrapper_fecha_hasta').style.display = 'none';
+            document.getElementById('vistaDetallada').checked = true;
+            document.getElementById('chkMostrarLimites').checked = true;
+            document.getElementById('chkResaltarAlertas').checked = true;
+            cargarGraficos();
+        }
+
         async function cargarGraficos() {
             const dias = document.getElementById('graficos_dias').value;
+            const areaId = document.getElementById('graficos_area').value;
+            const termometroId = document.getElementById('graficos_termometro').value;
+            const fechaDesde = document.getElementById('graficos_fecha_desde').value;
+            const fechaHasta = document.getElementById('graficos_fecha_hasta').value;
+
+            const params = new URLSearchParams();
+            if (dias && dias !== 'custom') params.append('dias', dias);
+            if (areaId) params.append('area_id', areaId);
+            if (termometroId) params.append('termometro_id', termometroId);
+            if (fechaDesde) params.append('fecha_desde', fechaDesde);
+            if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+
             try {
-                const response = await fetch(`/api/admin/graficos?dias=${dias}`);
-                if (!response.ok) throw new Error('Error al cargar los gráficos');
+                const response = await fetch(`/api/admin/graficos?${params.toString()}`);
+                if (!response.ok) throw new Error('Error al cargar datos de gráficos');
                 const data = await response.json();
+                ultimaDataGraficos = data;
+
                 destruirGraficos();
                 renderizarKPIsGraficos(data.resumen);
-                crearChartTendencias(data.tendencias);
+                actualizarBannerLimites(data.limites);
+                renderizarGraficoSegunModo();
                 crearChartAlertas(data.tendencias);
                 crearChartAreas(data.areas);
             } catch (error) {
@@ -2525,65 +2728,288 @@
             }
         }
 
+        function actualizarBannerLimites(limites) {
+            const banner = document.getElementById('banner_limites_info');
+            const txt = document.getElementById('txt_limites_info');
+            if (!limites) {
+                banner.style.display = 'none';
+                return;
+            }
+            banner.style.display = 'flex';
+            let info = '';
+            if (limites.termometro_nombre) {
+                info += `Termómetro: <strong>${limites.termometro_nombre}</strong> (${limites.area_nombre || ''}) &mdash; `;
+            } else if (limites.area_nombre) {
+                info += `Área: <strong>${limites.area_nombre}</strong> &mdash; `;
+            }
+            info += `Límite Operativo Seguro: <strong>${limites.temp_min_operativa}&deg;C</strong> (Mín) a <strong>${limites.temp_max_operativa}&deg;C</strong> (Máx)`;
+            if (limites.hum_min_operativa != null && limites.hum_max_operativa != null) {
+                info += ` | Humedad: ${limites.hum_min_operativa}% a ${limites.hum_max_operativa}%`;
+            }
+            txt.innerHTML = info;
+        }
+
+        function renderizarGraficoSegunModo() {
+            if (!ultimaDataGraficos) return;
+            const modoDetallado = document.getElementById('vistaDetallada').checked;
+            const titulo = document.getElementById('titulo_grafico_principal');
+
+            // Destruir el gráfico principal si ya fue creado
+            if (graficosCharts[0]) {
+                try { graficosCharts[0].destroy(); } catch (e) {}
+                graficosCharts[0] = null;
+            }
+
+            if (modoDetallado && ultimaDataGraficos.lecturas && ultimaDataGraficos.lecturas.length > 0) {
+                titulo.innerHTML = '<i class="bi bi-clock-history"></i> Lecturas Individuales en el Tiempo (Punto por Punto)';
+                crearChartLecturasDetalladas(ultimaDataGraficos.lecturas, ultimaDataGraficos.limites);
+            } else {
+                titulo.innerHTML = '<i class="bi bi-graph-up"></i> Tendencia de Promedios Diarios';
+                crearChartTendencias(ultimaDataGraficos.tendencias, ultimaDataGraficos.limites);
+            }
+        }
+
         function renderizarKPIsGraficos(resumen) {
             const container = document.getElementById('graficos_kpis');
             const alertaPct = resumen.total_registros > 0
                 ? Math.round((resumen.total_alertas / resumen.total_registros) * 100) : 0;
             container.innerHTML = `
                 <div class="col-md-3 col-6 mb-2">
-                    <div class="card text-center h-100">
+                    <div class="card text-center h-100 shadow-sm border-0 bg-light">
                         <div class="card-body py-3">
-                            <h3 class="text-primary mb-0">${resumen.total_registros}</h3>
-                            <div class="text-muted small">Registros</div>
+                            <h3 class="text-primary fw-bold mb-0">${resumen.total_registros}</h3>
+                            <div class="text-muted small fw-semibold">Registros Totales</div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3 col-6 mb-2">
-                    <div class="card text-center h-100">
+                    <div class="card text-center h-100 shadow-sm border-0 bg-light">
                         <div class="card-body py-3">
-                            <h3 class="text-warning mb-0">${resumen.total_alertas}</h3>
-                            <div class="text-muted small">Fuera de rango (${alertaPct}%)</div>
+                            <h3 class="text-danger fw-bold mb-0">${resumen.total_alertas}</h3>
+                            <div class="text-muted small fw-semibold">Fuera de Rango (${alertaPct}%)</div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3 col-6 mb-2">
-                    <div class="card text-center h-100">
+                    <div class="card text-center h-100 shadow-sm border-0 bg-light">
                         <div class="card-body py-3">
-                            <h3 class="text-success mb-0">${resumen.promedio_max ?? '-'}&deg;C</h3>
-                            <div class="text-muted small">Prom. Máxima</div>
+                            <h3 class="text-success fw-bold mb-0">${resumen.promedio_max ?? '-'}&deg;C</h3>
+                            <div class="text-muted small fw-semibold">Promedio Máxima</div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3 col-6 mb-2">
-                    <div class="card text-center h-100">
+                    <div class="card text-center h-100 shadow-sm border-0 bg-light">
                         <div class="card-body py-3">
-                            <h3 class="text-info mb-0">${resumen.promedio_min ?? '-'}&deg;C</h3>
-                            <div class="text-muted small">Prom. Mínima</div>
+                            <h3 class="text-info fw-bold mb-0">${resumen.promedio_min ?? '-'}&deg;C</h3>
+                            <div class="text-muted small fw-semibold">Promedio Mínima</div>
                         </div>
                     </div>
                 </div>`;
         }
 
-        function crearChartTendencias(tendencias) {
+        function crearChartLecturasDetalladas(lecturas, limites) {
             const ctx = document.getElementById('chartTendencias').getContext('2d');
-            const labels = tendencias.map(t => t.fecha);
+            const labels = lecturas.map(l => `${l.fecha_registro} (${l.termometro_nombre})`);
+            const mostrarLimites = document.getElementById('chkMostrarLimites').checked;
+            const mostrarAlertas = document.getElementById('chkResaltarAlertas').checked;
+
+            // Extraer límites operativos
+            let tempMinOp = limites ? limites.temp_min_operativa : (lecturas[0] ? lecturas[0].temp_min_operativa : null);
+            let tempMaxOp = limites ? limites.temp_max_operativa : (lecturas[0] ? lecturas[0].temp_max_operativa : null);
+
+            // Estilos de puntos para alertas
+            const pointBg = lecturas.map(l => (mostrarAlertas && l.fuera_rango_operativo) ? '#dc3545' : '#0d6efd');
+            const pointBorder = lecturas.map(l => (mostrarAlertas && l.fuera_rango_operativo) ? '#a71d2a' : '#0b5ed7');
+            const pointRadius = lecturas.map(l => (mostrarAlertas && l.fuera_rango_operativo) ? 7 : 4);
+            const pointStyle = lecturas.map(l => (mostrarAlertas && l.fuera_rango_operativo) ? 'rectRot' : 'circle');
+
+            const datasets = [
+                {
+                    label: 'Temp. Actual (°C)',
+                    data: lecturas.map(l => l.temp_actual),
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    tension: 0.2,
+                    pointBackgroundColor: pointBg,
+                    pointBorderColor: pointBorder,
+                    pointRadius: pointRadius,
+                    pointHoverRadius: 9,
+                    pointStyle: pointStyle,
+                    order: 1
+                },
+                {
+                    label: 'Temp. Máxima Registrada (°C)',
+                    data: lecturas.map(l => l.temp_maxima),
+                    borderColor: '#fd7e14',
+                    borderDash: [3, 3],
+                    tension: 0.2,
+                    pointRadius: 2,
+                    order: 2
+                },
+                {
+                    label: 'Temp. Mínima Registrada (°C)',
+                    data: lecturas.map(l => l.temp_minima),
+                    borderColor: '#0dcaf0',
+                    borderDash: [3, 3],
+                    tension: 0.2,
+                    pointRadius: 2,
+                    order: 3
+                }
+            ];
+
+            // Añadir líneas de límites paralelas si están activadas
+            if (mostrarLimites && tempMinOp != null && tempMaxOp != null) {
+                datasets.push({
+                    label: `Límite Mínimo Operativo (${tempMinOp}°C)`,
+                    data: labels.map(() => tempMinOp),
+                    borderColor: '#dc3545',
+                    borderWidth: 2,
+                    borderDash: [6, 6],
+                    pointRadius: 0,
+                    fill: false,
+                    order: 0
+                });
+                datasets.push({
+                    label: `Límite Máximo Operativo (${tempMaxOp}°C)`,
+                    data: labels.map(() => tempMaxOp),
+                    borderColor: '#dc3545',
+                    borderWidth: 2,
+                    borderDash: [6, 6],
+                    pointRadius: 0,
+                    fill: false,
+                    order: 0
+                });
+            }
+
+            // Plugin de anotaciones para Chart.js
+            const annotationsObj = {};
+            if (mostrarLimites && tempMinOp != null && tempMaxOp != null && typeof ChartAnnotation !== 'undefined') {
+                annotationsObj.lineaMax = {
+                    type: 'line',
+                    yMin: tempMaxOp,
+                    yMax: tempMaxOp,
+                    borderColor: '#dc3545',
+                    borderWidth: 2,
+                    borderDash: [6, 6],
+                    label: {
+                        display: true,
+                        content: `Límite Máx (${tempMaxOp}°C)`,
+                        position: 'start',
+                        backgroundColor: '#dc3545',
+                        color: '#fff',
+                        font: { size: 11, weight: 'bold' }
+                    }
+                };
+                annotationsObj.lineaMin = {
+                    type: 'line',
+                    yMin: tempMinOp,
+                    yMax: tempMinOp,
+                    borderColor: '#dc3545',
+                    borderWidth: 2,
+                    borderDash: [6, 6],
+                    label: {
+                        display: true,
+                        content: `Límite Mín (${tempMinOp}°C)`,
+                        position: 'start',
+                        backgroundColor: '#dc3545',
+                        color: '#fff',
+                        font: { size: 11, weight: 'bold' }
+                    }
+                };
+            }
+
             const chart = new Chart(ctx, {
                 type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        { label: 'Prom. Máxima (°C)', data: tendencias.map(t => t.promedio_max), borderColor: '#dc3545', backgroundColor: 'rgba(220,53,69,.1)', tension: 0.3, pointRadius: 3 },
-                        { label: 'Prom. Actual (°C)', data: tendencias.map(t => t.promedio_actual), borderColor: '#0d6efd', backgroundColor: 'rgba(13,110,253,.1)', tension: 0.3, pointRadius: 3 },
-                        { label: 'Prom. Mínima (°C)', data: tendencias.map(t => t.promedio_min), borderColor: '#0dcaf0', backgroundColor: 'rgba(13,202,240,.1)', tension: 0.3, pointRadius: 3 }
-                    ]
-                },
+                data: { labels, datasets },
                 options: {
                     responsive: true,
-                    plugins: { legend: { position: 'bottom' } },
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        annotation: { annotations: annotationsObj },
+                        zoom: {
+                            pan: { enabled: true, mode: 'x' },
+                            zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                footer: (items) => {
+                                    const index = items[0].dataIndex;
+                                    const item = lecturas[index];
+                                    let text = `Área: ${item.area_nombre}\nVentana: ${item.ventana_horaria}`;
+                                    if (item.fuera_rango_operativo) text += `\n⚠️ ¡FORA DE RANGO OPERATIVO!`;
+                                    if (item.observaciones) text += `\nObs: ${item.observaciones}`;
+                                    return text;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { title: { display: true, text: 'Temperatura (°C)' } },
+                        x: { ticks: { maxRotation: 45, minRotation: 0 } }
+                    }
+                }
+            });
+
+            graficosCharts[0] = chart;
+        }
+
+        function crearChartTendencias(tendencias, limites) {
+            const ctx = document.getElementById('chartTendencias').getContext('2d');
+            const labels = tendencias.map(t => t.fecha);
+            const mostrarLimites = document.getElementById('chkMostrarLimites').checked;
+
+            let tempMinOp = limites ? limites.temp_min_operativa : (tendencias[0] ? tendencias[0].temp_min_operativa : null);
+            let tempMaxOp = limites ? limites.temp_max_operativa : (tendencias[0] ? tendencias[0].temp_max_operativa : null);
+
+            const datasets = [
+                { label: 'Prom. Máxima (°C)', data: tendencias.map(t => t.promedio_max), borderColor: '#dc3545', backgroundColor: 'rgba(220,53,69,.1)', tension: 0.3, pointRadius: 3, order: 1 },
+                { label: 'Prom. Actual (°C)', data: tendencias.map(t => t.promedio_actual), borderColor: '#0d6efd', backgroundColor: 'rgba(13,110,253,.1)', tension: 0.3, pointRadius: 3, order: 1 },
+                { label: 'Prom. Mínima (°C)', data: tendencias.map(t => t.promedio_min), borderColor: '#0dcaf0', backgroundColor: 'rgba(13,202,240,.1)', tension: 0.3, pointRadius: 3, order: 1 }
+            ];
+
+            if (mostrarLimites && tempMinOp != null && tempMaxOp != null) {
+                datasets.push({
+                    label: `Límite Mínimo (${tempMinOp}°C)`,
+                    data: labels.map(() => tempMinOp),
+                    borderColor: '#dc3545',
+                    borderWidth: 2,
+                    borderDash: [6, 6],
+                    pointRadius: 0,
+                    fill: false,
+                    order: 0
+                });
+                datasets.push({
+                    label: `Límite Máximo (${tempMaxOp}°C)`,
+                    data: labels.map(() => tempMaxOp),
+                    borderColor: '#dc3545',
+                    borderWidth: 2,
+                    borderDash: [6, 6],
+                    pointRadius: 0,
+                    fill: false,
+                    order: 0
+                });
+            }
+
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: { labels, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        zoom: {
+                            pan: { enabled: true, mode: 'x' },
+                            zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
+                        }
+                    },
                     scales: { y: { title: { display: true, text: '°C' } } }
                 }
             });
-            graficosCharts.push(chart);
+
+            graficosCharts[0] = chart;
         }
 
         function crearChartAlertas(tendencias) {
@@ -2627,6 +3053,55 @@
                 }
             });
             graficosCharts.push(chart);
+        }
+
+        function resetearZoomGrafico() {
+            if (graficosCharts[0] && typeof graficosCharts[0].resetZoom === 'function') {
+                graficosCharts[0].resetZoom();
+            }
+        }
+
+        function exportarGraficoPNG() {
+            if (!graficosCharts[0]) {
+                alert('No hay gráfico activo para exportar.');
+                return;
+            }
+            const imageURI = graficosCharts[0].toBase64Image();
+            const link = document.createElement('a');
+            link.download = `grafico_temperaturas_${new Date().toISOString().slice(0, 10)}.png`;
+            link.href = imageURI;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function exportarGraficoCSV() {
+            if (!ultimaDataGraficos) {
+                alert('No hay datos disponibles para exportar.');
+                return;
+            }
+            const modoDetallado = document.getElementById('vistaDetallada').checked;
+            let csvContent = 'data:text/csv;charset=utf-8,\uFEFF';
+
+            if (modoDetallado && ultimaDataGraficos.lecturas && ultimaDataGraficos.lecturas.length > 0) {
+                csvContent += 'Fecha Registro,Termometro,Area,Ventana,Temp Actual,Temp Max,Temp Min,Fuera Rango,Lim Min Op,Lim Max Op,Observaciones\n';
+                ultimaDataGraficos.lecturas.forEach(l => {
+                    csvContent += `"${l.fecha_registro}","${l.termometro_nombre}","${l.area_nombre}","${l.ventana_horaria}",${l.temp_actual ?? ''},${l.temp_maxima},${l.temp_minima},"${l.fuera_rango_operativo ? 'SI' : 'NO'}",${l.temp_min_operativa},${l.temp_max_operativa},"${(l.observaciones || '').replace(/"/g, '""')}"\n`;
+                });
+            } else if (ultimaDataGraficos.tendencias) {
+                csvContent += 'Fecha,Promedio Actual,Promedio Max,Promedio Min,Alertas\n';
+                ultimaDataGraficos.tendencias.forEach(t => {
+                    csvContent += `"${t.fecha}",${t.promedio_actual ?? ''},${t.promedio_max ?? ''},${t.promedio_min ?? ''},${t.alertas}\n`;
+                });
+            }
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', `datos_temperaturas_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         async function logout() {
