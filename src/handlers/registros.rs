@@ -9,7 +9,7 @@ use sqlx::{PgPool, Row};
 use crate::{
     auth::CurrentUser,
     db::{get_config, log_auditoria},
-    logic::{determinar_ventana_actual, validar_registro},
+    logic::{determinar_ventana_actual, normalizar_lecturas, validar_registro},
     models::*,
 };
 
@@ -257,10 +257,18 @@ pub async fn crear_registro(
         .await
         .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Error obteniendo tipo termómetro".to_string()))?;
 
-    // Validar
-    let (fuera_rango_operativo, _advertencias) = validar_registro(
+    // Ordenar lecturas automáticamente (mín = menor, máx = mayor) para que
+    // el registrador no tenga que distinguir campos con números negativos
+    let (temp_actual, temp_max, temp_min) = normalizar_lecturas(
+        payload.temp_actual,
         payload.temp_maxima,
         payload.temp_minima,
+    );
+
+    // Validar
+    let (fuera_rango_operativo, _advertencias) = validar_registro(
+        temp_max,
+        temp_min,
         payload.humedad,
         &tipo,
     )
@@ -280,9 +288,9 @@ pub async fn crear_registro(
     .bind(payload.termometro_id as i32)
     .bind(current_user.0.id as i32)
     .bind(&ventana.nombre)
-    .bind(payload.temp_actual)
-    .bind(payload.temp_maxima)
-    .bind(payload.temp_minima)
+    .bind(temp_actual)
+    .bind(temp_max)
+    .bind(temp_min)
     .bind(payload.humedad)
     .bind(fuera_rango_operativo)
     .bind(&payload.observaciones)
@@ -348,9 +356,12 @@ pub async fn actualizar_registro(
 
     // Usar valores actuales si no se proporcionan nuevos
     let temp_actual = payload.temp_actual.or(registro.temp_actual);
-    let temp_max = payload.temp_maxima.unwrap_or(registro.temp_maxima);
-    let temp_min = payload.temp_minima.unwrap_or(registro.temp_minima);
+    let lectura_a = payload.temp_maxima.unwrap_or(registro.temp_maxima);
+    let lectura_b = payload.temp_minima.unwrap_or(registro.temp_minima);
     let humedad = payload.humedad.or(registro.humedad);
+
+    // Ordenar lecturas automáticamente (mín = menor, máx = mayor)
+    let (temp_actual, temp_max, temp_min) = normalizar_lecturas(temp_actual, lectura_a, lectura_b);
 
     // Validar
     let (fuera_rango_operativo, _) = validar_registro(temp_max, temp_min, humedad, &tipo)

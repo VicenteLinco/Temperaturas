@@ -6,6 +6,7 @@
     <title>Sistema de Temperaturas - Administración</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="lecturas.css">
     <style>
         :root {
             /* Paleta plana (sin degradados) */
@@ -1151,9 +1152,96 @@
         </div>
     </div>
 
+    <!-- Modal Editar Registro (Admin) -->
+    <div class="modal fade" id="registroAdminModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Registro</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3 text-center">
+                        <h5 id="admRegistroNombre" class="mb-1"></h5>
+                        <small class="text-muted" id="admRegistroMeta"></small>
+                    </div>
+
+                    <div id="formLecturasAdmin">
+                        <div class="alert alert-info py-2 small mb-3">
+                            <i class="bi bi-arrow-down-up"></i> Ingresa las lecturas en <strong>cualquier orden</strong>: el sistema ordena solo (la más baja = mínima, la más alta = máxima).
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="admTempActual" class="form-label fw-semibold">Temperatura Actual (°C)</label>
+                            <div class="temp-stepper">
+                                <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('admTempActual', -1)">−1</button>
+                                <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('admTempActual', -0.1)">−0.1</button>
+                                <input type="number" inputmode="decimal" step="0.1" min="-999" class="form-control form-control-lg" id="admTempActual">
+                                <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('admTempActual', 0.1)">+0.1</button>
+                                <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('admTempActual', 1)">+1</button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="admLectura2" class="form-label fw-semibold">Lectura 2 (°C)</label>
+                            <div class="temp-stepper">
+                                <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('admLectura2', -1)">−1</button>
+                                <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('admLectura2', -0.1)">−0.1</button>
+                                <input type="number" inputmode="decimal" step="0.1" min="-999" class="form-control" id="admLectura2">
+                                <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('admLectura2', 0.1)">+0.1</button>
+                                <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('admLectura2', 1)">+1</button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="admLectura3" class="form-label fw-semibold">Lectura 3 (°C)</label>
+                            <div class="temp-stepper">
+                                <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('admLectura3', -1)">−1</button>
+                                <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('admLectura3', -0.1)">−0.1</button>
+                                <input type="number" inputmode="decimal" step="0.1" min="-999" class="form-control" id="admLectura3">
+                                <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('admLectura3', 0.1)">+0.1</button>
+                                <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('admLectura3', 1)">+1</button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3" id="admHumedadGroup" style="display: none;">
+                            <label for="admHumedad" class="form-label text-info">Humedad (%)</label>
+                            <input type="number" step="0.1" class="form-control text-center" id="admHumedad">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="admObservaciones" class="form-label">Observaciones</label>
+                            <textarea class="form-control" id="admObservaciones" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <div id="confirmacionLecturasAdmin" style="display: none;">
+                        <div class="text-center fw-bold mb-1">Revisa las temperaturas ordenadas</div>
+                        <div id="barraTermometroAdmin"></div>
+                        <div class="row g-2" id="tarjetasLecturasAdmin"></div>
+                        <div id="confirmacionWarningsAdmin"></div>
+                        <div class="alert alert-light border small text-muted mb-2 mt-2">
+                            <i class="bi bi-check2-circle text-success"></i> Se guardará: mínima <strong id="admConfMinText">-</strong>°C · actual <strong id="admConfActualText">-</strong>°C · máxima <strong id="admConfMaxText">-</strong>°C
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-outline-primary" id="admBtnCorregir" onclick="volverAFormularioAdmin()" style="display: none;">
+                        <i class="bi bi-pencil"></i> Corregir
+                    </button>
+                    <button type="button" class="btn btn-primary" id="admBtnGuardar" onclick="revisarLecturasAdmin()">
+                        <i class="bi bi-eye"></i> Revisar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="lecturas.js"></script>
     <script>
         let currentUser = null;
         
@@ -1970,6 +2058,7 @@
         let registrosPaginaActual = 1;
         let registrosTotalPaginas = 1;
         let registrosTotal = 0;
+        let registrosActuales = [];
 
         async function cargarRegistros() {
             try {
@@ -1999,6 +2088,7 @@
                 const registros = data.registros || [];
                 registrosTotal = data.total || 0;
                 registrosTotalPaginas = data.total_paginas || 1;
+                registrosActuales = registros;
 
                 const tbody = document.getElementById('registrosTable');
                 const emptyMsg = document.getElementById('registrosEmpty');
@@ -2035,6 +2125,9 @@
                             <td>${r.usuario_nombre || '<span class="text-muted">Sistema</span>'}</td>
                             <td>${estado}</td>
                             <td class="table-actions">
+                                <button class="btn btn-sm btn-primary" onclick="abrirEdicionRegistro(${r.id})" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
                                 <button class="btn btn-sm btn-danger" onclick="eliminarRegistro(${r.id})" title="Eliminar">
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -2083,6 +2176,115 @@
                 }
             } catch (error) {
                 alert('Error: ' + error.message);
+            }
+        }
+
+        // ===== EDICIÓN DE REGISTROS (flujo de lecturas ordenadas) =====
+        let registroAdminSeleccionado = null;
+        let termometroAdminSeleccionado = null;
+
+        async function abrirEdicionRegistro(id) {
+            const registro = registrosActuales.find(r => r.id === id);
+            if (!registro) { alert('No se encontró el registro'); return; }
+            registroAdminSeleccionado = registro;
+
+            // Obtener el termómetro (rangos operativos para la barra y advertencias)
+            try {
+                const res = await fetch(`/api/termometros/${registro.termometro_id}`);
+                termometroAdminSeleccionado = res.ok ? await res.json() : null;
+            } catch (e) {
+                termometroAdminSeleccionado = null;
+            }
+
+            document.getElementById('admRegistroNombre').textContent = registro.termometro_nombre || ('ID: ' + registro.termometro_id);
+            document.getElementById('admRegistroMeta').textContent = [registro.area_nombre, registro.usuario_nombre, registro.ventana_horaria].filter(Boolean).join(' · ');
+
+            document.getElementById('admTempActual').value = registro.temp_actual != null ? registro.temp_actual : '';
+            document.getElementById('admLectura2').value = registro.temp_maxima;
+            document.getElementById('admLectura3').value = registro.temp_minima;
+            document.getElementById('admHumedad').value = registro.humedad != null ? registro.humedad : '';
+            document.getElementById('admObservaciones').value = registro.observaciones || '';
+
+            const tieneHum = termometroAdminSeleccionado ? termometroAdminSeleccionado.tiene_humedad : false;
+            document.getElementById('admHumedadGroup').style.display = tieneHum ? 'block' : 'none';
+
+            mostrarConfirmacionUIAdmin(false);
+            new bootstrap.Modal(document.getElementById('registroAdminModal')).show();
+        }
+
+        function leerLecturasAdmin() {
+            const actual = parseFloat(document.getElementById('admTempActual').value);
+            const l2 = parseFloat(document.getElementById('admLectura2').value);
+            const l3 = parseFloat(document.getElementById('admLectura3').value);
+            return { actual, l2, l3, ok: !isNaN(actual) && !isNaN(l2) && !isNaN(l3) };
+        }
+
+        function mostrarConfirmacionUIAdmin(confirmar) {
+            const btn = document.getElementById('admBtnGuardar');
+            const corregir = document.getElementById('admBtnCorregir');
+            document.getElementById('formLecturasAdmin').style.display = confirmar ? 'none' : 'block';
+            document.getElementById('confirmacionLecturasAdmin').style.display = confirmar ? 'block' : 'none';
+            corregir.style.display = confirmar ? 'inline-block' : 'none';
+            if (confirmar) {
+                btn.innerHTML = '<i class="bi bi-check-lg"></i> Guardar';
+                btn.onclick = guardarRegistroAdmin;
+            } else {
+                btn.innerHTML = '<i class="bi bi-eye"></i> Revisar';
+                btn.onclick = revisarLecturasAdmin;
+            }
+        }
+
+        function revisarLecturasAdmin() {
+            const l = leerLecturasAdmin();
+            if (!l.ok) { alert('Ingresa las 3 temperaturas para revisar'); return; }
+            const { actual, minima, maxima } = ordenarValores(l.actual, l.l2, l.l3);
+            renderConfirmacionLecturas(
+                'tarjetasLecturasAdmin', 'barraTermometroAdmin', 'confirmacionWarningsAdmin',
+                'admConfMinText', 'admConfActualText', 'admConfMaxText',
+                actual, minima, maxima, termometroAdminSeleccionado || {}
+            );
+            mostrarConfirmacionUIAdmin(true);
+        }
+
+        function volverAFormularioAdmin() {
+            mostrarConfirmacionUIAdmin(false);
+        }
+
+        async function guardarRegistroAdmin() {
+            const l = leerLecturasAdmin();
+            if (!l.ok) { alert('Ingresa las 3 temperaturas'); return; }
+            const { actual, minima, maxima } = ordenarValores(l.actual, l.l2, l.l3);
+
+            const btn = document.getElementById('admBtnGuardar');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...';
+
+            const payload = {
+                temp_actual: actual,
+                temp_maxima: maxima,
+                temp_minima: minima,
+                humedad: document.getElementById('admHumedad').value ? parseFloat(document.getElementById('admHumedad').value) : null,
+                observaciones: document.getElementById('admObservaciones').value || null
+            };
+
+            try {
+                const res = await fetch(`/api/registros/${registroAdminSeleccionado.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('registroAdminModal')).hide();
+                    cargarRegistros();
+                } else {
+                    const errText = await res.text();
+                    alert('Error: ' + errText);
+                }
+            } catch (e) {
+                alert('Error de red: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check-lg"></i> Guardar';
             }
         }
 

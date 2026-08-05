@@ -307,6 +307,47 @@ pub struct RegistrosPaginados {
     pub total_paginas: u32,
 }
 
+#[derive(Debug, Clone, Serialize, FromRow)]
+pub struct FueraDeRangoItem {
+    pub termometro_id: i32,
+    pub termometro_nombre: Option<String>,
+    pub area_nombre: String,
+    pub temp_maxima: f32,
+    pub temp_minima: f32,
+    pub humedad: Option<f32>,
+    pub observaciones: Option<String>,
+    pub usuario_nombre: String,
+}
+
+#[derive(Debug, Clone, Serialize, FromRow)]
+pub struct FueraDeServicioItem {
+    pub termometro_id: i32,
+    pub termometro_nombre: Option<String>,
+    pub area_nombre: String,
+    pub tipo_nombre: String,
+    pub ubicacion: Option<String>,
+    pub motivo: String,
+    pub comentarios_reporte: Option<String>,
+    pub fecha_reporte: DateTime<Utc>,
+}
+
+/// Informe de la franja horaria: mediciones fuera de rango y equipos sin funcionamiento
+#[derive(Debug, Serialize)]
+pub struct InformeFranjaResponse {
+    pub fecha: String,
+    pub ventana_horaria: String,
+    pub total_mediciones: i64,
+    pub fuera_de_rango: Vec<FueraDeRangoItem>,
+    pub fuera_de_servicio: Vec<FueraDeServicioItem>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct EnviarInformeRequest {
+    pub email: String,
+    #[serde(default)]
+    pub ventana_horaria: Option<String>,
+}
+
 impl From<Usuario> for UsuarioResponse {
     fn from(u: Usuario) -> Self {
         UsuarioResponse {

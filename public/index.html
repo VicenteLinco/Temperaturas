@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Sistema de Temperaturas - Registrador</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="lecturas.css">
     <style>
         :root {
             --brand: #2563eb;
@@ -489,32 +490,68 @@
                             </div>
                         </div>
 
-                        <div class="row">
-                             <div class="col-12 mb-3">
-                                <label for="tempActual" class="form-label">Temp. Actual (°C)</label>
-                                <input type="number" step="0.1" class="form-control form-control-lg text-center fw-bold" id="tempActual">
+                        <!-- FORMULARIO DE LECTURAS (sin etiquetas máx/mín: se ordenan solas) -->
+                        <div id="formLecturas">
+                            <div class="alert alert-info py-2 small mb-3">
+                                <i class="bi bi-arrow-down-up"></i> Ingresa las lecturas en <strong>cualquier orden</strong>: el sistema ordena solo (la más baja = mínima, la más alta = máxima).
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="tempActual" class="form-label fw-semibold">Temperatura Actual (°C)</label>
+                                <div class="temp-stepper">
+                                    <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('tempActual', -1)">−1</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('tempActual', -0.1)">−0.1</button>
+                                    <input type="number" inputmode="decimal" step="0.1" min="-999" class="form-control form-control-lg" id="tempActual">
+                                    <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('tempActual', 0.1)">+0.1</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('tempActual', 1)">+1</button>
+                                </div>
+                                <div class="lectura-hint">Lo que marca el termómetro ahora mismo.</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="lectura2" class="form-label fw-semibold">Lectura 2 (°C)</label>
+                                <div class="temp-stepper">
+                                    <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('lectura2', -1)">−1</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('lectura2', -0.1)">−0.1</button>
+                                    <input type="number" inputmode="decimal" step="0.1" min="-999" class="form-control" id="lectura2">
+                                    <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('lectura2', 0.1)">+0.1</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('lectura2', 1)">+1</button>
+                                </div>
+                                <div class="lectura-hint">La más alta o la más baja del día: da igual el orden.</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="lectura3" class="form-label fw-semibold">Lectura 3 (°C)</label>
+                                <div class="temp-stepper">
+                                    <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('lectura3', -1)">−1</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('lectura3', -0.1)">−0.1</button>
+                                    <input type="number" inputmode="decimal" step="0.1" min="-999" class="form-control" id="lectura3">
+                                    <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('lectura3', 0.1)">+0.1</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('lectura3', 1)">+1</button>
+                                </div>
+                                <div class="lectura-hint">La otra lectura del día: da igual el orden.</div>
+                            </div>
+
+                            <div class="mb-3" id="humedadGroup" style="display: none;">
+                                <label for="humedad" class="form-label text-info">Humedad (%)</label>
+                                <input type="number" step="0.1" class="form-control text-center" id="humedad">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="observaciones" class="form-label">Observaciones</label>
+                                <textarea class="form-control" id="observaciones" rows="2"></textarea>
                             </div>
                         </div>
 
-                        <div class="row">
-                            <div class="col-6 mb-3">
-                                <label for="tempMaxima" class="form-label text-danger">Máxima (°C)</label>
-                                <input type="number" step="0.1" class="form-control text-center" id="tempMaxima" required>
+                        <!-- CONFIRMACIÓN VISUAL -->
+                        <div id="confirmacionLecturas" style="display: none;">
+                            <div class="text-center fw-bold mb-1">Revisa las temperaturas ordenadas</div>
+                            <div id="barraTermometro"></div>
+                            <div class="row g-2" id="tarjetasLecturas"></div>
+                            <div id="confirmacionWarnings"></div>
+                            <div class="alert alert-light border small text-muted mb-2 mt-2">
+                                <i class="bi bi-check2-circle text-success"></i> Se guardará: mínima <strong id="confMinText">-</strong>°C · actual <strong id="confActualText">-</strong>°C · máxima <strong id="confMaxText">-</strong>°C
                             </div>
-                            <div class="col-6 mb-3">
-                                <label for="tempMinima" class="form-label text-primary">Mínima (°C)</label>
-                                <input type="number" step="0.1" class="form-control text-center" id="tempMinima" required>
-                            </div>
-                        </div>
-
-                        <div class="mb-3" id="humedadGroup" style="display: none;">
-                            <label for="humedad" class="form-label text-info">Humedad (%)</label>
-                            <input type="number" step="0.1" class="form-control text-center" id="humedad">
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="observaciones" class="form-label">Observaciones</label>
-                            <textarea class="form-control" id="observaciones" rows="2"></textarea>
                         </div>
                     </form>
                 </div>
@@ -523,8 +560,11 @@
                         <button type="button" class="btn btn-secondary btn-lg flex-grow-1" data-bs-dismiss="modal">
                             <i class="bi bi-x-lg"></i> Cerrar
                         </button>
-                        <button type="button" class="btn btn-primary btn-lg flex-grow-1" id="btnGuardar" onclick="guardarRegistro()">
-                            <i class="bi bi-check-lg"></i> Guardar
+                        <button type="button" class="btn btn-outline-primary btn-lg" id="btnCorregir" onclick="volverAFormulario()" style="display: none;">
+                            <i class="bi bi-pencil"></i> Corregir
+                        </button>
+                        <button type="button" class="btn btn-primary btn-lg flex-grow-1" id="btnGuardar" onclick="revisarLecturas()">
+                            <i class="bi bi-eye"></i> Revisar
                         </button>
                     </div>
                     <button type="button" class="btn btn-outline-danger btn-sm w-100 mt-2" id="btnFueraServicio" onclick="abrirModalFueraServicio()">
@@ -599,6 +639,33 @@
         </div>
     </div>
 
+    <!-- Modal Enviar Informe por Correo -->
+    <div class="modal fade" id="enviarInformeModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="bi bi-envelope"></i> Enviar informe por correo</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        Se adjuntará el PDF con el informe de la franja horaria (equipos <strong>fuera de rango</strong> y <strong>sin funcionamiento</strong>).
+                    </p>
+                    <div class="mb-2">
+                        <label for="informeEmail" class="form-label">Correo destinatario</label>
+                        <input type="email" class="form-control form-control-lg" id="informeEmail" placeholder="ejemplo@empresa.cl">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnEnviarInforme" onclick="enviarInformeCorreo()">
+                        <i class="bi bi-send"></i> Enviar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ... Modales Restantes ... -->
     <div class="modal fade" id="celebrationModal" tabindex="-1">
         <!-- ... -->
@@ -638,6 +705,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="lecturas.js"></script>
     <script>
         let currentUser = null;
         let html5QrCode = null;
@@ -975,38 +1043,51 @@
                  </div>`;
              }
              document.getElementById('ventanaGlobal').textContent = formatearTextoVentana(Object.values(areasData)[0]?.ventana);
+             const fechaHoy = formatearFechaHoy();
 
-             // Informe del día (al finalizar el registro diario)
+             // Informe de la franja horaria (al finalizar todas las mediciones)
              const completo = totalP === 0 && totalC > 0;
              const informeCard = `
                 <div class="card mb-3 ${completo ? 'border-success' : 'border-secondary-subtle'}">
-                    <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2 py-3">
-                        <div>
-                            <h6 class="mb-1">${completo
-                                ? '<i class="bi bi-check-circle text-success"></i> Registro del día completado'
-                                : '<i class="bi bi-clipboard-check"></i> Informe del día'}</h6>
-                            <small class="text-muted">Descarga el informe con las mediciones del día (${formatearFechaHoy()}).</small>
+                    <div class="card-body py-3">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div>
+                                <h6 class="mb-1">${completo
+                                    ? '<i class="bi bi-check-circle text-success"></i> Franja horaria completada'
+                                    : '<i class="bi bi-clipboard-check"></i> Informe de la franja'}</h6>
+                                <small class="text-muted">${completo
+                                    ? 'Informe de equipos fuera de rango y sin funcionamiento (' + fechaHoy + ').'
+                                    : 'Completa todas las mediciones para generar el informe.'}</small>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-outline-success" onclick="descargarInformeDia('csv')">
+                                    <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="descargarInformeDia('pdf')">
+                                    <i class="bi bi-file-earmark-pdf"></i> PDF
+                                </button>
+                            </div>
                         </div>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-sm btn-outline-success" onclick="descargarInformeDia('csv')">
-                                <i class="bi bi-file-earmark-spreadsheet"></i> CSV
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="descargarInformeDia('pdf')">
-                                <i class="bi bi-file-earmark-pdf"></i> PDF
-                            </button>
+                        <div id="informeFranjaContent">
+                            ${completo
+                                ? '<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div> Generando informe...</div>'
+                                : ''}
                         </div>
                     </div>
                 </div>`;
 
-             // Notificar una sola vez cuando se completa el registro del día
+             // Notificar y preguntar por correo una sola vez cuando se completa la franja
              if (completo && !informeNotificado) {
                  informeNotificado = true;
-                 mostrarToast('¡Registro del día completado! Puedes generar el informe.', 'success');
+                 mostrarToast('¡Franja horaria completada! Se generó el informe.', 'success');
+                 setTimeout(() => preguntarEnviarInforme(), 800);
              } else if (!completo) {
                  informeNotificado = false;
              }
 
              container.innerHTML = informeCard + `<div class="mb-3 text-center"><h5>Total: ${totalC} listos / ${totalP} pendientes</h5></div>` + html;
+
+             if (completo) cargarInformeFranja();
         }
 
         function formatearFechaHoy() {
@@ -1036,6 +1117,137 @@
                 document.body.removeChild(a);
             } catch (e) {
                 alert('Error al generar informe: ' + e.message);
+            }
+        }
+
+        // ===== INFORME DE FRANJA HORARIA =====
+
+        async function cargarInformeFranja() {
+            const cont = document.getElementById('informeFranjaContent');
+            if (!cont) return;
+            try {
+                const ventana = Object.values(areasData)[0]?.ventana || '';
+                const res = await fetch(`/api/registros/informe-franja?ventana_horaria=${encodeURIComponent(ventana)}`);
+                if (!res.ok) throw new Error('Error al obtener el informe');
+                const data = await res.json();
+                renderInformeFranja(cont, data);
+            } catch (e) {
+                cont.innerHTML = '<div class="alert alert-warning small mb-0 mt-2">No se pudo cargar el informe de la franja: ' + e.message + '</div>';
+            }
+        }
+
+        function renderInformeFranja(cont, data) {
+            const fr = data.fuera_de_rango || [];
+            const fs = data.fuera_de_servicio || [];
+
+            const listaFr = fr.length === 0
+                ? '<li class="list-group-item">No hay registros fuera de rango.</li>'
+                : fr.map(i => `<li class="list-group-item"><strong>${i.area_nombre}</strong> - ${i.termometro_nombre || 'ID ' + i.termometro_id}: <span class="text-danger">${i.temp_maxima}°C / ${i.temp_minima}°C</span></li>`).join('');
+
+            const listaFs = fs.length === 0
+                ? '<li class="list-group-item">No hay termómetros sin funcionamiento.</li>'
+                : fs.map(i => `<li class="list-group-item"><strong>${i.area_nombre}</strong> - ${i.termometro_nombre || 'ID ' + i.termometro_id}: <span class="text-danger">${i.motivo}</span></li>`).join('');
+
+            cont.innerHTML = `
+                <hr class="my-3">
+                <div class="row text-center g-2 mb-3">
+                    <div class="col-4">
+                        <div class="border rounded-3 p-2 bg-light">
+                            <div class="fw-bold fs-4">${data.total_mediciones}</div>
+                            <small class="text-muted">Mediciones</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="border rounded-3 p-2 bg-warning-subtle">
+                            <div class="fw-bold fs-4 text-warning">${fr.length}</div>
+                            <small class="text-muted">Fuera de rango</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="border rounded-3 p-2 bg-danger-subtle">
+                            <div class="fw-bold fs-4 text-danger">${fs.length}</div>
+                            <small class="text-muted">Sin funcionamiento</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <h6 class="text-warning"><i class="bi bi-exclamation-triangle"></i> Fuera de rango operativo (${fr.length})</h6>
+                    <ul class="list-group list-group-flush small">${listaFr}</ul>
+                </div>
+                <div class="mb-3">
+                    <h6 class="text-danger"><i class="bi bi-bug"></i> Sin funcionamiento (${fs.length})</h6>
+                    <ul class="list-group list-group-flush small">${listaFs}</ul>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-sm btn-primary" onclick="abrirEnviarInforme()">
+                        <i class="bi bi-envelope"></i> Enviar por correo
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="descargarInformeFranja('pdf')">
+                        <i class="bi bi-file-earmark-pdf"></i> Descargar PDF
+                    </button>
+                </div>`;
+        }
+
+        async function descargarInformeFranja(formato) {
+            try {
+                const ventana = Object.values(areasData)[0]?.ventana || '';
+                const response = await fetch(`/api/registros/informe-franja?formato=${formato}&ventana_horaria=${encodeURIComponent(ventana)}`);
+                if (!response.ok) throw new Error('Error al generar el informe');
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `informe_franja_${formatearFechaHoy()}.${formato}`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (e) {
+                alert('Error al descargar informe: ' + e.message);
+            }
+        }
+
+        async function preguntarEnviarInforme() {
+            const quiere = await mostrarConfirmacion(
+                'Enviar informe por correo',
+                'La franja horaria está completa. ¿Deseas enviar por correo el informe con los equipos <strong>fuera de rango</strong> y <strong>sin funcionamiento</strong>? Se adjuntará el PDF.'
+            );
+            if (quiere) abrirEnviarInforme();
+        }
+
+        function abrirEnviarInforme() {
+            new bootstrap.Modal(document.getElementById('enviarInformeModal')).show();
+        }
+
+        async function enviarInformeCorreo() {
+            const input = document.getElementById('informeEmail');
+            const email = input.value.trim();
+            if (!email) { alert('Ingrese el correo destinatario.'); input.focus(); return; }
+
+            const ventana = Object.values(areasData)[0]?.ventana || '';
+            const btn = document.getElementById('btnEnviarInforme');
+            const original = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enviando...';
+
+            try {
+                const res = await fetch('/api/registros/enviar-informe-franja', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, ventana_horaria: ventana })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok) {
+                    mostrarToast('Informe enviado a ' + email, 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('enviarInformeModal')).hide();
+                } else {
+                    alert('Error: ' + (data.message || 'No se pudo enviar el correo.'));
+                }
+            } catch (e) {
+                alert('Error de red: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = original;
             }
         }
 
@@ -1112,16 +1324,26 @@
             // Resetear y llenar datos
             form.reset();
             
+            // Volver a la vista de formulario (ocultar cualquier confirmación previa)
+            mostrarConfirmacionUI(false);
+
             if (registro) {
                 document.getElementById('registroId').value = registro.id;
                 document.getElementById('esEdicion').value = 'true';
-                document.getElementById('tempActual').value = registro.temp_actual;
-                document.getElementById('tempMaxima').value = registro.temp_maxima;
-                document.getElementById('tempMinima').value = registro.temp_minima;
+                if (registro.temp_actual != null) document.getElementById('tempActual').value = registro.temp_actual;
+                document.getElementById('lectura2').value = registro.temp_maxima;
+                document.getElementById('lectura3').value = registro.temp_minima;
                 if(registro.humedad) document.getElementById('humedad').value = registro.humedad;
                 if(registro.observaciones) document.getElementById('observaciones').value = registro.observaciones;
             } else {
                 document.getElementById('esEdicion').value = 'false';
+                // Precargar la última lectura guardada de este termómetro (evita teclear negativos)
+                const prev = JSON.parse(localStorage.getItem('ultimaLectura_' + termometro.id) || 'null');
+                if (prev) {
+                    if (prev.actual != null) document.getElementById('tempActual').value = prev.actual;
+                    if (prev.maxima != null) document.getElementById('lectura2').value = prev.maxima;
+                    if (prev.minima != null) document.getElementById('lectura3').value = prev.minima;
+                }
             }
             
             // Humedad
@@ -1141,6 +1363,57 @@
             }
 
             new bootstrap.Modal(document.getElementById('registroModal')).show();
+        }
+
+        // ===== FLUJO DE LECTURAS ORDENADAS AUTOMÁTICAMENTE =====
+        // (stepTemp, ordenarValores, renderConfirmacionLecturas vienen de lecturas.js)
+
+        function leerLecturas() {
+            const actual = parseFloat(document.getElementById('tempActual').value);
+            const l2 = parseFloat(document.getElementById('lectura2').value);
+            const l3 = parseFloat(document.getElementById('lectura3').value);
+            return {
+                actual, l2, l3,
+                ok: !isNaN(actual) && !isNaN(l2) && !isNaN(l3)
+            };
+        }
+
+        function mostrarConfirmacionUI(confirmar) {
+            const btn = document.getElementById('btnGuardar');
+            const corregir = document.getElementById('btnCorregir');
+            document.getElementById('formLecturas').style.display = confirmar ? 'none' : 'block';
+            document.getElementById('confirmacionLecturas').style.display = confirmar ? 'block' : 'none';
+            corregir.style.display = confirmar ? 'inline-block' : 'none';
+            if (confirmar) {
+                btn.innerHTML = '<i class="bi bi-check-lg"></i> Guardar';
+                btn.onclick = guardarRegistro;
+                document.getElementById('btnFueraServicio').style.display = 'none';
+            } else {
+                btn.innerHTML = '<i class="bi bi-eye"></i> Revisar';
+                btn.onclick = revisarLecturas;
+                if (termometroSeleccionado && !termometroSeleccionado.fuera_de_servicio) {
+                    document.getElementById('btnFueraServicio').style.display = 'inline-block';
+                }
+            }
+        }
+
+        function revisarLecturas() {
+            const l = leerLecturas();
+            if (!l.ok) {
+                mostrarToast('Ingresa las 3 temperaturas para revisar', 'warning');
+                return;
+            }
+            const { actual, minima, maxima } = ordenarValores(l.actual, l.l2, l.l3);
+            renderConfirmacionLecturas(
+                'tarjetasLecturas', 'barraTermometro', 'confirmacionWarnings',
+                'confMinText', 'confActualText', 'confMaxText',
+                actual, minima, maxima, termometroSeleccionado || {}
+            );
+            mostrarConfirmacionUI(true);
+        }
+
+        function volverAFormulario() {
+            mostrarConfirmacionUI(false);
         }
 
         // --- FUNCIONES FUERA DE SERVICIO Y REPARACION ---
@@ -1289,19 +1562,27 @@
         }
 
         async function guardarRegistro() {
+            const l = leerLecturas();
+            if (!l.ok) {
+                mostrarToast('Ingresa las 3 temperaturas', 'warning');
+                return;
+            }
+            const { actual, minima, maxima } = ordenarValores(l.actual, l.l2, l.l3);
+
             const btn = document.getElementById('btnGuardar');
-            btn.disabled = true; btn.innerHTML = 'Guardando...';
-            
-            // Recolectar datos
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...';
+
+            // Recolectar datos (máxima = la mayor, mínima = la menor, ya ordenado)
             const payload = {
                 termometro_id: parseInt(document.getElementById('termometroId').value),
-                temp_actual: parseFloat(document.getElementById('tempActual').value) || null,
-                temp_maxima: parseFloat(document.getElementById('tempMaxima').value),
-                temp_minima: parseFloat(document.getElementById('tempMinima').value),
+                temp_actual: actual,
+                temp_maxima: maxima,
+                temp_minima: minima,
                 humedad: document.getElementById('humedad').value ? parseFloat(document.getElementById('humedad').value) : null,
                 observaciones: document.getElementById('observaciones').value || null
             };
-            
+
             const esEdicion = document.getElementById('esEdicion').value === 'true';
             const registroId = document.getElementById('registroId').value;
             const url = esEdicion ? `/api/registros/${registroId}` : '/api/registros';
@@ -1312,8 +1593,11 @@
                     method: method, headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(payload)
                 });
-                
+
                 if (res.ok) {
+                    // Guardar referencia para precargar la próxima vez
+                    localStorage.setItem('ultimaLectura_' + payload.termometro_id,
+                        JSON.stringify({ actual, maxima, minima, ts: Date.now() }));
                     mostrarToast('Guardado exitosamente', 'success');
                     bootstrap.Modal.getInstance(document.getElementById('registroModal')).hide();
                     await cargarTodasLasAreas();
@@ -1326,7 +1610,8 @@
             } catch (e) {
                 alert('Error de red: ' + e.message);
             } finally {
-                btn.disabled = false; btn.textContent = 'Guardar';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check-lg"></i> Guardar';
             }
         }
 

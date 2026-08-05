@@ -241,6 +241,28 @@ pub fn validar_registro(
     Ok((fuera_rango_operativo, advertencias))
 }
 
+/// Ordena las lecturas para que la máxima sea la mayor y la mínima la menor.
+/// Los registradores a veces confunden máx/mín cuando hay números negativos
+/// (p. ej. registran -12 en mínima y -18 en máxima). Al reordenar aquí en el
+/// backend, la data siempre queda coherente sin importar el orden de ingreso.
+pub fn normalizar_lecturas(
+    temp_actual: Option<f32>,
+    lectura_a: f32,
+    lectura_b: f32,
+) -> (Option<f32>, f32, f32) {
+    let mut valores = Vec::with_capacity(3);
+    if let Some(a) = temp_actual {
+        valores.push(a);
+    }
+    valores.push(lectura_a);
+    valores.push(lectura_b);
+
+    let temp_minima = valores.iter().cloned().fold(f32::INFINITY, f32::min);
+    let temp_maxima = valores.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+
+    (temp_actual, temp_maxima, temp_minima)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -367,5 +389,29 @@ mod tests {
         let (fuera, advertencias) = validar_registro(20.0, 4.0, None, &tipo).unwrap();
         assert!(fuera);
         assert!(!advertencias.is_empty());
+    }
+
+    #[test]
+    fn normalizar_lecturas_ordena_correctamente_con_negativos() {
+        // El registrador ingresó las lecturas al revés: -12 como "máxima" y -18 como "mínima"
+        let (actual, maxima, minima) = normalizar_lecturas(Some(-15.0), -12.0, -18.0);
+        assert_eq!(actual, Some(-15.0));
+        assert_eq!(maxima, -12.0);
+        assert_eq!(minima, -18.0);
+    }
+
+    #[test]
+    fn normalizar_lecturas_actual_puede_ser_extrema() {
+        let (_, maxima, minima) = normalizar_lecturas(Some(-25.0), -12.0, -18.0);
+        assert_eq!(maxima, -12.0);
+        assert_eq!(minima, -25.0);
+    }
+
+    #[test]
+    fn normalizar_lecturas_sin_actual() {
+        let (actual, maxima, minima) = normalizar_lecturas(None, -12.0, -18.0);
+        assert_eq!(actual, None);
+        assert_eq!(maxima, -12.0);
+        assert_eq!(minima, -18.0);
     }
 }

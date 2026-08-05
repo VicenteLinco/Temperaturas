@@ -259,11 +259,12 @@ Cada tipo de termómetro define:
 2. Seleccionar área
 3. Ver lista de termómetros pendientes y completados
 4. Escanear código QR del termómetro
-5. Ingresar temperatura máxima, mínima y humedad (si aplica)
-6. Sistema valida rangos y muestra advertencias
-7. Guardar registro
-8. Continuar con siguiente termómetro
-9. Al finalizar, botón "Cerrar Mediciones" muestra resumen de pendientes
+5. Ingresar temperatura actual y otras 2 lecturas (en **cualquier orden**, con botones `+`/`−`)
+6. El sistema ordena solo: la menor = mínima, la mayor = máxima (también se reordena en el backend)
+7. Pantalla de confirmación visual con barra termómetro (mín/actual/máx) y advertencias
+8. Guardar registro
+9. Continuar con siguiente termómetro
+10. Al finalizar, botón "Cerrar Mediciones" muestra resumen de pendientes
 
 ## Flujo de Trabajo del Administrador
 
@@ -385,7 +386,7 @@ cargo test
 - Revisar zona horaria del servidor
 
 #### Error: "Temperatura máxima no puede ser menor que mínima"
-- Validación agregada en v2.0
+- Las lecturas se ordenan automáticamente (menor = mínima, mayor = máxima), así que este error solo aparece si se envía data directamente por API con valores inconsistentes
 - Verificar que los valores sean coherentes (máx ≥ mín)
 
 ### Scanner QR
