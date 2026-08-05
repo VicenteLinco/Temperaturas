@@ -891,10 +891,14 @@
                             <h2 class="mb-0"><i class="bi bi-graph-up-arrow text-primary"></i> Análisis y Gráficos de Temperatura</h2>
                             <p class="text-muted small mb-0">Filtra por área, termómetro y rango de fechas con límites operativos y alertas en tiempo real.</p>
                         </div>
-                        <div class="d-flex gap-2 align-items-center">
-                            <button class="btn btn-outline-secondary btn-sm" onclick="exportarGraficoPNG()"><i class="bi bi-download"></i> Exportar PNG</button>
-                            <button class="btn btn-outline-success btn-sm" onclick="exportarGraficoCSV()"><i class="bi bi-file-earmark-spreadsheet"></i> Exportar CSV</button>
-                            <button class="btn btn-outline-danger btn-sm" onclick="resetearZoomGrafico()"><i class="bi bi-zoom-out"></i> Reset Zoom</button>
+                        <div class="d-flex gap-2 align-items-center flex-wrap">
+                            <div class="btn-group btn-group-sm" role="group" aria-label="Controles de Zoom">
+                                <button class="btn btn-outline-secondary" onclick="hacerZoomGrafico(1.25)" title="Acercar gráfico"><i class="bi bi-zoom-in"></i> +</button>
+                                <button class="btn btn-outline-secondary" onclick="hacerZoomGrafico(0.8)" title="Alejar gráfico"><i class="bi bi-zoom-out"></i> -</button>
+                                <button class="btn btn-outline-danger" onclick="resetearZoomGrafico()" title="Restablecer Zoom"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+                            </div>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="exportarGraficoPNG()"><i class="bi bi-download"></i> PNG</button>
+                            <button class="btn btn-outline-success btn-sm" onclick="exportarGraficoCSV()"><i class="bi bi-file-earmark-spreadsheet"></i> CSV</button>
                         </div>
                     </div>
 
@@ -1015,7 +1019,7 @@
                     <div class="card mb-4 shadow-sm border-0" style="border-radius: 18px; overflow: hidden;">
                         <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3 px-4">
                             <h5 class="mb-0 fs-6 fw-semibold" id="titulo_grafico_principal"><i class="bi bi-graph-up text-primary me-2"></i> Gráfico Principal de Temperatura</h5>
-                            <small class="text-white-50" style="font-size: 0.8rem;"><i class="bi bi-info-circle me-1"></i> Usa el mouse/gestos para Zoom y Pan</small>
+                            <small class="text-white-50" style="font-size: 0.8rem;"><i class="bi bi-info-circle me-1"></i> Scroll normal para bajar la página. Usa <strong>Ctrl + Rueda</strong> o los botones para Zoom.</small>
                         </div>
                         <div class="card-body p-4">
                             <!-- Apple Empty State (se muestra si 0 termómetros están seleccionados) -->
@@ -1311,37 +1315,46 @@
 
                     <div id="formLecturasAdmin">
                         <div class="alert alert-info py-2 small mb-3">
-                            <i class="bi bi-arrow-down-up"></i> Ingresa las lecturas en <strong>cualquier orden</strong>: el sistema ordena solo (la más baja = mínima, la más alta = máxima).
+                            <i class="bi bi-info-circle-fill me-1"></i> Las 3 lecturas son <strong>obligatorias</strong>. Ingrésalas en cualquier orden: el sistema las clasifica automáticamente (menor = mínima, mayor = máxima).
                         </div>
 
                         <div class="mb-3">
-                            <label for="admTempActual" class="form-label fw-semibold">Temperatura Actual (°C)</label>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label for="admTempActual" class="form-label fw-semibold mb-0">1ª Lectura: Temp. Actual (°C)</label>
+                                <span class="badge bg-primary">Obligatoria</span>
+                            </div>
                             <div class="temp-stepper">
                                 <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('admTempActual', -1)">−1</button>
                                 <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('admTempActual', -0.1)">−0.1</button>
-                                <input type="number" inputmode="decimal" step="0.1" min="-999" class="form-control form-control-lg" id="admTempActual">
+                                <input type="number" inputmode="decimal" step="0.1" min="-999" class="form-control form-control-lg" id="admTempActual" placeholder="Valor actual (ej: 4.5)">
                                 <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('admTempActual', 0.1)">+0.1</button>
                                 <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('admTempActual', 1)">+1</button>
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label for="admLectura2" class="form-label fw-semibold">Lectura 2 (°C)</label>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label for="admLectura2" class="form-label fw-semibold mb-0">2ª Lectura de Temperatura (°C)</label>
+                                <span class="badge bg-secondary">Obligatoria</span>
+                            </div>
                             <div class="temp-stepper">
                                 <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('admLectura2', -1)">−1</button>
                                 <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('admLectura2', -0.1)">−0.1</button>
-                                <input type="number" inputmode="decimal" step="0.1" min="-999" class="form-control" id="admLectura2">
+                                <input type="number" inputmode="decimal" step="0.1" min="-999" class="form-control" id="admLectura2" placeholder="Segunda lectura (ej: 2.1)">
                                 <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('admLectura2', 0.1)">+0.1</button>
                                 <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('admLectura2', 1)">+1</button>
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label for="admLectura3" class="form-label fw-semibold">Lectura 3 (°C)</label>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label for="admLectura3" class="form-label fw-semibold mb-0">3ª Lectura de Temperatura (°C)</label>
+                                <span class="badge bg-secondary">Obligatoria</span>
+                            </div>
                             <div class="temp-stepper">
                                 <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('admLectura3', -1)">−1</button>
                                 <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('admLectura3', -0.1)">−0.1</button>
-                                <input type="number" inputmode="decimal" step="0.1" min="-999" class="form-control" id="admLectura3">
+                                <input type="number" inputmode="decimal" step="0.1" min="-999" class="form-control" id="admLectura3" placeholder="Tercera lectura (ej: 7.8)">
                                 <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('admLectura3', 0.1)">+0.1</button>
                                 <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('admLectura3', 1)">+1</button>
                             </div>
@@ -2933,6 +2946,30 @@
                 </div>`;
         }
 
+        function formatearFechaEjeX(fechaStr) {
+            if (!fechaStr) return '';
+            try {
+                const parts = fechaStr.split(' ');
+                if (parts.length === 2) {
+                    const [f, h] = parts;
+                    const dateParts = f.split('-');
+                    const timeParts = h.split(':');
+                    if (dateParts.length === 3 && timeParts.length >= 2) {
+                        return `${dateParts[2]}/${dateParts[1]} ${timeParts[0]}:${timeParts[1]}`;
+                    }
+                }
+                const d = new Date(fechaStr.replace(' ', 'T'));
+                if (isNaN(d.getTime())) return fechaStr;
+                const dia = String(d.getDate()).padStart(2, '0');
+                const mes = String(d.getMonth() + 1).padStart(2, '0');
+                const hora = String(d.getHours()).padStart(2, '0');
+                const min = String(d.getMinutes()).padStart(2, '0');
+                return `${dia}/${mes} ${hora}:${min}`;
+            } catch (e) {
+                return fechaStr;
+            }
+        }
+
         function crearChartLecturasDetalladas(lecturas, limites) {
             const canvasEl = document.getElementById('chartTendencias');
             if (!canvasEl) return;
@@ -2944,6 +2981,9 @@
                 destruirGraficos();
                 return;
             }
+
+            const totalPuntos = lecturas.length;
+            const radiusBase = totalPuntos > 60 ? 0 : (totalPuntos > 25 ? 1.5 : 3);
 
             // Paleta Sobria Tipo Apple
             const applePalette = [
@@ -2958,13 +2998,13 @@
             ];
 
             let datasets = [];
-            const labels = lecturas.map(l => `${l.fecha_registro} (${l.termometro_nombre})`);
+            const labels = lecturas.map(l => formatearFechaEjeX(l.fecha_registro));
 
             // Si hay exactamente 1 termómetro seleccionado: mostrar lecturas detalladas (Actual, Máx, Mín)
             if (termometrosSeleccionadosGraficos.size === 1) {
                 const pointBg = lecturas.map(l => (mostrarAlertas && l.fuera_rango_operativo) ? '#ff3b30' : '#0071e3');
                 const pointBorder = lecturas.map(l => (mostrarAlertas && l.fuera_rango_operativo) ? '#c92a2a' : '#0057b3');
-                const pointRadius = lecturas.map(l => (mostrarAlertas && l.fuera_rango_operativo) ? 6 : 3);
+                const pointRadius = lecturas.map(l => (mostrarAlertas && l.fuera_rango_operativo) ? Math.max(6, radiusBase + 4) : radiusBase);
                 const pointStyle = lecturas.map(l => (mostrarAlertas && l.fuera_rango_operativo) ? 'rectRot' : 'circle');
 
                 datasets = [
@@ -2989,7 +3029,8 @@
                         borderColor: '#ff9500',
                         borderDash: [4, 4],
                         tension: 0.3,
-                        pointRadius: 2,
+                        pointRadius: Math.max(0, radiusBase - 0.5),
+                        pointHoverRadius: 6,
                         borderWidth: 1.5,
                         order: 2
                     },
@@ -2999,13 +3040,14 @@
                         borderColor: '#30b0c7',
                         borderDash: [4, 4],
                         tension: 0.3,
-                        pointRadius: 2,
+                        pointRadius: Math.max(0, radiusBase - 0.5),
+                        pointHoverRadius: 6,
                         borderWidth: 1.5,
                         order: 3
                     }
                 ];
             } else {
-                // Si hay 2+ termómetros seleccionados: agrupar por termómetro para comparar limpia y soberanamente
+                // Si hay 2+ termómetros seleccionados: agrupar por termómetro para comparar
                 const termMap = new Map();
                 lecturas.forEach(l => {
                     if (!termMap.has(l.termometro_id)) {
@@ -3029,7 +3071,7 @@
                         borderColor: color,
                         backgroundColor: color,
                         tension: 0.3,
-                        pointRadius: 3,
+                        pointRadius: radiusBase,
                         pointHoverRadius: 7,
                         borderWidth: 2,
                         spanGaps: true,
@@ -3047,7 +3089,7 @@
                 datasets.push({
                     label: `Límite Mín (${tempMinOp}°C)`,
                     data: labels.map(() => tempMinOp),
-                    borderColor: 'rgba(255, 59, 48, 0.7)',
+                    borderColor: 'rgba(255, 59, 48, 0.75)',
                     borderWidth: 1.5,
                     borderDash: [5, 5],
                     pointRadius: 0,
@@ -3057,7 +3099,7 @@
                 datasets.push({
                     label: `Límite Máx (${tempMaxOp}°C)`,
                     data: labels.map(() => tempMaxOp),
-                    borderColor: 'rgba(255, 59, 48, 0.7)',
+                    borderColor: 'rgba(255, 59, 48, 0.75)',
                     borderWidth: 1.5,
                     borderDash: [5, 5],
                     pointRadius: 0,
@@ -3072,24 +3114,56 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
                     plugins: {
-                        legend: { position: 'bottom', labels: { usePointStyle: true, font: { family: '-apple-system, sans-serif', size: 12 } } },
+                        legend: {
+                            position: 'bottom',
+                            labels: { usePointStyle: true, font: { family: '-apple-system, sans-serif', size: 12 } }
+                        },
                         zoom: {
                             pan: { enabled: true, mode: 'x' },
-                            zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
+                            zoom: {
+                                wheel: { enabled: true, modifierKey: 'ctrl' },
+                                pinch: { enabled: true },
+                                mode: 'x'
+                            }
                         },
+                        annotation: (mostrarLimites && tempMinOp != null && tempMaxOp != null) ? {
+                            annotations: {
+                                rangoSeguro: {
+                                    type: 'box',
+                                    yMin: tempMinOp,
+                                    yMax: tempMaxOp,
+                                    backgroundColor: 'rgba(52, 199, 89, 0.05)',
+                                    borderColor: 'rgba(52, 199, 89, 0.2)',
+                                    borderWidth: 1,
+                                    borderDash: [4, 4]
+                                }
+                            }
+                        } : {},
                         tooltip: {
-                            backgroundColor: 'rgba(29, 29, 31, 0.9)',
+                            backgroundColor: 'rgba(29, 29, 31, 0.92)',
                             titleFont: { family: '-apple-system, sans-serif', size: 13, weight: 'bold' },
                             bodyFont: { family: '-apple-system, sans-serif', size: 12 },
-                            padding: 10,
+                            padding: 12,
                             cornerRadius: 10,
                             callbacks: {
+                                title: (items) => {
+                                    if (!items.length) return '';
+                                    const index = items[0].dataIndex;
+                                    const item = lecturas[index];
+                                    return item ? `${item.fecha_registro} — ${item.termometro_nombre}` : items[0].label;
+                                },
                                 footer: (items) => {
+                                    if (!items.length) return '';
                                     const index = items[0].dataIndex;
                                     const item = lecturas[index];
                                     if (!item) return '';
-                                    let text = `Área: ${item.area_nombre}\nVentana: ${item.ventana_horaria}`;
+                                    let text = `Área: ${item.area_nombre || '-'}`;
+                                    if (item.ventana_horaria) text += ` | Ventana: ${item.ventana_horaria}`;
                                     if (item.fuera_rango_operativo) text += `\n⚠️ ¡FUERA DE RANGO OPERATIVO!`;
                                     if (item.observaciones) text += `\nObs: ${item.observaciones}`;
                                     return text;
@@ -3103,7 +3177,13 @@
                             grid: { color: 'rgba(0,0,0,0.04)' }
                         },
                         x: {
-                            ticks: { maxRotation: 45, minRotation: 0, font: { family: '-apple-system, sans-serif', size: 11 } },
+                            ticks: {
+                                autoSkip: true,
+                                maxTicksLimit: 12,
+                                maxRotation: 0,
+                                minRotation: 0,
+                                font: { family: '-apple-system, sans-serif', size: 11 }
+                            },
                             grid: { display: false }
                         }
                     }
@@ -3115,16 +3195,19 @@
 
         function crearChartTendencias(tendencias, limites) {
             const ctx = document.getElementById('chartTendencias').getContext('2d');
-            const labels = tendencias.map(t => t.fecha);
+            const labels = tendencias.map(t => formatearFechaEjeX(t.fecha));
             const mostrarLimites = document.getElementById('chkMostrarLimites').checked;
 
             let tempMinOp = limites ? limites.temp_min_operativa : (tendencias[0] ? tendencias[0].temp_min_operativa : null);
             let tempMaxOp = limites ? limites.temp_max_operativa : (tendencias[0] ? tendencias[0].temp_max_operativa : null);
 
+            const numTend = tendencias.length;
+            const radiusBase = numTend > 40 ? 1 : 3;
+
             const datasets = [
-                { label: 'Prom. Máxima (°C)', data: tendencias.map(t => t.promedio_max), borderColor: '#dc3545', backgroundColor: 'rgba(220,53,69,.1)', tension: 0.3, pointRadius: 3, order: 1 },
-                { label: 'Prom. Actual (°C)', data: tendencias.map(t => t.promedio_actual), borderColor: '#0d6efd', backgroundColor: 'rgba(13,110,253,.1)', tension: 0.3, pointRadius: 3, order: 1 },
-                { label: 'Prom. Mínima (°C)', data: tendencias.map(t => t.promedio_min), borderColor: '#0dcaf0', backgroundColor: 'rgba(13,202,240,.1)', tension: 0.3, pointRadius: 3, order: 1 }
+                { label: 'Prom. Máxima (°C)', data: tendencias.map(t => t.promedio_max), borderColor: '#dc3545', backgroundColor: 'rgba(220,53,69,.1)', tension: 0.3, pointRadius: radiusBase, order: 1 },
+                { label: 'Prom. Actual (°C)', data: tendencias.map(t => t.promedio_actual), borderColor: '#0d6efd', backgroundColor: 'rgba(13,110,253,.1)', tension: 0.3, pointRadius: radiusBase, order: 1 },
+                { label: 'Prom. Mínima (°C)', data: tendencias.map(t => t.promedio_min), borderColor: '#0dcaf0', backgroundColor: 'rgba(13,202,240,.1)', tension: 0.3, pointRadius: radiusBase, order: 1 }
             ];
 
             if (mostrarLimites && tempMinOp != null && tempMaxOp != null) {
@@ -3156,14 +3239,33 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
                     plugins: {
                         legend: { position: 'bottom' },
                         zoom: {
                             pan: { enabled: true, mode: 'x' },
-                            zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
+                            zoom: {
+                                wheel: { enabled: true, modifierKey: 'ctrl' },
+                                pinch: { enabled: true },
+                                mode: 'x'
+                            }
                         }
                     },
-                    scales: { y: { title: { display: true, text: '°C' } } }
+                    scales: {
+                        y: { title: { display: true, text: '°C' } },
+                        x: {
+                            ticks: {
+                                autoSkip: true,
+                                maxTicksLimit: 12,
+                                maxRotation: 0,
+                                minRotation: 0,
+                                font: { family: '-apple-system, sans-serif', size: 11 }
+                            }
+                        }
+                    }
                 }
             });
 
@@ -3175,7 +3277,7 @@
             const chart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: tendencias.map(t => t.fecha),
+                    labels: tendencias.map(t => formatearFechaEjeX(t.fecha)),
                     datasets: [{
                         label: 'Alertas',
                         data: tendencias.map(t => t.alertas),
@@ -3187,7 +3289,10 @@
                 options: {
                     responsive: true,
                     plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                    scales: {
+                        y: { beginAtZero: true, ticks: { precision: 0 } },
+                        x: { ticks: { autoSkip: true, maxTicksLimit: 10, maxRotation: 0 } }
+                    }
                 }
             });
             graficosCharts.push(chart);
@@ -3207,10 +3312,19 @@
                 options: {
                     responsive: true,
                     plugins: { legend: { position: 'bottom' } },
-                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                    scales: {
+                        y: { beginAtZero: true, ticks: { precision: 0 } },
+                        x: { ticks: { maxRotation: 0 } }
+                    }
                 }
             });
             graficosCharts.push(chart);
+        }
+
+        function hacerZoomGrafico(factor) {
+            if (graficosCharts[0] && typeof graficosCharts[0].zoom === 'function') {
+                graficosCharts[0].zoom(factor);
+            }
         }
 
         function resetearZoomGrafico() {

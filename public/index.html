@@ -500,58 +500,64 @@
                             </div>
                         </div>
 
-                        <!-- FORMULARIO DE LECTURAS (Temperatura Actual SIEMPRE PRIMERO) -->
+                        <!-- FORMULARIO DE LECTURAS (3 Lecturas Obligatorias) -->
                         <div id="formLecturas">
                             <div class="alert py-2.5 px-3 mb-3 border-0 rounded-3 d-flex align-items-start gap-2.5" style="background-color: rgba(0, 113, 227, 0.08); color: #0071e3;">
                                 <i class="bi bi-info-circle-fill fs-5 flex-shrink-0 mt-0.5"></i>
                                 <div>
-                                    <strong style="font-weight: 600;">1º SIEMPRE PRIMERO: Temperatura Actual</strong>
+                                    <strong style="font-weight: 600;">Las 3 lecturas son OBLIGATORIAS</strong>
                                     <div class="mt-1" style="font-size: 0.82rem; color: #1d1d1f;">
-                                        La <strong>Temperatura Actual</strong> es la lectura principal e imprescindible. Las siguientes lecturas son secundarias (mínima/máxima en cualquier orden).
+                                        Debes ingresar las 3 temperaturas del termómetro. El orden en que las ingreses <strong>no afecta el resultado</strong>: el sistema clasifica automáticamente el valor menor como Mínima, el mayor como Máxima y mantiene la Actual.
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Campo 1: Temperatura Actual (OBLIGATORIO Y PRINCIPAL) -->
+                            <!-- Campo 1: Temperatura Actual -->
                             <div class="mb-3 p-3 border rounded-3 bg-white shadow-sm" style="border-color: rgba(0,113,227,0.3) !important;">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <label for="tempActual" class="form-label fw-bold mb-0 text-primary fs-6">1º Temperatura Actual (°C)</label>
-                                    <span class="badge rounded-pill bg-primary px-2.5 py-1" style="font-size: 0.7rem; font-weight: 600;"><i class="bi bi-star-fill me-1"></i>OBLIGATORIA (PRINCIPAL)</span>
+                                    <label for="tempActual" class="form-label fw-bold mb-0 text-primary fs-6">1ª Lectura: Temperatura Actual (°C)</label>
+                                    <span class="badge rounded-pill bg-primary px-2.5 py-1" style="font-size: 0.7rem; font-weight: 600;"><i class="bi bi-asterisk me-1"></i>OBLIGATORIA</span>
                                 </div>
                                 <div class="temp-stepper">
                                     <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('tempActual', -1)">−1</button>
                                     <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('tempActual', -0.1)">−0.1</button>
-                                    <input type="number" inputmode="decimal" step="0.1" min="-999" class="form-control form-control-lg text-center fw-bold" id="tempActual" placeholder="Valor actual">
+                                    <input type="number" inputmode="decimal" step="0.1" min="-999" class="form-control form-control-lg text-center fw-bold" id="tempActual" placeholder="Valor actual (ej: 4.5)">
                                     <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('tempActual', 0.1)">+0.1</button>
                                     <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('tempActual', 1)">+1</button>
                                 </div>
-                                <div class="lectura-hint text-primary fw-medium"><i class="bi bi-thermometer-half me-1"></i>Lectura en vivo del termómetro ahora mismo.</div>
+                                <div class="lectura-hint text-primary fw-medium"><i class="bi bi-thermometer-half me-1"></i>Lectura en vivo del termómetro.</div>
                             </div>
 
-                            <!-- Campo 2: Lectura Secundaria -->
+                            <!-- Campo 2: Segunda Lectura -->
                             <div class="mb-3">
-                                <label for="lectura2" class="form-label fw-semibold text-secondary">2º Lectura Secundaria (°C)</label>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label for="lectura2" class="form-label fw-semibold text-secondary mb-0">2ª Lectura de Temperatura (°C)</label>
+                                    <span class="badge rounded-pill bg-secondary px-2 py-0.5" style="font-size: 0.68rem; font-weight: 600;"><i class="bi bi-asterisk me-1"></i>OBLIGATORIA</span>
+                                </div>
                                 <div class="temp-stepper">
                                     <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('lectura2', -1)">−1</button>
                                     <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('lectura2', -0.1)">−0.1</button>
-                                    <input type="number" inputmode="decimal" step="0.1" min="-999" class="form-control text-center" id="lectura2" placeholder="Opcional">
+                                    <input type="number" inputmode="decimal" step="0.1" min="-999" class="form-control text-center" id="lectura2" placeholder="Segunda lectura (ej: 2.1)">
                                     <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('lectura2', 0.1)">+0.1</button>
                                     <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('lectura2', 1)">+1</button>
                                 </div>
-                                <div class="lectura-hint">Cualquiera de las otras lecturas (máxima o mínima).</div>
+                                <div class="lectura-hint">Cualquiera de las otras dos lecturas (mínima o máxima).</div>
                             </div>
 
-                            <!-- Campo 3: Lectura Secundaria -->
+                            <!-- Campo 3: Tercera Lectura -->
                             <div class="mb-3">
-                                <label for="lectura3" class="form-label fw-semibold text-secondary">3º Lectura Secundaria (°C)</label>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label for="lectura3" class="form-label fw-semibold text-secondary mb-0">3ª Lectura de Temperatura (°C)</label>
+                                    <span class="badge rounded-pill bg-secondary px-2 py-0.5" style="font-size: 0.68rem; font-weight: 600;"><i class="bi bi-asterisk me-1"></i>OBLIGATORIA</span>
+                                </div>
                                 <div class="temp-stepper">
                                     <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('lectura3', -1)">−1</button>
                                     <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('lectura3', -0.1)">−0.1</button>
-                                    <input type="number" inputmode="decimal" step="0.1" min="-999" class="form-control text-center" id="lectura3" placeholder="Opcional">
+                                    <input type="number" inputmode="decimal" step="0.1" min="-999" class="form-control text-center" id="lectura3" placeholder="Tercera lectura (ej: 7.8)">
                                     <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('lectura3', 0.1)">+0.1</button>
                                     <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('lectura3', 1)">+1</button>
                                 </div>
-                                <div class="lectura-hint">Cualquiera de las otras lecturas (máxima o mínima).</div>
+                                <div class="lectura-hint">Cualquiera de las otras dos lecturas (mínima o máxima).</div>
                             </div>
 
                             <div class="mb-3" id="humedadGroup" style="display: none;">
@@ -1421,12 +1427,8 @@
 
         function revisarLecturas() {
             const l = leerLecturas();
-            if (isNaN(l.actual)) {
-                mostrarToast('La 1º Temperatura Actual es obligatoria y debe ser ingresada primero', 'warning');
-                return;
-            }
             if (!l.ok) {
-                mostrarToast('Ingresa las 3 temperaturas requeridas para continuar', 'warning');
+                mostrarToast('Las 3 lecturas de temperatura son obligatorias. Por favor ingresa los 3 valores.', 'warning');
                 return;
             }
             const { actual, minima, maxima } = ordenarValores(l.actual, l.l2, l.l3);
