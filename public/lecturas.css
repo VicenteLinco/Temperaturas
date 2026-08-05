@@ -1,15 +1,60 @@
-/* ===== Flujo de lecturas ordenadas automáticamente (compartido index/admin) ===== */
+/* ===== System Apple Theme & Design Tokens ===== */
+:root {
+    --apple-font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --apple-bg: #f5f5f7;
+    --apple-card-bg: #ffffff;
+    --apple-text: #1d1d1f;
+    --apple-text-secondary: #86868b;
+    --apple-blue: #0071e3;
+    --apple-blue-hover: #0077ed;
+    --apple-blue-soft: rgba(0, 113, 227, 0.08);
+    --apple-green: #34c759;
+    --apple-orange: #ff9500;
+    --apple-red: #ff3b30;
+    --apple-gray: #e5e5ea;
+    --apple-gray-light: #f2f2f7;
+    --apple-border: rgba(0, 0, 0, 0.08);
+    --apple-radius-sm: 8px;
+    --apple-radius-md: 12px;
+    --apple-radius-lg: 18px;
+    --apple-radius-pill: 9999px;
+    --apple-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --apple-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.04);
+    --apple-shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.12);
+}
+
+body {
+    font-family: var(--apple-font);
+    color: var(--apple-text);
+    background-color: var(--apple-bg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Stepper de temperaturas Apple style */
 .temp-stepper {
     display: flex;
     align-items: stretch;
     gap: 6px;
 }
 .temp-stepper .btn {
+    font-family: var(--apple-font);
     font-weight: 600;
-    border-radius: 8px;
+    border-radius: var(--apple-radius-sm);
     padding: 0.5rem 0.75rem;
     min-width: 44px;
-    font-family: inherit;
+    border-color: var(--apple-border);
+    color: var(--apple-text);
+    background: #f2f2f7;
+    transition: all 0.15s ease;
+}
+.temp-stepper .btn:hover {
+    background: #e5e5ea;
+    color: var(--apple-text);
+    border-color: #d1d1d6;
+}
+.temp-stepper .btn:active {
+    transform: scale(0.95);
 }
 .temp-stepper .btn-step-sm {
     min-width: 38px;
@@ -19,38 +64,44 @@
 .temp-stepper input {
     text-align: center;
     font-weight: 700;
-    font-size: 1.2rem;
+    font-size: 1.25rem;
     flex: 1;
     min-width: 0;
-    font-family: inherit;
-    border-radius: 8px;
-    border: 1px solid #cbd5e1;
+    font-family: var(--apple-font);
+    border-radius: var(--apple-radius-md);
+    border: 1px solid #d2d2d7;
+    background-color: #ffffff;
+    color: var(--apple-text);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .temp-stepper input:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    border-color: var(--apple-blue);
+    box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.15);
+    outline: none;
 }
 .lectura-hint {
     font-size: 0.8rem;
-    color: #64748b;
+    color: var(--apple-text-secondary);
     margin-top: 6px;
     line-height: 1.35;
 }
+
+/* Barra de termómetro con estética Apple */
 .barra-termometro {
     position: relative;
     height: 14px;
-    border-radius: 7px;
-    background-color: #e2e8f0;
-    margin: 34px 8px 44px;
-    border: 1px solid #cbd5e1;
+    border-radius: var(--apple-radius-pill);
+    background-color: #e5e5ea;
+    margin: 36px 8px 46px;
+    border: 1px solid rgba(0,0,0,0.06);
 }
 .barra-termometro .zona-operativa {
     position: absolute;
     top: 0;
     bottom: 0;
-    background-color: #dcfce7;
-    border-left: 2px solid #16a34a;
-    border-right: 2px solid #16a34a;
+    background-color: rgba(52, 199, 89, 0.2);
+    border-left: 2px solid var(--apple-green);
+    border-right: 2px solid var(--apple-green);
     border-radius: 2px;
 }
 .barra-marker {
@@ -60,7 +111,7 @@
     z-index: 2;
 }
 .barra-marker.top {
-    top: -30px;
+    top: -32px;
 }
 .barra-marker.bottom {
     top: 22px;
@@ -69,67 +120,165 @@
     font-size: 0.7rem;
     font-weight: 700;
     white-space: nowrap;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.4px;
     text-transform: uppercase;
-    color: #475569;
+    color: var(--apple-text-secondary);
 }
 .barra-marker .pin {
     width: 3px;
     height: 14px;
     margin: 0 auto;
-    background-color: #475569;
+    background-color: var(--apple-text);
     border-radius: 2px;
 }
 .barra-marker .valor {
     font-size: 0.85rem;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--apple-text);
     background-color: #ffffff;
-    border: 1px solid #cbd5e1;
+    border: 1px solid rgba(0,0,0,0.1);
     border-radius: 6px;
     padding: 2px 6px;
     display: inline-block;
     margin-top: 3px;
-    box-shadow: 0 1px 3px rgba(15,23,42,0.08);
+    box-shadow: var(--apple-shadow-sm);
 }
+
+/* Tarjetas de lectura */
 .tarjeta-lectura {
-    border-radius: 10px;
+    border-radius: var(--apple-radius-md);
     padding: 12px 8px;
     text-align: center;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--apple-border);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: var(--apple-shadow-sm);
+    background: #ffffff;
 }
 .tarjeta-lectura .tl-label {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 700;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.5px;
     text-transform: uppercase;
 }
 .tarjeta-lectura .tl-valor {
     font-size: 1.5rem;
-    font-weight: 800;
+    font-weight: 700;
     line-height: 1.2;
     margin-top: 2px;
     margin-bottom: 2px;
     font-feature-settings: "tnum";
+    letter-spacing: -0.02em;
 }
 .tarjeta-lectura .tl-unidad {
     font-size: 0.8rem;
     font-weight: 600;
 }
 .tarjeta-lectura.min {
-    background-color: #eff6ff;
-    border-color: #bfdbfe;
-    color: #1e40af;
+    background-color: rgba(0, 113, 227, 0.06);
+    border-color: rgba(0, 113, 227, 0.2);
+    color: #0071e3;
 }
 .tarjeta-lectura.max {
-    background-color: #fef2f2;
-    border-color: #fecaca;
-    color: #991b1b;
+    background-color: rgba(255, 149, 0, 0.08);
+    border-color: rgba(255, 149, 0, 0.25);
+    color: #c97100;
 }
 .tarjeta-lectura.actual {
-    background-color: #f0fdf4;
-    border-color: #bbf7d0;
-    color: #166534;
+    background-color: rgba(52, 199, 89, 0.08);
+    border-color: rgba(52, 199, 89, 0.25);
+    color: #1e7e34;
 }
+
+/* Chips / Pills Apple para selección multi-termómetro */
+.apple-chip-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+.apple-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: var(--apple-radius-pill);
+    background: #e8e8ed;
+    color: var(--apple-text);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+.apple-chip:hover {
+    background: #dcdce0;
+}
+.apple-chip input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid #86868b;
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.15s ease;
+    background-color: #fff;
+}
+.apple-chip input[type="checkbox"]:checked {
+    background-color: var(--apple-blue);
+    border-color: var(--apple-blue);
+}
+.apple-chip input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    left: 4.5px;
+    top: 1.5px;
+    width: 4px;
+    height: 8px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+.apple-chip.active, .apple-chip:has(input:checked) {
+    background: rgba(0, 113, 227, 0.12);
+    color: var(--apple-blue);
+    border-color: rgba(0, 113, 227, 0.3);
+    font-weight: 600;
+}
+
+/* Estado Vacío de Gráfica Apple */
+.apple-empty-chart {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1.5rem;
+    text-align: center;
+    background: #ffffff;
+    border-radius: var(--apple-radius-lg);
+    border: 2px dashed #d2d2d7;
+    margin: 1rem 0;
+}
+.apple-empty-chart i {
+    font-size: 3.5rem;
+    color: var(--apple-blue);
+    opacity: 0.7;
+    margin-bottom: 1rem;
+}
+.apple-empty-chart h5 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--apple-text);
+    margin-bottom: 0.4rem;
+}
+.apple-empty-chart p {
+    font-size: 0.9rem;
+    color: var(--apple-text-secondary);
+    max-width: 420px;
+    margin-bottom: 0;
+}
+
 

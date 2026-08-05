@@ -12,26 +12,27 @@
     <link rel="stylesheet" href="lecturas.css">
     <style>
         :root {
-            /* Paleta plana sobria y elegante */
-            --brand: #2563eb;
-            --brand-dark: #1d4ed8;
-            --ink: #0f172a;
-            --slate: #0f172a;
-            --bg: #f8fafc;
-            --muted: #64748b;
+            /* Paleta Sobria Tipo Apple */
+            --brand: #0071e3;
+            --brand-dark: #0057b3;
+            --ink: #1d1d1f;
+            --slate: #1d1d1f;
+            --bg: #f5f5f7;
+            --muted: #86868b;
 
             --sidebar-width: 260px;
             --header-height: 60px;
-            --radius: 12px;
-            --shadow-card: 0 1px 3px rgba(15,23,42,0.08), 0 1px 2px rgba(15,23,42,0.06);
-            --shadow-hover: 0 6px 16px rgba(15,23,42,0.12);
+            --radius: 14px;
+            --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.08);
         }
 
         body {
             background-color: var(--bg);
-            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
             color: var(--ink);
             padding-top: 0;
+            -webkit-font-smoothing: antialiased;
         }
 
         /* Navbar */
@@ -39,11 +40,11 @@
             background-color: var(--slate);
             min-height: var(--header-height);
             height: auto;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
             z-index: 1000;
             padding-top: calc(0.5rem + env(safe-area-inset-top));
             padding-bottom: 0.5rem;
-            border-bottom: 3px solid var(--brand);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         .navbar-brand {
             font-weight: 700;
@@ -898,29 +899,21 @@
                     </div>
 
                     <!-- Card de Filtros Avanzados -->
-                    <div class="card mb-4 shadow-sm border-0 bg-light">
-                        <div class="card-body">
+                    <div class="card mb-4 shadow-sm border-0 bg-white" style="border-radius: 16px;">
+                        <div class="card-body p-4">
                             <form id="formFiltrosGraficos" onsubmit="event.preventDefault(); cargarGraficos();" class="row g-3 align-items-end">
                                 <!-- Área -->
-                                <div class="col-md-3 col-sm-6">
-                                    <label class="form-label fw-bold mb-1"><i class="bi bi-building"></i> Área</label>
-                                    <select class="form-select" id="graficos_area" onchange="alCambiarAreaGraficos()">
+                                <div class="col-md-4 col-sm-6">
+                                    <label class="form-label fw-bold mb-1" style="font-size: 0.85rem;"><i class="bi bi-building text-primary"></i> Área</label>
+                                    <select class="form-select rounded-3" id="graficos_area" onchange="alCambiarAreaGraficos()">
                                         <option value="">Todas las Áreas</option>
                                     </select>
                                 </div>
 
-                                <!-- Termómetro -->
-                                <div class="col-md-3 col-sm-6">
-                                    <label class="form-label fw-bold mb-1"><i class="bi bi-thermometer-half"></i> Termómetro / Sensor</label>
-                                    <select class="form-select" id="graficos_termometro" onchange="cargarGraficos()">
-                                        <option value="">Todos los Termómetros</option>
-                                    </select>
-                                </div>
-
                                 <!-- Período / Preset -->
-                                <div class="col-md-2 col-sm-6">
-                                    <label class="form-label fw-bold mb-1"><i class="bi bi-calendar-range"></i> Período Preset</label>
-                                    <select class="form-select" id="graficos_dias" onchange="alCambiarPresetFechas()">
+                                <div class="col-md-3 col-sm-6">
+                                    <label class="form-label fw-bold mb-1" style="font-size: 0.85rem;"><i class="bi bi-calendar-range text-primary"></i> Período</label>
+                                    <select class="form-select rounded-3" id="graficos_dias" onchange="alCambiarPresetFechas()">
                                         <option value="7">Últimos 7 días</option>
                                         <option value="15">Últimos 15 días</option>
                                         <option value="30" selected>Últimos 30 días</option>
@@ -932,48 +925,73 @@
 
                                 <!-- Fecha Desde -->
                                 <div class="col-md-2 col-sm-6" id="wrapper_fecha_desde" style="display: none;">
-                                    <label class="form-label fw-bold mb-1">Fecha Desde</label>
-                                    <input type="date" class="form-control" id="graficos_fecha_desde">
+                                    <label class="form-label fw-bold mb-1" style="font-size: 0.85rem;">Fecha Desde</label>
+                                    <input type="date" class="form-control rounded-3" id="graficos_fecha_desde">
                                 </div>
 
                                 <!-- Fecha Hasta -->
                                 <div class="col-md-2 col-sm-6" id="wrapper_fecha_hasta" style="display: none;">
-                                    <label class="form-label fw-bold mb-1">Fecha Hasta</label>
-                                    <input type="date" class="form-control" id="graficos_fecha_hasta">
+                                    <label class="form-label fw-bold mb-1" style="font-size: 0.85rem;">Fecha Hasta</label>
+                                    <input type="date" class="form-control rounded-3" id="graficos_fecha_hasta">
                                 </div>
 
                                 <!-- Botones de Acción -->
-                                <div class="col-md-2 col-sm-6 d-flex gap-2">
-                                    <button type="button" class="btn btn-primary w-100" onclick="cargarGraficos()">
-                                        <i class="bi bi-funnel-fill"></i> Filtrar
+                                <div class="col-md-3 col-sm-6 d-flex gap-2">
+                                    <button type="button" class="btn btn-primary rounded-pill px-4 w-100" onclick="cargarGraficos()">
+                                        <i class="bi bi-funnel-fill me-1"></i> Aplicar Filtros
                                     </button>
-                                    <button type="button" class="btn btn-outline-secondary" onclick="limpiarFiltrosGraficos()" title="Limpiar filtros">
+                                    <button type="button" class="btn btn-outline-secondary rounded-pill" onclick="limpiarFiltrosGraficos()" title="Limpiar filtros">
                                         <i class="bi bi-arrow-counterclockwise"></i>
                                     </button>
+                                </div>
+
+                                <!-- Selector Multi-Termómetro tipo Apple Chips -->
+                                <div class="col-12 mt-3">
+                                    <div class="p-3 border rounded-3 bg-light" style="border-color: rgba(0, 113, 227, 0.15) !important;">
+                                        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <label class="form-label fw-bold mb-0 text-dark" style="font-size: 0.88rem;">
+                                                    <i class="bi bi-ui-checks text-primary me-1"></i> Termómetros a Visualizar:
+                                                </label>
+                                                <span id="contador_termometros_seleccionados" class="badge rounded-pill bg-primary px-2.5 py-1" style="font-size: 0.75rem;">0 seleccionados</span>
+                                            </div>
+                                            <div class="d-flex gap-2">
+                                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1" onclick="seleccionarTodosTermometros(true)" style="font-size: 0.78rem; font-weight: 500;">
+                                                    <i class="bi bi-check-all me-1"></i> Seleccionar Todos
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1" onclick="seleccionarTodosTermometros(false)" style="font-size: 0.78rem; font-weight: 500;">
+                                                    <i class="bi bi-x-circle me-1"></i> Deseleccionar Todos
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div id="contenedor_chips_termometros" class="apple-chip-group pt-1">
+                                            <!-- Checkboxes tipo Apple Chips se generan dinámicamente -->
+                                        </div>
+                                    </div>
                                 </div>
                             </form>
 
                             <!-- Modos de visualización y opciones -->
                             <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top flex-wrap gap-2">
-                                <div class="btn-group btn-group-sm" role="group">
+                                <div class="btn-group btn-group-sm rounded-pill overflow-hidden border" role="group">
                                     <input type="radio" class="btn-check" name="modoVistaGrafico" id="vistaDetallada" value="detallada" checked onchange="renderizarGraficoSegunModo()">
-                                    <label class="btn btn-outline-primary" for="vistaDetallada"><i class="bi bi-clock-history"></i> Lecturas Individuales (Detallado)</label>
+                                    <label class="btn btn-outline-primary px-3" for="vistaDetallada"><i class="bi bi-clock-history me-1"></i> Lecturas Individuales</label>
 
                                     <input type="radio" class="btn-check" name="modoVistaGrafico" id="vistaTendencia" value="tendencia" onchange="renderizarGraficoSegunModo()">
-                                    <label class="btn btn-outline-primary" for="vistaTendencia"><i class="bi bi-graph-up"></i> Promedios Diarios (Tendencia)</label>
+                                    <label class="btn btn-outline-primary px-3" for="vistaTendencia"><i class="bi bi-graph-up me-1"></i> Promedios Diarios</label>
                                 </div>
 
-                                <div class="d-flex align-items-center gap-3">
+                                <div class="d-flex align-items-center gap-3 flex-wrap">
                                     <div class="form-check form-switch mb-0">
                                         <input class="form-check-input" type="checkbox" id="chkMostrarLimites" checked onchange="renderizarGraficoSegunModo()">
-                                        <label class="form-check-label text-danger fw-bold small" for="chkMostrarLimites">
-                                            <i class="bi bi-dash-lg"></i> Líneas de Límites Operativos (Mín/Máx)
+                                        <label class="form-check-label text-secondary fw-medium small" for="chkMostrarLimites">
+                                            <i class="bi bi-dash-lg text-danger"></i> Límites Operativos
                                         </label>
                                     </div>
                                     <div class="form-check form-switch mb-0">
                                         <input class="form-check-input" type="checkbox" id="chkResaltarAlertas" checked onchange="renderizarGraficoSegunModo()">
-                                        <label class="form-check-label text-warning fw-bold small" for="chkResaltarAlertas">
-                                            <i class="bi bi-exclamation-triangle-fill"></i> Resaltar Alertas Fuera de Rango
+                                        <label class="form-check-label text-secondary fw-medium small" for="chkResaltarAlertas">
+                                            <i class="bi bi-exclamation-triangle-fill text-warning"></i> Resaltar Alertas
                                         </label>
                                     </div>
                                 </div>
@@ -985,22 +1003,29 @@
                     <div class="row mb-3" id="graficos_kpis"></div>
 
                     <!-- Banner Info Límites Seleccionados -->
-                    <div id="banner_limites_info" class="alert alert-info py-2 mb-3 d-flex justify-content-between align-items-center" style="display: none;">
+                    <div id="banner_limites_info" class="alert alert-info py-2.5 px-3 mb-3 d-flex justify-content-between align-items-center rounded-3 shadow-sm" style="display: none; background: rgba(0,113,227,0.06); border-color: rgba(0,113,227,0.2); color: #0071e3;">
                         <div>
-                            <i class="bi bi-shield-check me-2"></i>
+                            <i class="bi bi-shield-check me-2 fs-5"></i>
                             <span id="txt_limites_info">Cargando límites...</span>
                         </div>
-                        <span class="badge bg-danger">Límites Operativos de Control</span>
+                        <span class="badge rounded-pill bg-danger px-3 py-1.5" style="font-weight: 500;">Límites Operativos</span>
                     </div>
 
-                    <!-- Tendencia / Lecturas Main Chart -->
-                    <div class="card mb-4 shadow-sm">
-                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-2">
-                            <h5 class="mb-0" id="titulo_grafico_principal"><i class="bi bi-graph-up"></i> Gráfico Principal de Temperatura</h5>
-                            <small class="text-white-50"><i class="bi bi-info-circle"></i> Usa la rueda del mouse para hacer Zoom</small>
+                    <!-- Tendencia / Lecturas Main Chart Card -->
+                    <div class="card mb-4 shadow-sm border-0" style="border-radius: 18px; overflow: hidden;">
+                        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3 px-4">
+                            <h5 class="mb-0 fs-6 fw-semibold" id="titulo_grafico_principal"><i class="bi bi-graph-up text-primary me-2"></i> Gráfico Principal de Temperatura</h5>
+                            <small class="text-white-50" style="font-size: 0.8rem;"><i class="bi bi-info-circle me-1"></i> Usa el mouse/gestos para Zoom y Pan</small>
                         </div>
-                        <div class="card-body">
-                            <div style="position: relative; width: 100%; min-height: 380px;">
+                        <div class="card-body p-4">
+                            <!-- Apple Empty State (se muestra si 0 termómetros están seleccionados) -->
+                            <div id="appleEmptyChartState" class="apple-empty-chart" style="display: flex;">
+                                <i class="bi bi-bar-chart-line"></i>
+                                <h5>Ningún termómetro seleccionado</h5>
+                                <p>Por defecto la gráfica no carga nada para evitar saturación con demasiados puntos. Selecciona uno o más termómetros en la lista superior para visualizar la gráfica.</p>
+                            </div>
+                            <!-- Canvas para Chart.js -->
+                            <div id="chartCanvasWrapper" style="position: relative; width: 100%; min-height: 400px; display: none;">
                                 <canvas id="chartTendencias" height="110"></canvas>
                             </div>
                         </div>
@@ -2639,6 +2664,8 @@
             await cargarGraficos();
         }
 
+        let termometrosSeleccionadosGraficos = new Set();
+
         async function cargarOpcionesFiltrosGraficos() {
             try {
                 const [resAreas, resTermometros] = await Promise.all([
@@ -2667,21 +2694,79 @@
 
         function actualizarDropdownTermometrosGraficos() {
             const areaId = document.getElementById('graficos_area').value;
-            const selectTermometro = document.getElementById('graficos_termometro');
-            const valorPrevio = selectTermometro.value;
-
+            const containerChips = document.getElementById('contenedor_chips_termometros');
+            
             let filtrados = termometrosListaGraficos;
             if (areaId) {
                 filtrados = termometrosListaGraficos.filter(t => t.area_id == areaId);
             }
 
-            selectTermometro.innerHTML = '<option value="">Todos los Termómetros (' + filtrados.length + ')</option>' +
-                filtrados.map(t => `<option value="${t.id}">${t.nombre || 'Termómetro #' + t.id} (${t.ubicacion || 'Sin ub.'})</option>`).join('');
+            // Limpiar seleccionados que ya no existan en la lista filtrada
+            const idsFiltrados = new Set(filtrados.map(t => String(t.id)));
+            termometrosSeleccionadosGraficos = new Set(
+                Array.from(termometrosSeleccionadosGraficos).filter(id => idsFiltrados.has(String(id)))
+            );
 
-            if (filtrados.some(t => t.id == valorPrevio)) {
-                selectTermometro.value = valorPrevio;
+            if (filtrados.length === 0) {
+                containerChips.innerHTML = '<div class="text-muted small py-2"><i class="bi bi-info-circle me-1"></i>No hay termómetros registrados en esta área.</div>';
             } else {
-                selectTermometro.value = '';
+                containerChips.innerHTML = filtrados.map(t => {
+                    const isChecked = termometrosSeleccionadosGraficos.has(String(t.id));
+                    return `
+                        <label class="apple-chip ${isChecked ? 'active' : ''}" id="chip_term_${t.id}">
+                            <input type="checkbox" value="${t.id}" ${isChecked ? 'checked' : ''} onchange="alCambiarTermometroChip(this)">
+                            <span>${t.nombre || 'Termómetro #' + t.id}</span>
+                        </label>
+                    `;
+                }).join('');
+            }
+
+            actualizarContadorTermometros(filtrados.length);
+        }
+
+        function alCambiarTermometroChip(chk) {
+            const val = String(chk.value);
+            const chipLabel = document.getElementById(`chip_term_${val}`);
+            if (chk.checked) {
+                termometrosSeleccionadosGraficos.add(val);
+                if (chipLabel) chipLabel.classList.add('active');
+            } else {
+                termometrosSeleccionadosGraficos.delete(val);
+                if (chipLabel) chipLabel.classList.remove('active');
+            }
+
+            const areaId = document.getElementById('graficos_area').value;
+            let filtrados = termometrosListaGraficos;
+            if (areaId) filtrados = termometrosListaGraficos.filter(t => t.area_id == areaId);
+            actualizarContadorTermometros(filtrados.length);
+
+            renderizarGraficoSegunModo();
+        }
+
+        function seleccionarTodosTermometros(marcarTodos) {
+            const areaId = document.getElementById('graficos_area').value;
+            let filtrados = termometrosListaGraficos;
+            if (areaId) filtrados = termometrosListaGraficos.filter(t => t.area_id == areaId);
+
+            termometrosSeleccionadosGraficos.clear();
+            if (marcarTodos) {
+                filtrados.forEach(t => termometrosSeleccionadosGraficos.add(String(t.id)));
+            }
+
+            actualizarDropdownTermometrosGraficos();
+            renderizarGraficoSegunModo();
+        }
+
+        function actualizarContadorTermometros(totalArea) {
+            const badge = document.getElementById('contador_termometros_seleccionados');
+            if (badge) {
+                const n = termometrosSeleccionadosGraficos.size;
+                badge.textContent = `${n} de ${totalArea} seleccionados`;
+                if (n === 0) {
+                    badge.className = 'badge rounded-pill bg-secondary px-2.5 py-1';
+                } else {
+                    badge.className = 'badge rounded-pill bg-primary px-2.5 py-1';
+                }
             }
         }
 
@@ -2704,6 +2789,7 @@
 
         function limpiarFiltrosGraficos() {
             document.getElementById('graficos_area').value = '';
+            termometrosSeleccionadosGraficos.clear();
             actualizarDropdownTermometrosGraficos();
             document.getElementById('graficos_dias').value = '30';
             document.getElementById('graficos_fecha_desde').value = '';
@@ -2719,14 +2805,12 @@
         async function cargarGraficos() {
             const dias = document.getElementById('graficos_dias').value;
             const areaId = document.getElementById('graficos_area').value;
-            const termometroId = document.getElementById('graficos_termometro').value;
             const fechaDesde = document.getElementById('graficos_fecha_desde').value;
             const fechaHasta = document.getElementById('graficos_fecha_hasta').value;
 
             const params = new URLSearchParams();
             if (dias && dias !== 'custom') params.append('dias', dias);
             if (areaId) params.append('area_id', areaId);
-            if (termometroId) params.append('termometro_id', termometroId);
             if (fechaDesde) params.append('fecha_desde', fechaDesde);
             if (fechaHasta) params.append('fecha_hasta', fechaHasta);
 
@@ -2772,20 +2856,40 @@
 
         function renderizarGraficoSegunModo() {
             if (!ultimaDataGraficos) return;
-            const modoDetallado = document.getElementById('vistaDetallada').checked;
+            const emptyState = document.getElementById('appleEmptyChartState');
+            const canvasWrapper = document.getElementById('chartCanvasWrapper');
             const titulo = document.getElementById('titulo_grafico_principal');
 
-            // Destruir el gráfico principal si ya fue creado
+            // Si 0 termómetros están seleccionados: mostrar Apple Empty State
+            if (termometrosSeleccionadosGraficos.size === 0) {
+                if (emptyState) emptyState.style.display = 'flex';
+                if (canvasWrapper) canvasWrapper.style.display = 'none';
+                destruirGraficos();
+                return;
+            }
+
+            // Si hay termómetros seleccionados: mostrar Canvas
+            if (emptyState) emptyState.style.display = 'none';
+            if (canvasWrapper) canvasWrapper.style.display = 'block';
+
+            // Destruir el gráfico principal anterior
             if (graficosCharts[0]) {
                 try { graficosCharts[0].destroy(); } catch (e) {}
                 graficosCharts[0] = null;
             }
 
-            if (modoDetallado && ultimaDataGraficos.lecturas && ultimaDataGraficos.lecturas.length > 0) {
-                titulo.innerHTML = '<i class="bi bi-clock-history"></i> Lecturas Individuales en el Tiempo (Punto por Punto)';
-                crearChartLecturasDetalladas(ultimaDataGraficos.lecturas, ultimaDataGraficos.limites);
+            // Filtrar lecturas según los termómetros seleccionados por el usuario
+            const lecturasFiltradas = (ultimaDataGraficos.lecturas || []).filter(l =>
+                termometrosSeleccionadosGraficos.has(String(l.termometro_id))
+            );
+
+            const modoDetallado = document.getElementById('vistaDetallada').checked;
+
+            if (modoDetallado) {
+                titulo.innerHTML = `<i class="bi bi-clock-history text-primary me-2"></i> Lecturas Individuales (${termometrosSeleccionadosGraficos.size} termómetro${termometrosSeleccionadosGraficos.size > 1 ? 's' : ''})`;
+                crearChartLecturasDetalladas(lecturasFiltradas, ultimaDataGraficos.limites);
             } else {
-                titulo.innerHTML = '<i class="bi bi-graph-up"></i> Tendencia de Promedios Diarios';
+                titulo.innerHTML = '<i class="bi bi-graph-up text-primary me-2"></i> Tendencia de Promedios Diarios';
                 crearChartTendencias(ultimaDataGraficos.tendencias, ultimaDataGraficos.limites);
             }
         }
@@ -2796,148 +2900,170 @@
                 ? Math.round((resumen.total_alertas / resumen.total_registros) * 100) : 0;
             container.innerHTML = `
                 <div class="col-md-3 col-6 mb-2">
-                    <div class="card text-center h-100 shadow-sm border-0 bg-light">
+                    <div class="card text-center h-100 shadow-sm border-0 bg-white" style="border-radius:12px;">
                         <div class="card-body py-3">
                             <h3 class="text-primary fw-bold mb-0">${resumen.total_registros}</h3>
-                            <div class="text-muted small fw-semibold">Registros Totales</div>
+                            <div class="text-secondary small fw-medium">Registros Totales</div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3 col-6 mb-2">
-                    <div class="card text-center h-100 shadow-sm border-0 bg-light">
+                    <div class="card text-center h-100 shadow-sm border-0 bg-white" style="border-radius:12px;">
                         <div class="card-body py-3">
                             <h3 class="text-danger fw-bold mb-0">${resumen.total_alertas}</h3>
-                            <div class="text-muted small fw-semibold">Fuera de Rango (${alertaPct}%)</div>
+                            <div class="text-secondary small fw-medium">Fuera de Rango (${alertaPct}%)</div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3 col-6 mb-2">
-                    <div class="card text-center h-100 shadow-sm border-0 bg-light">
+                    <div class="card text-center h-100 shadow-sm border-0 bg-white" style="border-radius:12px;">
                         <div class="card-body py-3">
-                            <h3 class="text-success fw-bold mb-0">${resumen.promedio_max ?? '-'}&deg;C</h3>
-                            <div class="text-muted small fw-semibold">Promedio Máxima</div>
+                            <h3 class="text-warning fw-bold mb-0">${resumen.promedio_max ?? '-'}&deg;C</h3>
+                            <div class="text-secondary small fw-medium">Promedio Máxima</div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3 col-6 mb-2">
-                    <div class="card text-center h-100 shadow-sm border-0 bg-light">
+                    <div class="card text-center h-100 shadow-sm border-0 bg-white" style="border-radius:12px;">
                         <div class="card-body py-3">
                             <h3 class="text-info fw-bold mb-0">${resumen.promedio_min ?? '-'}&deg;C</h3>
-                            <div class="text-muted small fw-semibold">Promedio Mínima</div>
+                            <div class="text-secondary small fw-medium">Promedio Mínima</div>
                         </div>
                     </div>
                 </div>`;
         }
 
         function crearChartLecturasDetalladas(lecturas, limites) {
-            const ctx = document.getElementById('chartTendencias').getContext('2d');
-            const labels = lecturas.map(l => `${l.fecha_registro} (${l.termometro_nombre})`);
+            const canvasEl = document.getElementById('chartTendencias');
+            if (!canvasEl) return;
+            const ctx = canvasEl.getContext('2d');
             const mostrarLimites = document.getElementById('chkMostrarLimites').checked;
             const mostrarAlertas = document.getElementById('chkResaltarAlertas').checked;
+
+            if (!lecturas || lecturas.length === 0) {
+                destruirGraficos();
+                return;
+            }
+
+            // Paleta Sobria Tipo Apple
+            const applePalette = [
+                '#0071e3', // Apple Blue
+                '#ff9500', // Apple Orange
+                '#34c759', // Apple Green
+                '#af52de', // Apple Purple
+                '#5856d6', // Apple Indigo
+                '#ff2d55', // Apple Pink
+                '#30b0c7', // Apple Teal
+                '#ffcc00'  // Apple Yellow
+            ];
+
+            let datasets = [];
+            const labels = lecturas.map(l => `${l.fecha_registro} (${l.termometro_nombre})`);
+
+            // Si hay exactamente 1 termómetro seleccionado: mostrar lecturas detalladas (Actual, Máx, Mín)
+            if (termometrosSeleccionadosGraficos.size === 1) {
+                const pointBg = lecturas.map(l => (mostrarAlertas && l.fuera_rango_operativo) ? '#ff3b30' : '#0071e3');
+                const pointBorder = lecturas.map(l => (mostrarAlertas && l.fuera_rango_operativo) ? '#c92a2a' : '#0057b3');
+                const pointRadius = lecturas.map(l => (mostrarAlertas && l.fuera_rango_operativo) ? 6 : 3);
+                const pointStyle = lecturas.map(l => (mostrarAlertas && l.fuera_rango_operativo) ? 'rectRot' : 'circle');
+
+                datasets = [
+                    {
+                        label: 'Temp. Actual (°C)',
+                        data: lecturas.map(l => l.temp_actual),
+                        borderColor: '#0071e3',
+                        backgroundColor: 'rgba(0, 113, 227, 0.08)',
+                        tension: 0.3,
+                        pointBackgroundColor: pointBg,
+                        pointBorderColor: pointBorder,
+                        pointRadius: pointRadius,
+                        pointHoverRadius: 7,
+                        pointStyle: pointStyle,
+                        borderWidth: 2.5,
+                        fill: true,
+                        order: 1
+                    },
+                    {
+                        label: 'Temp. Máxima (°C)',
+                        data: lecturas.map(l => l.temp_maxima),
+                        borderColor: '#ff9500',
+                        borderDash: [4, 4],
+                        tension: 0.3,
+                        pointRadius: 2,
+                        borderWidth: 1.5,
+                        order: 2
+                    },
+                    {
+                        label: 'Temp. Mínima (°C)',
+                        data: lecturas.map(l => l.temp_minima),
+                        borderColor: '#30b0c7',
+                        borderDash: [4, 4],
+                        tension: 0.3,
+                        pointRadius: 2,
+                        borderWidth: 1.5,
+                        order: 3
+                    }
+                ];
+            } else {
+                // Si hay 2+ termómetros seleccionados: agrupar por termómetro para comparar limpia y soberanamente
+                const termMap = new Map();
+                lecturas.forEach(l => {
+                    if (!termMap.has(l.termometro_id)) {
+                        termMap.set(l.termometro_id, {
+                            id: l.termometro_id,
+                            nombre: l.termometro_nombre,
+                            readings: []
+                        });
+                    }
+                    termMap.get(l.termometro_id).readings.push(l);
+                });
+
+                let colorIdx = 0;
+                termMap.forEach(term => {
+                    const color = applePalette[colorIdx % applePalette.length];
+                    colorIdx++;
+
+                    datasets.push({
+                        label: term.nombre,
+                        data: lecturas.map(l => (l.termometro_id === term.id ? l.temp_actual : null)),
+                        borderColor: color,
+                        backgroundColor: color,
+                        tension: 0.3,
+                        pointRadius: 3,
+                        pointHoverRadius: 7,
+                        borderWidth: 2,
+                        spanGaps: true,
+                        order: 1
+                    });
+                });
+            }
 
             // Extraer límites operativos
             let tempMinOp = limites ? limites.temp_min_operativa : (lecturas[0] ? lecturas[0].temp_min_operativa : null);
             let tempMaxOp = limites ? limites.temp_max_operativa : (lecturas[0] ? lecturas[0].temp_max_operativa : null);
 
-            // Estilos de puntos para alertas
-            const pointBg = lecturas.map(l => (mostrarAlertas && l.fuera_rango_operativo) ? '#dc3545' : '#0d6efd');
-            const pointBorder = lecturas.map(l => (mostrarAlertas && l.fuera_rango_operativo) ? '#a71d2a' : '#0b5ed7');
-            const pointRadius = lecturas.map(l => (mostrarAlertas && l.fuera_rango_operativo) ? 7 : 4);
-            const pointStyle = lecturas.map(l => (mostrarAlertas && l.fuera_rango_operativo) ? 'rectRot' : 'circle');
-
-            const datasets = [
-                {
-                    label: 'Temp. Actual (°C)',
-                    data: lecturas.map(l => l.temp_actual),
-                    borderColor: '#0d6efd',
-                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
-                    tension: 0.2,
-                    pointBackgroundColor: pointBg,
-                    pointBorderColor: pointBorder,
-                    pointRadius: pointRadius,
-                    pointHoverRadius: 9,
-                    pointStyle: pointStyle,
-                    order: 1
-                },
-                {
-                    label: 'Temp. Máxima Registrada (°C)',
-                    data: lecturas.map(l => l.temp_maxima),
-                    borderColor: '#fd7e14',
-                    borderDash: [3, 3],
-                    tension: 0.2,
-                    pointRadius: 2,
-                    order: 2
-                },
-                {
-                    label: 'Temp. Mínima Registrada (°C)',
-                    data: lecturas.map(l => l.temp_minima),
-                    borderColor: '#0dcaf0',
-                    borderDash: [3, 3],
-                    tension: 0.2,
-                    pointRadius: 2,
-                    order: 3
-                }
-            ];
-
-            // Añadir líneas de límites paralelas si están activadas
+            // Añadir líneas de límites si están activadas
             if (mostrarLimites && tempMinOp != null && tempMaxOp != null) {
                 datasets.push({
-                    label: `Límite Mínimo Operativo (${tempMinOp}°C)`,
+                    label: `Límite Mín (${tempMinOp}°C)`,
                     data: labels.map(() => tempMinOp),
-                    borderColor: '#dc3545',
-                    borderWidth: 2,
-                    borderDash: [6, 6],
+                    borderColor: 'rgba(255, 59, 48, 0.7)',
+                    borderWidth: 1.5,
+                    borderDash: [5, 5],
                     pointRadius: 0,
                     fill: false,
                     order: 0
                 });
                 datasets.push({
-                    label: `Límite Máximo Operativo (${tempMaxOp}°C)`,
+                    label: `Límite Máx (${tempMaxOp}°C)`,
                     data: labels.map(() => tempMaxOp),
-                    borderColor: '#dc3545',
-                    borderWidth: 2,
-                    borderDash: [6, 6],
+                    borderColor: 'rgba(255, 59, 48, 0.7)',
+                    borderWidth: 1.5,
+                    borderDash: [5, 5],
                     pointRadius: 0,
                     fill: false,
                     order: 0
                 });
-            }
-
-            // Plugin de anotaciones para Chart.js
-            const annotationsObj = {};
-            if (mostrarLimites && tempMinOp != null && tempMaxOp != null && typeof ChartAnnotation !== 'undefined') {
-                annotationsObj.lineaMax = {
-                    type: 'line',
-                    yMin: tempMaxOp,
-                    yMax: tempMaxOp,
-                    borderColor: '#dc3545',
-                    borderWidth: 2,
-                    borderDash: [6, 6],
-                    label: {
-                        display: true,
-                        content: `Límite Máx (${tempMaxOp}°C)`,
-                        position: 'start',
-                        backgroundColor: '#dc3545',
-                        color: '#fff',
-                        font: { size: 11, weight: 'bold' }
-                    }
-                };
-                annotationsObj.lineaMin = {
-                    type: 'line',
-                    yMin: tempMinOp,
-                    yMax: tempMinOp,
-                    borderColor: '#dc3545',
-                    borderWidth: 2,
-                    borderDash: [6, 6],
-                    label: {
-                        display: true,
-                        content: `Límite Mín (${tempMinOp}°C)`,
-                        position: 'start',
-                        backgroundColor: '#dc3545',
-                        color: '#fff',
-                        font: { size: 11, weight: 'bold' }
-                    }
-                };
             }
 
             const chart = new Chart(ctx, {
@@ -2947,19 +3073,24 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'bottom' },
-                        annotation: { annotations: annotationsObj },
+                        legend: { position: 'bottom', labels: { usePointStyle: true, font: { family: '-apple-system, sans-serif', size: 12 } } },
                         zoom: {
                             pan: { enabled: true, mode: 'x' },
                             zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
                         },
                         tooltip: {
+                            backgroundColor: 'rgba(29, 29, 31, 0.9)',
+                            titleFont: { family: '-apple-system, sans-serif', size: 13, weight: 'bold' },
+                            bodyFont: { family: '-apple-system, sans-serif', size: 12 },
+                            padding: 10,
+                            cornerRadius: 10,
                             callbacks: {
                                 footer: (items) => {
                                     const index = items[0].dataIndex;
                                     const item = lecturas[index];
+                                    if (!item) return '';
                                     let text = `Área: ${item.area_nombre}\nVentana: ${item.ventana_horaria}`;
-                                    if (item.fuera_rango_operativo) text += `\n⚠️ ¡FORA DE RANGO OPERATIVO!`;
+                                    if (item.fuera_rango_operativo) text += `\n⚠️ ¡FUERA DE RANGO OPERATIVO!`;
                                     if (item.observaciones) text += `\nObs: ${item.observaciones}`;
                                     return text;
                                 }
@@ -2967,8 +3098,14 @@
                         }
                     },
                     scales: {
-                        y: { title: { display: true, text: 'Temperatura (°C)' } },
-                        x: { ticks: { maxRotation: 45, minRotation: 0 } }
+                        y: {
+                            title: { display: true, text: 'Temperatura (°C)', font: { family: '-apple-system, sans-serif', size: 12, weight: 'bold' } },
+                            grid: { color: 'rgba(0,0,0,0.04)' }
+                        },
+                        x: {
+                            ticks: { maxRotation: 45, minRotation: 0, font: { family: '-apple-system, sans-serif', size: 11 } },
+                            grid: { display: false }
+                        }
                     }
                 }
             });

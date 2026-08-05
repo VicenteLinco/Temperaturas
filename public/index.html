@@ -12,43 +12,46 @@
     <link rel="stylesheet" href="lecturas.css">
     <style>
         :root {
-            --brand: #2563eb;
-            --brand-dark: #1d4ed8;
-            --ink: #1e293b;
-            --slate: #0f172a;
-            --bg: #f8fafc;
-            --radius: 12px;
-            --shadow-card: 0 1px 3px rgba(15,23,42,0.08), 0 1px 2px rgba(15,23,42,0.06);
-            --shadow-hover: 0 4px 14px rgba(15,23,42,0.1);
+            --brand: #0071e3;
+            --brand-dark: #0057b3;
+            --ink: #1d1d1f;
+            --slate: #1d1d1f;
+            --bg: #f5f5f7;
+            --radius: 14px;
+            --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.08);
         }
         body {
             background-color: var(--bg);
             margin: 0;
             padding: 0;
             overflow-x: hidden;
-            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
             color: var(--ink);
+            -webkit-font-smoothing: antialiased;
         }
         .navbar {
             background-color: var(--slate);
-            border-bottom: 3px solid var(--brand);
-            padding-top: calc(0.55rem + env(safe-area-inset-top));
-            padding-bottom: 0.55rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: calc(0.65rem + env(safe-area-inset-top));
+            padding-bottom: 0.65rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
         }
         .navbar-brand {
-            font-weight: 700;
-            letter-spacing: -0.01em;
+            font-weight: 600;
+            letter-spacing: -0.015em;
             font-size: 1.15rem;
         }
         .btn-outline-light {
-            border-radius: 8px;
+            border-radius: 9999px;
             transition: all 0.2s ease;
-            font-size: 0.875rem;
-            font-weight: 600;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border-color: rgba(255, 255, 255, 0.2);
         }
         .btn-outline-light:hover {
-            background-color: var(--brand);
-            border-color: var(--brand);
+            background-color: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
         }
         .main-container {
             display: flex;
@@ -497,46 +500,58 @@
                             </div>
                         </div>
 
-                        <!-- FORMULARIO DE LECTURAS (sin etiquetas máx/mín: se ordenan solas) -->
+                        <!-- FORMULARIO DE LECTURAS (Temperatura Actual SIEMPRE PRIMERO) -->
                         <div id="formLecturas">
-                            <div class="alert alert-info py-2 small mb-3">
-                                <i class="bi bi-arrow-down-up"></i> Ingresa las lecturas en <strong>cualquier orden</strong>: el sistema ordena solo (la más baja = mínima, la más alta = máxima).
+                            <div class="alert py-2.5 px-3 mb-3 border-0 rounded-3 d-flex align-items-start gap-2.5" style="background-color: rgba(0, 113, 227, 0.08); color: #0071e3;">
+                                <i class="bi bi-info-circle-fill fs-5 flex-shrink-0 mt-0.5"></i>
+                                <div>
+                                    <strong style="font-weight: 600;">1º SIEMPRE PRIMERO: Temperatura Actual</strong>
+                                    <div class="mt-1" style="font-size: 0.82rem; color: #1d1d1f;">
+                                        La <strong>Temperatura Actual</strong> es la lectura principal e imprescindible. Las siguientes lecturas son secundarias (mínima/máxima en cualquier orden).
+                                    </div>
+                                </div>
                             </div>
 
-                            <div class="mb-3">
-                                <label for="tempActual" class="form-label fw-semibold">Temperatura Actual (°C)</label>
+                            <!-- Campo 1: Temperatura Actual (OBLIGATORIO Y PRINCIPAL) -->
+                            <div class="mb-3 p-3 border rounded-3 bg-white shadow-sm" style="border-color: rgba(0,113,227,0.3) !important;">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label for="tempActual" class="form-label fw-bold mb-0 text-primary fs-6">1º Temperatura Actual (°C)</label>
+                                    <span class="badge rounded-pill bg-primary px-2.5 py-1" style="font-size: 0.7rem; font-weight: 600;"><i class="bi bi-star-fill me-1"></i>OBLIGATORIA (PRINCIPAL)</span>
+                                </div>
                                 <div class="temp-stepper">
                                     <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('tempActual', -1)">−1</button>
                                     <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('tempActual', -0.1)">−0.1</button>
-                                    <input type="number" inputmode="decimal" step="0.1" min="-999" class="form-control form-control-lg" id="tempActual">
+                                    <input type="number" inputmode="decimal" step="0.1" min="-999" class="form-control form-control-lg text-center fw-bold" id="tempActual" placeholder="Valor actual">
                                     <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('tempActual', 0.1)">+0.1</button>
                                     <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('tempActual', 1)">+1</button>
                                 </div>
-                                <div class="lectura-hint">Lo que marca el termómetro ahora mismo.</div>
+                                <div class="lectura-hint text-primary fw-medium"><i class="bi bi-thermometer-half me-1"></i>Lectura en vivo del termómetro ahora mismo.</div>
                             </div>
 
+                            <!-- Campo 2: Lectura Secundaria -->
                             <div class="mb-3">
-                                <label for="lectura2" class="form-label fw-semibold">Lectura 2 (°C)</label>
+                                <label for="lectura2" class="form-label fw-semibold text-secondary">2º Lectura Secundaria (°C)</label>
                                 <div class="temp-stepper">
                                     <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('lectura2', -1)">−1</button>
                                     <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('lectura2', -0.1)">−0.1</button>
-                                    <input type="number" inputmode="decimal" step="0.1" min="-999" class="form-control" id="lectura2">
+                                    <input type="number" inputmode="decimal" step="0.1" min="-999" class="form-control text-center" id="lectura2" placeholder="Opcional">
                                     <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('lectura2', 0.1)">+0.1</button>
                                     <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('lectura2', 1)">+1</button>
                                 </div>
-                                <div class="lectura-hint">La más alta o la más baja del día: da igual el orden.</div>
+                                <div class="lectura-hint">Cualquiera de las otras lecturas (máxima o mínima).</div>
                             </div>
 
+                            <!-- Campo 3: Lectura Secundaria -->
                             <div class="mb-3">
-                                <label for="lectura3" class="form-label fw-semibold">Lectura 3 (°C)</label>
+                                <label for="lectura3" class="form-label fw-semibold text-secondary">3º Lectura Secundaria (°C)</label>
                                 <div class="temp-stepper">
                                     <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('lectura3', -1)">−1</button>
                                     <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('lectura3', -0.1)">−0.1</button>
-                                    <input type="number" inputmode="decimal" step="0.1" min="-999" class="form-control" id="lectura3">
+                                    <input type="number" inputmode="decimal" step="0.1" min="-999" class="form-control text-center" id="lectura3" placeholder="Opcional">
                                     <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('lectura3', 0.1)">+0.1</button>
                                     <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('lectura3', 1)">+1</button>
                                 </div>
-                                <div class="lectura-hint">La otra lectura del día: da igual el orden.</div>
+                                <div class="lectura-hint">Cualquiera de las otras lecturas (máxima o mínima).</div>
                             </div>
 
                             <div class="mb-3" id="humedadGroup" style="display: none;">
@@ -1406,8 +1421,12 @@
 
         function revisarLecturas() {
             const l = leerLecturas();
+            if (isNaN(l.actual)) {
+                mostrarToast('La 1º Temperatura Actual es obligatoria y debe ser ingresada primero', 'warning');
+                return;
+            }
             if (!l.ok) {
-                mostrarToast('Ingresa las 3 temperaturas para revisar', 'warning');
+                mostrarToast('Ingresa las 3 temperaturas requeridas para continuar', 'warning');
                 return;
             }
             const { actual, minima, maxima } = ordenarValores(l.actual, l.l2, l.l3);

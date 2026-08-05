@@ -35,8 +35,8 @@ function construirWarningsLecturas(minima, actual, maxima, t) {
 
 function renderTarjetasLecturas(containerId, actual, minima, maxima) {
     const cards = [
+        { cls: 'actual', label: '1º ACTUAL (PRINCIPAL)', val: actual },
         { cls: 'min', label: 'MÍNIMA', val: minima },
-        { cls: 'actual', label: 'ACTUAL', val: actual },
         { cls: 'max', label: 'MÁXIMA', val: maxima }
     ].map(c => `
         <div class="col-4">
