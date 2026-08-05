@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Imprimir Códigos QR - Sistema de Temperaturas</title>
     <style>
         @media print {
@@ -26,10 +26,10 @@
         }
 
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Arial, sans-serif;
             margin: 0;
             padding: 20px;
-            background-color: #f5f5f5;
+            background-color: #f1f5f9;
         }
 
         .container {
@@ -38,11 +38,68 @@
         }
 
         .controls {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
+            background: #0f172a;
+            padding: 16px 20px;
+            border-radius: 14px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            border-bottom: 3px solid #2563eb;
+        }
+        .controls h2 {
+            margin: 0;
+            color: #fff;
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .controls h2 i {
+            color: #3b82f6;
+        }
+        .controls .btn-group-custom {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: white;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background-color: #334155;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #1e293b;
         }
 
         .qr-grid {
@@ -55,16 +112,18 @@
         .qr-item {
             background: white;
             padding: 20px;
-            border-radius: 8px;
+            border-radius: 12px;
             text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(15,23,42,0.08);
+            border: 1px solid #e2e8f0;
             break-inside: avoid;
         }
 
         .qr-item h3 {
             margin: 0 0 10px 0;
             font-size: 16px;
-            color: #333;
+            color: #1e293b;
+            font-weight: 600;
         }
 
         .qr-item .qr-container {
@@ -72,37 +131,17 @@
             display: inline-block;
         }
 
+        .qr-container img,
+        .qr-container canvas {
+            max-width: 100%;
+            height: auto;
+        }
+
         .qr-item .info {
             font-size: 12px;
-            color: #666;
+            color: #64748b;
             margin-top: 10px;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-right: 10px;
-        }
-
-        .btn-primary {
-            background-color: #007bff;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background-color: #0056b3;
-        }
-
-        .btn-secondary {
-            background-color: #6c757d;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background-color: #545b62;
+            line-height: 1.6;
         }
 
         @media print {
@@ -115,19 +154,55 @@
                 border: 1px solid #ddd;
             }
         }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 12px;
+            }
+            .controls {
+                padding: 14px;
+                justify-content: center;
+                text-align: center;
+            }
+            .controls h2 {
+                justify-content: center;
+                font-size: 1.05rem;
+            }
+            .controls .btn-group-custom {
+                width: 100%;
+                justify-content: center;
+            }
+            .controls .btn {
+                flex: 1 1 40%;
+                justify-content: center;
+            }
+            .qr-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 12px;
+            }
+            .qr-item {
+                padding: 12px;
+            }
+            .qr-item h3 {
+                font-size: 14px;
+            }
+        }
     </style>
     <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 </head>
 <body>
     <div class="container">
         <div class="controls no-print">
-            <h2>Imprimir Códigos QR</h2>
-            <button class="btn btn-primary" onclick="window.print()">
-                🖨️ Imprimir
-            </button>
-            <button class="btn btn-secondary" onclick="window.close()">
-                ✖ Cerrar
-            </button>
+            <h2><i class="bi bi-qr-code"></i> Imprimir Códigos QR</h2>
+            <div class="btn-group-custom">
+                <button class="btn btn-primary" onclick="window.print()">
+                    <i class="bi bi-printer"></i> Imprimir
+                </button>
+                <button class="btn btn-secondary" onclick="window.close()">
+                    <i class="bi bi-x-circle"></i> Cerrar
+                </button>
+            </div>
         </div>
 
         <div id="qr-grid" class="qr-grid"></div>

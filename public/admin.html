@@ -2,37 +2,56 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Sistema de Temperaturas - Administración</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
         :root {
-            /* Paleta Térmica */
-            --color-cold: #0052D4;
-            --color-cool: #4364F7;
-            --color-warm: #f2994a;
-            --color-hot: #e53935;
-            
+            /* Paleta plana (sin degradados) */
+            --brand: #2563eb;
+            --brand-dark: #1d4ed8;
+            --ink: #1e293b;
+            --slate: #0f172a;
+            --bg: #f1f5f9;
+            --muted: #64748b;
+
             --sidebar-width: 260px;
             --header-height: 60px;
+            --radius: 14px;
+            --shadow-card: 0 1px 3px rgba(15,23,42,0.08), 0 1px 2px rgba(15,23,42,0.06);
+            --shadow-hover: 0 8px 22px rgba(15,23,42,0.14);
         }
 
         body {
-            background-color: #f4f6f9;
+            background-color: var(--bg);
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             padding-top: 0;
         }
 
-        /* Navbar Térmico */
+        /* Navbar */
         .navbar {
-            background: linear-gradient(90deg, var(--color-cold) 0%, var(--color-hot) 100%);
+            background-color: var(--slate);
             min-height: var(--header-height);
             height: auto;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15);
             z-index: 1000;
-            padding-top: 0.5rem;
+            padding-top: calc(0.5rem + env(safe-area-inset-top));
             padding-bottom: 0.5rem;
+            border-bottom: 3px solid var(--brand);
+        }
+        .navbar-brand {
+            font-weight: 600;
+            font-size: 1.15rem;
+        }
+        #btnSidebarToggle {
+            border-radius: 9px;
+            padding: 0.35rem 0.6rem;
+            font-size: 1.2rem;
+        }
+        #btnSidebarToggle:hover {
+            background-color: var(--brand);
+            border-color: var(--brand);
         }
 
         /* Sidebar & Content (Desktop Default) */
@@ -41,86 +60,270 @@
             top: 0;
             z-index: 100;
             padding: 20px 0;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-            background-color: #fff;
+            box-shadow: 2px 0 10px rgba(15, 23, 42, 0.08);
+            background-color: var(--slate);
             height: 100vh;
             overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #334155 transparent;
         }
 
         .content-area {
             padding: 20px;
             min-height: calc(100vh - var(--header-height));
         }
-        
+
         .content-section {
-            animation: fadeIn 0.3s ease-in-out;
+            animation: fadeIn 0.25s ease-in-out;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .nav-link {
-            color: #333;
-            padding: 10px 20px;
-            border-radius: 0 25px 25px 0;
-            margin-right: 15px;
-            transition: all 0.2s;
+        .sidebar .nav-link {
+            color: #cbd5e1;
+            padding: 11px 20px;
+            border-left: 3px solid transparent;
+            transition: all 0.15s ease;
+            font-size: 0.95rem;
         }
 
-        .nav-link:hover {
-            background-color: #e9ecef;
-            color: var(--color-cold);
+        .sidebar .nav-link:hover {
+            background-color: #1e293b;
+            color: #ffffff;
         }
 
-        .nav-link.active {
-            background: linear-gradient(90deg, var(--color-cold), var(--color-cool));
-            color: #fff;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        .sidebar .nav-link.active {
+            background-color: var(--brand);
+            color: #ffffff;
+            border-left-color: #ffffff;
+            font-weight: 600;
         }
 
-        .nav-link i {
+        .sidebar .nav-link i {
             margin-right: 10px;
             font-size: 1.1em;
+            width: 20px;
+            text-align: center;
         }
-        
+
+        .sidebar-brand {
+            display: none;
+        }
+
         .table-actions .btn {
             margin-right: 5px;
+            margin-bottom: 3px;
+        }
+
+        /* Secciones */
+        .content-section > h2 {
+            font-weight: 700;
+            color: var(--ink);
+        }
+
+        /* Tarjetas */
+        .card {
+            border: none;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-card);
+        }
+        .card-header {
+            background-color: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .card-header.bg-primary { background: linear-gradient(135deg, #2563eb, #1d4ed8) !important; }
+        .card-header.bg-success { background: linear-gradient(135deg, #16a34a, #15803d) !important; }
+        .card-header.bg-warning { background: linear-gradient(135deg, #f59e0b, #d97706) !important; color: #fff; }
+        .card-header.bg-info { background: linear-gradient(135deg, #0ea5e9, #0284c7) !important; }
+
+        /* Botones */
+        .btn {
+            border-radius: 10px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .btn:active {
+            transform: scale(0.98);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            border: none;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+            transform: translateY(-1px);
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #16a34a, #15803d);
+            border: none;
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            border: none;
+        }
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border: none;
+        }
+        .btn-sm {
+            border-radius: 8px;
+        }
+
+        /* Tablas */
+        .table {
+            --bs-table-hover-bg: #f8fafc;
+            margin-bottom: 0;
+            vertical-align: middle;
+        }
+        .table thead th {
+            background-color: #f8fafc;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--muted);
+            font-weight: 600;
+            white-space: nowrap;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .table tbody td {
+            padding: 0.7rem 0.75rem;
+            border-color: #f1f5f9;
+        }
+        .table-responsive {
+            -webkit-overflow-scrolling: touch;
+        }
+        .badge {
+            border-radius: 6px;
+            padding: 0.4em 0.65em;
+            font-weight: 500;
+        }
+
+        /* Formularios */
+        .form-control, .form-select {
+            border-radius: 10px;
+            padding: 0.55rem 0.75rem;
+            font-size: 0.95rem;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--brand);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+        }
+        .form-label {
+            font-weight: 500;
+            color: var(--ink);
+        }
+
+        /* Modales */
+        .modal-content {
+            border: none;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 30px 60px rgba(2, 6, 23, 0.35);
+        }
+        .modal-header {
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1rem 1.25rem;
+        }
+        .modal-header.bg-primary,
+        .modal-header.bg-success,
+        .modal-header.bg-danger {
+            border-bottom: none;
+        }
+        .modal-footer {
+            border-top: 1px solid #e2e8f0;
+        }
+
+        /* KPIs */
+        #graficos_kpis .card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        #graficos_kpis .card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-hover);
+        }
+        #graficos_kpis .card h3 {
+            font-weight: 800;
+        }
+
+        /* Backdrop móvil */
+        .sidebar-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(2, 6, 23, 0.5);
+            z-index: 1040;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .sidebar-backdrop.show {
+            display: block;
+            opacity: 1;
         }
 
         /* Mobile Responsive Overrides */
-        @media (max-width: 768px) {
+        @media (max-width: 767.98px) {
             .navbar .container-fluid {
-                flex-direction: column;
-                align-items: flex-start;
+                flex-wrap: nowrap;
             }
             .navbar-brand {
-                font-size: 1rem;
-                margin-bottom: 0.5rem;
-                white-space: normal; /* Allow title to wrap */
+                font-size: 0.95rem;
+                white-space: normal;
+                line-height: 1.2;
             }
             .navbar .d-flex {
-                width: 100%;
-                justify-content: space-between;
-                align-items: center;
-            }
-            #security-bar {
-                font-size: 0.85rem;
-                padding: 5px !important;
-            }
-            #timer-display {
-                font-size: 1rem !important;
+                flex-shrink: 0;
             }
             .sidebar {
-                position: static;
-                height: auto;
-                width: 100%;
-                box-shadow: none;
-                border-bottom: 1px solid #dee2e6;
+                position: fixed;
+                top: calc(var(--header-height) + env(safe-area-inset-top));
+                left: -100%;
+                width: min(280px, 82vw);
+                height: calc(100vh - var(--header-height));
+                z-index: 1045;
+                transition: left 0.3s ease;
+                box-shadow: 4px 0 24px rgba(2, 6, 23, 0.35);
+            }
+            .sidebar.sidebar-open {
+                left: 0;
+            }
+            .sidebar-brand {
+                display: block;
+                color: #94a3b8;
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+                padding: 0 20px 8px;
+                border-bottom: 1px solid #1e293b;
+                margin-bottom: 8px;
             }
             .content-area {
-                padding: 10px;
+                padding: 12px;
+                min-height: calc(100vh - var(--header-height));
+            }
+            .content-section > .d-flex {
+                flex-direction: column;
+                align-items: stretch !important;
+                gap: 12px;
+            }
+            .content-section > .d-flex > * {
+                width: 100%;
+            }
+            .content-section > .d-flex .btn-group {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+            .content-section > .d-flex .btn-group .btn {
+                flex: 1 1 auto;
+            }
+            .card-header {
+                padding: 0.9rem 1rem;
             }
         }
     </style>
@@ -128,22 +331,34 @@
 <body style="display: none;">
     <nav class="navbar navbar-dark">
         <div class="container-fluid">
-            <span class="navbar-brand mb-0 h1">
-                <i class="bi bi-thermometer-half"></i> Sistema de Temperaturas - Administración
-            </span>
-            <div class="d-flex">
-                <span class="text-white me-3">Usuario: <span id="username"></span></span>
-                <button class="btn btn-outline-light btn-sm" onclick="logout()">Cerrar Sesión</button>
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-outline-light d-md-none" id="btnSidebarToggle" onclick="toggleSidebar()" aria-label="Menú">
+                    <i class="bi bi-list"></i>
+                </button>
+                <span class="navbar-brand mb-0 h1">
+                    <i class="bi bi-thermometer-half"></i> <span class="d-none d-sm-inline">Sistema de Temperaturas -</span> Administración
+                </span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="text-white me-2 d-none d-md-inline">Usuario: <strong id="username"></strong></span>
+                <button class="btn btn-outline-light btn-sm" onclick="logout()">
+                    <i class="bi bi-box-arrow-right me-1"></i><span class="d-none d-sm-inline">Cerrar Sesión</span>
+                </button>
             </div>
         </div>
     </nav>
 
+    <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 p-0 sidebar">
+            <div class="col-md-3 col-lg-2 p-0 sidebar" id="sidebar">
+                <div class="sidebar-brand">Navegación</div>
                 <nav class="nav flex-column pt-3">
-                    <!-- Dashboard Eliminado por seguridad -->
+                    <!-- Sección "Gráficos" (antes "Dashboard"). El dashboard original se eliminó en v2.0
+                     porque exponía agregados de forma genérica; la sección Gráficos actual es de solo
+                     lectura, admin-only, y consume la API autenticada /api/admin/graficos. -->
                     <a class="nav-link active" href="#" onclick="showSection('registros')">
                         <i class="bi bi-clipboard-data"></i> Gestión de Registros
                     </a>
@@ -168,12 +383,15 @@
                     <a class="nav-link" href="#" onclick="showSection('reportes')">
                         <i class="bi bi-file-earmark-text"></i> Reportes
                     </a>
+                    <a class="nav-link" href="#" onclick="showSection('graficos')">
+                        <i class="bi bi-bar-chart-line"></i> Gráficos
+                    </a>
                 </nav>
             </div>
 
             <!-- Content Area -->
             <div class="col-md-9 col-lg-10 content-area">
-                <!-- Dashboard Eliminado -->
+                <!-- Ver nota en la sección Gráficos sobre la eliminación del dashboard v2.0 -->
 
                 <!-- Usuarios Section -->
                 <div id="section-usuarios" class="content-section">
@@ -508,6 +726,19 @@
                                 <i class="bi bi-inbox" style="font-size: 3rem;"></i>
                                 <p class="mt-2">No hay registros para mostrar</p>
                             </div>
+                            <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2" id="registrosPaginacion" style="display: none;">
+                                <div class="text-muted small" id="registrosInfo"></div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <select class="form-select form-select-sm w-auto" id="registros_page_size" onchange="cambiarTamanoPaginaRegistros()">
+                                        <option value="25">25 / página</option>
+                                        <option value="50" selected>50 / página</option>
+                                        <option value="100">100 / página</option>
+                                    </select>
+                                    <button class="btn btn-sm btn-outline-secondary" id="registros_prev" onclick="cambiarPaginaRegistros(-1)">&laquo; Anterior</button>
+                                    <span class="text-muted small" id="registrosPaginaInfo"></span>
+                                    <button class="btn btn-sm btn-outline-secondary" id="registros_next" onclick="cambiarPaginaRegistros(1)">Siguiente &raquo;</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -624,6 +855,56 @@
                                             <i class="bi bi-file-earmark-pdf"></i> PDF
                                         </button>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráficos Section -->
+                <div id="section-graficos" class="content-section" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                        <h2 class="mb-0">Gráficos y Tendencias</h2>
+                        <select class="form-select w-auto" id="graficos_dias" onchange="cargarGraficos()">
+                            <option value="7">Últimos 7 días</option>
+                            <option value="15">Últimos 15 días</option>
+                            <option value="30" selected>Últimos 30 días</option>
+                            <option value="90">Últimos 90 días</option>
+                            <option value="365">Último año</option>
+                        </select>
+                    </div>
+
+                    <!-- KPIs -->
+                    <div class="row mb-3" id="graficos_kpis"></div>
+
+                    <!-- Tendencia de temperaturas -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="bi bi-graph-up"></i> Tendencia de Temperaturas</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="chartTendencias" height="100"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-warning text-dark">
+                                    <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Alertas por Día</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="chartAlertas" height="140"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-info text-white">
+                                    <h5 class="mb-0"><i class="bi bi-building"></i> Registros por Área</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="chartAreas" height="140"></canvas>
                                 </div>
                             </div>
                         </div>
@@ -872,7 +1153,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-    <!-- Chart.js eliminado -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>
         let currentUser = null;
         
@@ -904,7 +1185,29 @@
             }
         }
 
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            const abrir = !sidebar.classList.contains('sidebar-open');
+            if (abrir) window.scrollTo(0, 0);
+            sidebar.classList.toggle('sidebar-open', abrir);
+            backdrop.classList.toggle('show', abrir);
+            document.body.style.overflow = abrir ? 'hidden' : '';
+        }
+
+        function cerrarSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar.classList.contains('sidebar-open')) {
+                sidebar.classList.remove('sidebar-open');
+                document.getElementById('sidebarBackdrop').classList.remove('show');
+                document.body.style.overflow = '';
+            }
+        }
+
         function showSection(section) {
+            // En móvil, cerrar el menú lateral al navegar
+            cerrarSidebar();
+
             // Ocultar todas las secciones
             document.querySelectorAll('.content-section').forEach(el => el.style.display = 'none');
 
@@ -939,11 +1242,14 @@
                 case 'termometros': cargarTermometros(); break;
                 case 'impresion': cargarSeccionImpresion(); break;
                 case 'reportes': inicializarReportes(); break;
+                case 'graficos': cargarGraficos(); break;
                 case 'configuracion': cargarConfiguracion(); break;
             }
         }
 
-        // === DASHBOARD ELIMINADO ===
+        // === DASHBOARD / GRÁFICOS ===
+        // El dashboard original se eliminó en v2.0; la sección Gráficos (ver más abajo) lo
+        // reemplaza de forma segura: solo lectura, admin-only, API autenticada.
 
         // === USUARIOS ===
         async function cargarUsuarios() {
@@ -1661,6 +1967,10 @@
         }
 
         // === REGISTROS ===
+        let registrosPaginaActual = 1;
+        let registrosTotalPaginas = 1;
+        let registrosTotal = 0;
+
         async function cargarRegistros() {
             try {
                 // Construir parámetros de filtro
@@ -1675,6 +1985,8 @@
                 if (fechaHasta) params.append('fecha_hasta', fechaHasta);
                 if (areaId) params.append('area_id', areaId);
                 if (ventana) params.append('ventana_horaria', ventana);
+                params.append('page', registrosPaginaActual);
+                params.append('page_size', document.getElementById('registros_page_size').value);
 
                 const response = await fetch(`/api/admin/registros?${params}`);
 
@@ -1683,18 +1995,24 @@
                     throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
                 }
 
-                const registros = await response.json();
+                const data = await response.json();
+                const registros = data.registros || [];
+                registrosTotal = data.total || 0;
+                registrosTotalPaginas = data.total_paginas || 1;
 
                 const tbody = document.getElementById('registrosTable');
                 const emptyMsg = document.getElementById('registrosEmpty');
+                const paginacion = document.getElementById('registrosPaginacion');
 
-                if (registros.length === 0) {
+                if (registrosTotal === 0) {
                     tbody.innerHTML = '';
                     emptyMsg.style.display = 'block';
+                    paginacion.style.display = 'none';
                     return;
                 }
 
                 emptyMsg.style.display = 'none';
+                paginacion.style.display = 'flex';
                 tbody.innerHTML = registros.map(r => {
                     const fecha = new Date(r.fecha_registro).toLocaleString('es-ES');
                     const tempActual = r.temp_actual !== null ? r.temp_actual + '°C' : '-';
@@ -1724,9 +2042,33 @@
                         </tr>
                     `;
                 }).join('');
+
+                renderizarPaginacionRegistros();
             } catch (error) {
                 alert('Error al cargar registros: ' + error.message);
             }
+        }
+
+        function renderizarPaginacionRegistros() {
+            const pageSize = parseInt(document.getElementById('registros_page_size').value);
+            const desde = registrosTotal === 0 ? 0 : ((registrosPaginaActual - 1) * pageSize) + 1;
+            const hasta = Math.min(registrosPaginaActual * pageSize, registrosTotal);
+            document.getElementById('registrosInfo').textContent = `Mostrando ${desde}–${hasta} de ${registrosTotal} registros`;
+            document.getElementById('registrosPaginaInfo').textContent = `Página ${registrosPaginaActual} de ${registrosTotalPaginas}`;
+            document.getElementById('registros_prev').disabled = registrosPaginaActual <= 1;
+            document.getElementById('registros_next').disabled = registrosPaginaActual >= registrosTotalPaginas;
+        }
+
+        function cambiarPaginaRegistros(delta) {
+            const nueva = registrosPaginaActual + delta;
+            if (nueva < 1 || nueva > registrosTotalPaginas) return;
+            registrosPaginaActual = nueva;
+            cargarRegistros();
+        }
+
+        function cambiarTamanoPaginaRegistros() {
+            registrosPaginaActual = 1;
+            cargarRegistros();
         }
 
         async function eliminarRegistro(id) {
@@ -1749,6 +2091,7 @@
             document.getElementById('filtro_fecha_hasta').value = '';
             document.getElementById('filtro_area').value = '';
             document.getElementById('filtro_ventana').value = '';
+            registrosPaginaActual = 1;
             cargarRegistros();
         }
 
@@ -1952,6 +2295,136 @@
             } catch (error) {
                 alert('Error al generar reporte: ' + error.message);
             }
+        }
+
+        // === GRÁFICOS ===
+        let graficosCharts = [];
+
+        function destruirGraficos() {
+            graficosCharts.forEach(c => { try { c.destroy(); } catch (e) {} });
+            graficosCharts = [];
+        }
+
+        async function cargarGraficos() {
+            const dias = document.getElementById('graficos_dias').value;
+            try {
+                const response = await fetch(`/api/admin/graficos?dias=${dias}`);
+                if (!response.ok) throw new Error('Error al cargar los gráficos');
+                const data = await response.json();
+                destruirGraficos();
+                renderizarKPIsGraficos(data.resumen);
+                crearChartTendencias(data.tendencias);
+                crearChartAlertas(data.tendencias);
+                crearChartAreas(data.areas);
+            } catch (error) {
+                console.error('Error cargando gráficos:', error);
+                document.getElementById('graficos_kpis').innerHTML =
+                    '<div class="col-12"><div class="alert alert-danger">Error al cargar los gráficos: ' + error.message + '</div></div>';
+            }
+        }
+
+        function renderizarKPIsGraficos(resumen) {
+            const container = document.getElementById('graficos_kpis');
+            const alertaPct = resumen.total_registros > 0
+                ? Math.round((resumen.total_alertas / resumen.total_registros) * 100) : 0;
+            container.innerHTML = `
+                <div class="col-md-3 col-6 mb-2">
+                    <div class="card text-center h-100">
+                        <div class="card-body py-3">
+                            <h3 class="text-primary mb-0">${resumen.total_registros}</h3>
+                            <div class="text-muted small">Registros</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6 mb-2">
+                    <div class="card text-center h-100">
+                        <div class="card-body py-3">
+                            <h3 class="text-warning mb-0">${resumen.total_alertas}</h3>
+                            <div class="text-muted small">Fuera de rango (${alertaPct}%)</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6 mb-2">
+                    <div class="card text-center h-100">
+                        <div class="card-body py-3">
+                            <h3 class="text-success mb-0">${resumen.promedio_max ?? '-'}&deg;C</h3>
+                            <div class="text-muted small">Prom. Máxima</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6 mb-2">
+                    <div class="card text-center h-100">
+                        <div class="card-body py-3">
+                            <h3 class="text-info mb-0">${resumen.promedio_min ?? '-'}&deg;C</h3>
+                            <div class="text-muted small">Prom. Mínima</div>
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        function crearChartTendencias(tendencias) {
+            const ctx = document.getElementById('chartTendencias').getContext('2d');
+            const labels = tendencias.map(t => t.fecha);
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Prom. Máxima (°C)', data: tendencias.map(t => t.promedio_max), borderColor: '#dc3545', backgroundColor: 'rgba(220,53,69,.1)', tension: 0.3, pointRadius: 3 },
+                        { label: 'Prom. Actual (°C)', data: tendencias.map(t => t.promedio_actual), borderColor: '#0d6efd', backgroundColor: 'rgba(13,110,253,.1)', tension: 0.3, pointRadius: 3 },
+                        { label: 'Prom. Mínima (°C)', data: tendencias.map(t => t.promedio_min), borderColor: '#0dcaf0', backgroundColor: 'rgba(13,202,240,.1)', tension: 0.3, pointRadius: 3 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: { y: { title: { display: true, text: '°C' } } }
+                }
+            });
+            graficosCharts.push(chart);
+        }
+
+        function crearChartAlertas(tendencias) {
+            const ctx = document.getElementById('chartAlertas').getContext('2d');
+            const chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: tendencias.map(t => t.fecha),
+                    datasets: [{
+                        label: 'Alertas',
+                        data: tendencias.map(t => t.alertas),
+                        backgroundColor: 'rgba(255,193,7,.7)',
+                        borderColor: '#ffc107',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                }
+            });
+            graficosCharts.push(chart);
+        }
+
+        function crearChartAreas(areas) {
+            const ctx = document.getElementById('chartAreas').getContext('2d');
+            const chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: areas.map(a => a.area),
+                    datasets: [
+                        { label: 'Registros', data: areas.map(a => a.total), backgroundColor: 'rgba(13,110,253,.7)' },
+                        { label: 'Alertas', data: areas.map(a => a.alertas), backgroundColor: 'rgba(220,53,69,.7)' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                }
+            });
+            graficosCharts.push(chart);
         }
 
         async function logout() {

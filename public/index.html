@@ -2,19 +2,45 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Sistema de Temperaturas - Registrador</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
+        :root {
+            --brand: #2563eb;
+            --brand-dark: #1d4ed8;
+            --ink: #1e293b;
+            --slate: #0f172a;
+            --bg: #f1f5f9;
+            --radius: 14px;
+            --shadow-card: 0 1px 3px rgba(15,23,42,0.08), 0 1px 2px rgba(15,23,42,0.06);
+            --shadow-hover: 0 8px 22px rgba(15,23,42,0.14);
+        }
         body {
-            background-color: #f5f5f5;
+            background-color: var(--bg);
             margin: 0;
             padding: 0;
             overflow-x: hidden;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
         }
         .navbar {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-color: var(--slate);
+            border-bottom: 3px solid var(--brand);
+            padding-top: calc(0.55rem + env(safe-area-inset-top));
+            padding-bottom: 0.55rem;
+        }
+        .navbar-brand {
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        .btn-outline-light {
+            border-radius: 9px;
+            transition: all 0.2s ease;
+        }
+        .btn-outline-light:hover {
+            background-color: var(--brand);
+            border-color: var(--brand);
         }
         .main-container {
             display: flex;
@@ -23,20 +49,22 @@
             margin-top: 56px;
         }
         .scanner-section {
-            padding: 20px;
-            background-color: #fff;
+            padding: 20px 16px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
             text-align: center;
+            border-bottom: 1px solid #e2e8f0;
         }
         #qr-reader {
             width: 100%;
             max-width: 400px;
             margin: 0 auto;
-            border: 3px solid #667eea;
-            border-radius: 15px;
+            border: 3px solid var(--brand);
+            border-radius: 18px;
             overflow: hidden;
             min-height: 300px;
             position: relative;
             background-color: #000;
+            box-shadow: var(--shadow-card);
         }
         .scanner-overlay {
             position: absolute;
@@ -50,6 +78,18 @@
             align-items: center;
             justify-content: center;
             z-index: 10;
+            padding: 20px;
+        }
+        .scanner-overlay i {
+            color: var(--brand);
+        }
+        .scanner-overlay .btn {
+            min-height: 50px;
+            font-weight: 600;
+            border-radius: 12px;
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
         }
         .scanner-status {
             margin-top: 15px;
@@ -61,21 +101,59 @@
         /* PESTAÑAS */
         .tabs-container {
             background: white;
-            border-bottom: 2px solid #dee2e6;
+            border-bottom: 2px solid #e2e8f0;
             position: sticky;
             top: 56px;
             z-index: 100;
-            padding-top: 10px;
+            padding-top: 8px;
+            box-shadow: 0 1px 3px rgba(15,23,42,0.05);
         }
         .nav-tabs {
             border-bottom: none;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .nav-tabs::-webkit-scrollbar {
+            display: none;
+        }
+        .nav-tabs .nav-item {
+            flex: 0 0 auto;
+        }
+        .nav-tabs .nav-link {
+            color: #64748b;
+            border: none;
+            border-bottom: 3px solid transparent;
+            padding: 10px 18px;
+            margin-bottom: -2px;
+            font-weight: 500;
+            white-space: nowrap;
+            transition: color 0.15s ease, border-color 0.15s ease;
+        }
+        .nav-tabs .nav-link:hover {
+            color: var(--brand);
+        }
+        .nav-tabs .nav-link.active {
+            color: var(--brand);
+            font-weight: 600;
+            border-bottom-color: var(--brand);
+            background: transparent;
+        }
+        .section-title {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 18px 0 10px;
+            font-size: 0.95rem;
         }
         .termometro-card {
             background: white;
-            border-radius: 12px;
+            border-radius: var(--radius);
             padding: 15px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 12px;
+            box-shadow: var(--shadow-card);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -85,45 +163,77 @@
         }
         .termometro-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            border-color: #667eea;
-            background-color: #f8f9fa;
+            box-shadow: var(--shadow-hover);
+            border-color: var(--brand);
+            background-color: #f8fafc;
         }
         .termometro-card:active {
-            transform: scale(0.98);
+            transform: scale(0.99);
         }
-        .termometro-card.pendiente { border-left: 5px solid #ffc107; }
-        .termometro-card.completado { border-left: 5px solid #198754; }
+        .termometro-card.pendiente { border-left: 5px solid #f59e0b; }
+        .termometro-card.completado { border-left: 5px solid #16a34a; }
+        .termometro-card .btn {
+            flex-shrink: 0;
+        }
 
         .area-summary-card {
             padding: 15px;
-            border-radius: 10px;
+            border-radius: 12px;
             margin-bottom: 10px;
             cursor: pointer;
-            transition: background 0.2s;
-            border: 1px solid #dee2e6;
+            transition: all 0.2s;
+            border: 1px solid #e2e8f0;
+            font-weight: 500;
         }
-        .area-summary-card.completo { background-color: #d1e7dd; border-color: #badbcc; }
-        .area-summary-card.incompleto { background-color: #fff3cd; border-color: #ffecb5; }
-        .area-summary-card.sin-iniciar { background-color: #f8d7da; border-color: #f5c6cb; }
+        .area-summary-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+        .area-summary-card.completo { background-color: #dcfce7; border-color: #bbf7d0; }
+        .area-summary-card.incompleto { background-color: #fef3c7; border-color: #fde68a; }
+        .area-summary-card.sin-iniciar { background-color: #fee2e2; border-color: #fecaca; }
 
         .progress-bar-custom {
             height: 6px;
-            background-color: #e9ecef;
+            background-color: #e2e8f0;
             border-radius: 3px;
             overflow: hidden;
         }
         .progress-fill {
             height: 100%;
-            background-color: #667eea;
+            background: linear-gradient(90deg, var(--brand), #3b82f6);
+            border-radius: 3px;
             transition: width 0.5s ease;
         }
         .area-header-card {
             background: white;
-            padding: 15px;
-            border-radius: 12px;
+            padding: 16px;
+            border-radius: var(--radius);
             margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: var(--shadow-card);
+            border: 1px solid #e2e8f0;
+        }
+        .area-header-card h4 {
+            font-weight: 700;
+        }
+
+        /* Botones */
+        .btn {
+            border-radius: 10px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            border: none;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+            transform: translateY(-1px);
+        }
+        .btn:active {
+            transform: scale(0.98);
         }
 
         /* LOADING OVERLAY */
@@ -133,29 +243,29 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(15, 23, 42, 0.92);
             display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 9999;
             color: white;
-            backdrop-filter: blur(5px);
             transition: opacity 0.3s ease;
         }
         .loader-container {
             width: 300px;
+            max-width: calc(100vw - 48px);
             text-align: center;
         }
         .progress {
             height: 10px;
-            background-color: rgba(255,255,255,0.2);
+            background-color: #334155;
             border-radius: 5px;
             overflow: hidden;
             margin-bottom: 15px;
         }
         .progress-bar {
-            background: linear-gradient(90deg, #4364F7, #e53935);
+            background: linear-gradient(90deg, var(--brand), #3b82f6);
             transition: width 0.1s linear;
         }
         .loader-text {
@@ -167,6 +277,78 @@
             font-size: 2rem;
             font-weight: 700;
             margin-bottom: 10px;
+        }
+
+        /* Modales */
+        .modal-content {
+            border: none;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 30px 60px rgba(2, 6, 23, 0.3);
+        }
+        .modal-header {
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1rem 1.25rem;
+        }
+        .modal-footer {
+            border-top: 1px solid #e2e8f0;
+        }
+        .modal .btn-lg {
+            min-height: 52px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        /* Toast */
+        .toast-msg {
+            position: fixed;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10000;
+            min-width: 260px;
+            max-width: calc(100vw - 32px);
+            text-align: center;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 12px 30px rgba(2, 6, 23, 0.3);
+            animation: toastIn 0.3s ease;
+            margin: 0;
+        }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translate(-50%, -12px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+
+        /* Responsive */
+        @media (max-width: 575.98px) {
+            .main-container {
+                margin-top: 52px;
+                min-height: calc(100vh - 52px);
+            }
+            .tabs-container {
+                top: 52px;
+            }
+            .navbar-brand {
+                font-size: 1.05rem;
+            }
+            .scanner-section {
+                padding: 14px 12px;
+            }
+            #qr-reader {
+                min-height: 240px;
+                border-radius: 14px;
+            }
+            .termometro-card {
+                padding: 13px;
+                margin-bottom: 10px;
+            }
+            .modal .btn-lg {
+                font-size: 1rem;
+            }
+            .modal-dialog {
+                margin: 10px;
+            }
         }
     </style>
 </head>
@@ -205,7 +387,7 @@
             <div style="position: relative; max-width: 400px; margin: 0 auto;">
                 <div id="qr-reader"></div>
                 <div id="scannerOverlay" class="scanner-overlay">
-                    <i class="bi bi-camera-video mb-3" style="font-size: 3rem; color: #667eea;"></i>
+                    <i class="bi bi-camera-video mb-3" style="font-size: 3rem; color: #2563eb;"></i>
                     <h5 class="mb-3">Scanner de QR</h5>
                     <button class="btn btn-primary btn-lg" onclick="inicializarScanner()">
                         <i class="bi bi-power"></i> Activar Cámara
@@ -462,6 +644,7 @@
         let areasData = {};
         let areaActualId = null;
         let termometroSeleccionado = null;
+        let informeNotificado = false;
 
         // ===== INICIALIZACIÓN =====
         // ... (checkAuth e inicializarApp iguales) ...
@@ -792,7 +975,68 @@
                  </div>`;
              }
              document.getElementById('ventanaGlobal').textContent = formatearTextoVentana(Object.values(areasData)[0]?.ventana);
-             container.innerHTML = `<div class="mb-3 text-center"><h5>Total: ${totalC} listos / ${totalP} pendientes</h5></div>` + html;
+
+             // Informe del día (al finalizar el registro diario)
+             const completo = totalP === 0 && totalC > 0;
+             const informeCard = `
+                <div class="card mb-3 ${completo ? 'border-success' : 'border-secondary-subtle'}">
+                    <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2 py-3">
+                        <div>
+                            <h6 class="mb-1">${completo
+                                ? '<i class="bi bi-check-circle text-success"></i> Registro del día completado'
+                                : '<i class="bi bi-clipboard-check"></i> Informe del día'}</h6>
+                            <small class="text-muted">Descarga el informe con las mediciones del día (${formatearFechaHoy()}).</small>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-success" onclick="descargarInformeDia('csv')">
+                                <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="descargarInformeDia('pdf')">
+                                <i class="bi bi-file-earmark-pdf"></i> PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+
+             // Notificar una sola vez cuando se completa el registro del día
+             if (completo && !informeNotificado) {
+                 informeNotificado = true;
+                 mostrarToast('¡Registro del día completado! Puedes generar el informe.', 'success');
+             } else if (!completo) {
+                 informeNotificado = false;
+             }
+
+             container.innerHTML = informeCard + `<div class="mb-3 text-center"><h5>Total: ${totalC} listos / ${totalP} pendientes</h5></div>` + html;
+        }
+
+        function formatearFechaHoy() {
+            const hoy = new Date();
+            const anio = hoy.getFullYear();
+            const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+            const dia = String(hoy.getDate()).padStart(2, '0');
+            return `${anio}-${mes}-${dia}`;
+        }
+
+        async function descargarInformeDia(formato) {
+            const fecha = formatearFechaHoy();
+            try {
+                const response = await fetch(`/api/registros/informe-dia?fecha=${fecha}&formato=${formato}`);
+                if (!response.ok) {
+                    const errText = await response.text();
+                    throw new Error(errText || 'Error al generar el informe');
+                }
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `informe_dia_${fecha}.${formato}`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (e) {
+                alert('Error al generar informe: ' + e.message);
+            }
         }
 
         // ===== MODAL UNIFICADO =====
@@ -1097,7 +1341,7 @@
             si.addEventListener('click',fSi); no.addEventListener('click',fNo); mo.show();
         })}
         function mostrarEstado(m,t){ const s=document.getElementById('scannerStatus');s.className=`alert alert-${t}`;s.textContent=m;s.classList.remove('d-none');setTimeout(()=>s.classList.add('d-none'),3000)}
-        function mostrarToast(m,t){const d=document.createElement('div');d.className=`alert alert-${t} fixed-top m-3`;d.textContent=m;document.body.appendChild(d);setTimeout(()=>d.remove(),3000)}
+        function mostrarToast(m,t){const d=document.createElement('div');d.className=`alert alert-${t} toast-msg`;d.textContent=m;document.body.appendChild(d);setTimeout(()=>d.remove(),3000)}
         async function logout(){ await fetch('/api/logout',{method:'POST'}); window.location.href='/login.html';}
         
         // ===== EVENTOS DEL SCANNER =====
