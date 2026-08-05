@@ -3,9 +3,8 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use chrono::Local;
 use serde::Deserialize;
-use sqlx::PgPool;
+use sqlx::{PgPool, Row};
 
 use crate::{
     auth::CurrentUser,
@@ -20,15 +19,16 @@ pub struct FiltrosRegistros {
     fecha_hasta: Option<String>,
     area_id: Option<i64>,
     ventana_horaria: Option<String>,
+    page: Option<u32>,
+    page_size: Option<u32>,
 }
 
 pub async fn listar_registros(
     _current_user: CurrentUser,
     State(pool): State<PgPool>,
     Query(filtros): Query<FiltrosRegistros>,
-) -> Result<Json<Vec<RegistroConDetalles>>, StatusCode> {
-    let mut query = String::from(
-        r#"
+) -> Result<Json<RegistrosPaginados>, StatusCode> {
+    const SELECT_FIELDS: &str = r#"
         SELECT
             r.id, r.termometro_id, t.nombre as termometro_nombre,
             a.nombre as area_nombre, u.username as usuario_nombre,
@@ -38,9 +38,7 @@ pub async fn listar_registros(
         LEFT JOIN termometros t ON r.termometro_id = t.id
         LEFT JOIN areas a ON t.area_id = a.id
         LEFT JOIN usuarios u ON r.usuario_id = u.id
-        WHERE 1=1
-        "#
-    );
+    "#;
 
     let mut i = 0;
     let mut conditions = Vec::new();
@@ -48,16 +46,16 @@ pub async fn listar_registros(
     if let Some(f) = &filtros.fecha_desde {
         if !f.is_empty() {
             i += 1;
-            conditions.push(format!("(CAST(r.fecha_registro AT TIME ZONE 'UTC' AS DATE)) >= ${}::date", i));
+            conditions.push(format!("(CAST(r.fecha_registro AT TIME ZONE 'America/Santiago' AS DATE)) >= ${}::date", i));
         }
     }
     if let Some(f) = &filtros.fecha_hasta {
         if !f.is_empty() {
             i += 1;
-            conditions.push(format!("(CAST(r.fecha_registro AT TIME ZONE 'UTC' AS DATE)) <= ${}::date", i));
+            conditions.push(format!("(CAST(r.fecha_registro AT TIME ZONE 'America/Santiago' AS DATE)) <= ${}::date", i));
         }
     }
-    if let Some(area_id) = filtros.area_id {
+    if filtros.area_id.is_some() {
         i += 1;
         conditions.push(format!("t.area_id = ${}", i));
     }
@@ -68,32 +66,75 @@ pub async fn listar_registros(
         }
     }
 
-    if !conditions.is_empty() {
-        query.push_str(" AND ");
-        query.push_str(&conditions.join(" AND "));
-    }
+    let where_clause = if conditions.is_empty() {
+        String::from("")
+    } else {
+        format!(" WHERE {}", conditions.join(" AND "))
+    };
 
-    query.push_str(&format!(" ORDER BY r.fecha_registro DESC, r.id DESC LIMIT {}", crate::handlers::MAX_REGISTROS_POR_PAGINA));
+    // Total de registros que cumplen los filtros
+    let count_query = format!(
+        "SELECT COUNT(*)::bigint AS total FROM registros r \
+         LEFT JOIN termometros t ON r.termometro_id = t.id \
+         LEFT JOIN areas a ON t.area_id = a.id \
+         LEFT JOIN usuarios u ON r.usuario_id = u.id{}",
+        where_clause
+    );
 
-    let mut q = sqlx::query_as(&query);
+    let mut count_q = sqlx::query(&count_query);
+    if let Some(f) = &filtros.fecha_desde { if !f.is_empty() { count_q = count_q.bind(f); } }
+    if let Some(f) = &filtros.fecha_hasta { if !f.is_empty() { count_q = count_q.bind(f); } }
+    if let Some(area) = filtros.area_id { count_q = count_q.bind(area as i32); }
+    if let Some(ventana) = &filtros.ventana_horaria { if !ventana.is_empty() { count_q = count_q.bind(ventana); } }
 
+    let total: i64 = count_q
+        .fetch_one(&pool)
+        .await
+        .map_err(|e| {
+            tracing::error!("Error SQL count listar_registros: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+        .get("total");
+
+    // Paginación
+    let page_size = filtros.page_size.unwrap_or(50).clamp(1, crate::handlers::MAX_REGISTROS_POR_PAGINA as u32);
+    let page = filtros.page.unwrap_or(1).max(1);
+    let offset = (page - 1) * page_size;
+    let total_paginas = ((total as f64) / (page_size as f64)).ceil().max(1.0) as u32;
+
+    let select_query = format!(
+        "{}{} ORDER BY r.fecha_registro DESC, r.id DESC LIMIT ${} OFFSET ${}",
+        SELECT_FIELDS,
+        where_clause,
+        i + 1,
+        i + 2
+    );
+
+    let mut q = sqlx::query_as(&select_query);
     if let Some(f) = &filtros.fecha_desde { if !f.is_empty() { q = q.bind(f); } }
     if let Some(f) = &filtros.fecha_hasta { if !f.is_empty() { q = q.bind(f); } }
     if let Some(area) = filtros.area_id { q = q.bind(area as i32); }
     if let Some(ventana) = &filtros.ventana_horaria { if !ventana.is_empty() { q = q.bind(ventana); } }
+    q = q.bind(page_size as i32).bind(offset as i32);
 
-    let registros = q
+    let registros: Vec<RegistroConDetalles> = q
         .fetch_all(&pool)
         .await
         .map_err(|e| {
             tracing::error!("Error SQL listar_registros: {:?}", e);
-            tracing::error!("Query: {}", query);
+            tracing::error!("Query: {}", select_query);
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
-    tracing::debug!("listar_registros encontró {} registros", registros.len());
+    tracing::debug!("listar_registros página {} con {} registros (total {})", page, registros.len(), total);
 
-    Ok(Json(registros))
+    Ok(Json(RegistrosPaginados {
+        registros,
+        total,
+        pagina: page,
+        page_size,
+        total_paginas,
+    }))
 }
 
 pub async fn obtener_pendientes_area(
@@ -158,7 +199,7 @@ pub async fn obtener_pendientes_area(
         LEFT JOIN usuarios u ON r.usuario_id = u.id
         WHERE t.area_id = $1 
           AND r.ventana_horaria = $2
-          AND r.fecha_registro::date = CURRENT_DATE
+          AND (r.fecha_registro AT TIME ZONE 'America/Santiago')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/Santiago')::date
         "#
     )
     .bind(area_id as i32)

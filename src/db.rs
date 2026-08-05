@@ -138,10 +138,15 @@ async fn create_tables(pool: &PgPool) -> Result<()> {
     .await?;
 
     // Índice único para evitar duplicados
+    // Nota: usa el día de America/Santiago (misma zona horaria que la lógica del sistema).
+    // Para bases existentes creadas con el día UTC, recrear el índice manualmente:
+    //   DROP INDEX IF EXISTS idx_registros_unique_per_day;
+    //   CREATE UNIQUE INDEX idx_registros_unique_per_day
+    //   ON registros(termometro_id, (CAST(fecha_registro AT TIME ZONE 'America/Santiago' AS DATE)), ventana_horaria);
     sqlx::query(
         r#"
         CREATE UNIQUE INDEX IF NOT EXISTS idx_registros_unique_per_day
-        ON registros(termometro_id, (CAST(fecha_registro AT TIME ZONE 'UTC' AS DATE)), ventana_horaria)
+        ON registros(termometro_id, (CAST(fecha_registro AT TIME ZONE 'America/Santiago' AS DATE)), ventana_horaria)
         "#,
     )
     .execute(pool)

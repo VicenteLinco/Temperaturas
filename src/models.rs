@@ -63,6 +63,7 @@ pub struct Termometro {
     pub updated_at: DateTime<Utc>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct MantenimientoTermometro {
     pub id: i32,
@@ -297,6 +298,15 @@ pub struct PendientesResponse {
     pub completados: Vec<RegistroConDetalles>,
 }
 
+#[derive(Debug, Serialize)]
+pub struct RegistrosPaginados {
+    pub registros: Vec<RegistroConDetalles>,
+    pub total: i64,
+    pub pagina: u32,
+    pub page_size: u32,
+    pub total_paginas: u32,
+}
+
 impl From<Usuario> for UsuarioResponse {
     fn from(u: Usuario) -> Self {
         UsuarioResponse {
@@ -309,7 +319,10 @@ impl From<Usuario> for UsuarioResponse {
 }
 
 // ===== ALERTAS =====
+// Los tipos de alertas quedan definidos para la futura feature de notificaciones;
+// aún no están conectados a endpoints.
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Alerta {
     pub id: i32,
@@ -333,6 +346,7 @@ pub struct Alerta {
     pub responsable_resolucion: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, FromRow)]
 pub struct AlertaConDetalles {
     // Datos de alerta
@@ -367,6 +381,7 @@ pub struct AlertaConDetalles {
     pub usuario_nombre: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct ResolverAlertaRequest {
     pub accion_correctiva: String,

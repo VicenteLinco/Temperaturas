@@ -25,12 +25,19 @@ pub struct FiltrosReporteMensual {
     area_id: Option<i64>,
 }
 
-pub async fn generar_reporte_diario(
-    _current_user: CurrentUser,
-    State(pool): State<PgPool>,
-    Query(filtros): Query<FiltrosReporteDiario>,
-) -> Result<(StatusCode, Vec<u8>), StatusCode> {
-    // Construir query
+#[derive(Deserialize)]
+pub struct FiltrosInformeDia {
+    formato: String,
+    fecha: Option<String>,
+    area_id: Option<i64>,
+}
+
+/// Construye las filas del reporte diario (compartido entre admin y registrador)
+async fn construir_registros_diario(
+    pool: &PgPool,
+    fecha: &str,
+    area_id: Option<i64>,
+) -> Result<Vec<PgRow>, StatusCode> {
     let mut query = String::from(
         r#"
         SELECT
@@ -45,34 +52,65 @@ pub async fn generar_reporte_diario(
         JOIN areas a ON t.area_id = a.id
         JOIN tipos_termometro ti ON t.tipo_id = ti.id
         JOIN usuarios u ON r.usuario_id = u.id
-        WHERE (r.fecha_registro::date) = CAST($1 AS DATE)
+        WHERE (r.fecha_registro AT TIME ZONE 'America/Santiago')::date = CAST($1 AS DATE)
         "#
     );
 
-    if filtros.area_id.is_some() {
+    if area_id.is_some() {
         query.push_str(" AND t.area_id = $2");
     }
 
     query.push_str(" ORDER BY a.nombre, t.nombre, r.ventana_horaria");
 
-    let mut q = sqlx::query(&query).bind(&filtros.fecha);
+    let mut q = sqlx::query(&query).bind(fecha);
 
-    if let Some(area_id) = filtros.area_id {
+    if let Some(area_id) = area_id {
         q = q.bind(area_id as i32);
     }
 
-    let rows = q
-        .fetch_all(&pool)
+    q.fetch_all(pool)
         .await
         .map_err(|e| {
             tracing::error!("Error reporte diario: {:?}", e);
             StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+        })
+}
+
+pub async fn generar_reporte_diario(
+    _current_user: CurrentUser,
+    State(pool): State<PgPool>,
+    Query(filtros): Query<FiltrosReporteDiario>,
+) -> Result<(StatusCode, Vec<u8>), StatusCode> {
+    let rows = construir_registros_diario(&pool, &filtros.fecha, filtros.area_id).await?;
 
     if filtros.formato == "csv" {
         generar_csv_diario(rows, &filtros.fecha)
     } else if filtros.formato == "pdf" {
         generar_pdf_diario(rows, &filtros.fecha)
+    } else {
+        Err(StatusCode::BAD_REQUEST)
+    }
+}
+
+/// Informe del día para registradores (generado al finalizar el registro diario)
+pub async fn generar_informe_dia(
+    _current_user: CurrentUser,
+    State(pool): State<PgPool>,
+    Query(filtros): Query<FiltrosInformeDia>,
+) -> Result<(StatusCode, Vec<u8>), StatusCode> {
+    let fecha = filtros.fecha.unwrap_or_else(|| {
+        chrono::Utc::now()
+            .with_timezone(&chrono_tz::America::Santiago)
+            .format("%Y-%m-%d")
+            .to_string()
+    });
+
+    let rows = construir_registros_diario(&pool, &fecha, filtros.area_id).await?;
+
+    if filtros.formato == "csv" {
+        generar_csv_diario(rows, &fecha)
+    } else if filtros.formato == "pdf" {
+        generar_pdf_diario(rows, &fecha)
     } else {
         Err(StatusCode::BAD_REQUEST)
     }
@@ -186,7 +224,19 @@ fn generar_csv_diario(rows: Vec<PgRow>, _fecha: &str) -> Result<(StatusCode, Vec
 }
 
 fn generar_csv_mensual(rows: Vec<PgRow>, mes: u32, anio: i32) -> Result<(StatusCode, Vec<u8>), StatusCode> {
-    generar_csv_diario(rows, &format!("{}-{:02}", anio, mes))
+    generar_csv_diario(rows, &periodo_mensual(mes, anio))
+}
+
+const MESES_ES: [&str; 12] = [
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+];
+
+/// Etiqueta legible del período mensual, ej: "Julio 2026"
+fn periodo_mensual(mes: u32, anio: i32) -> String {
+    let idx = (mes.saturating_sub(1)) as usize;
+    let nombre = if idx < MESES_ES.len() { MESES_ES[idx] } else { "Mes" };
+    format!("{} {}", nombre, anio)
 }
 
 fn generar_pdf_diario(rows: Vec<PgRow>, fecha: &str) -> Result<(StatusCode, Vec<u8>), StatusCode> {
@@ -280,5 +330,5 @@ fn generar_pdf_diario(rows: Vec<PgRow>, fecha: &str) -> Result<(StatusCode, Vec<
 }
 
 fn generar_pdf_mensual(rows: Vec<PgRow>, mes: u32, anio: i32) -> Result<(StatusCode, Vec<u8>), StatusCode> {
-    generar_pdf_diario(rows, &format!("{}-{:02}", anio, mes))
+    generar_pdf_diario(rows, &periodo_mensual(mes, anio))
 }

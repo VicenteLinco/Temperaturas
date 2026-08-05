@@ -240,3 +240,132 @@ pub fn validar_registro(
 
     Ok((fuera_rango_operativo, advertencias))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::NaiveTime;
+
+    fn tipo_base() -> TipoTermometro {
+        TipoTermometro {
+            id: 1,
+            nombre: "Refrigerador".to_string(),
+            descripcion: None,
+            tiene_humedad: false,
+            temp_min_operativa: 2.0,
+            temp_max_operativa: 8.0,
+            temp_min_fisica: -10.0,
+            temp_max_fisica: 30.0,
+            hum_min_operativa: None,
+            hum_max_operativa: None,
+            hum_min_fisica: None,
+            hum_max_fisica: None,
+            activo: true,
+            created_at: chrono::Utc::now(),
+            updated_at: chrono::Utc::now(),
+        }
+    }
+
+    fn tipo_con_humedad() -> TipoTermometro {
+        let mut t = tipo_base();
+        t.tiene_humedad = true;
+        t.hum_min_operativa = Some(30.0);
+        t.hum_max_operativa = Some(60.0);
+        t.hum_min_fisica = Some(0.0);
+        t.hum_max_fisica = Some(100.0);
+        t
+    }
+
+    #[test]
+    fn rango_directo_dentro_de_tolerancia() {
+        let central = NaiveTime::from_hms_opt(14, 0, 0).unwrap();
+        let ahora = NaiveTime::from_hms_opt(15, 0, 0).unwrap();
+        assert!(esta_en_rango(central, 119, ahora));
+    }
+
+    #[test]
+    fn rango_directo_fuera_de_tolerancia() {
+        let central = NaiveTime::from_hms_opt(14, 0, 0).unwrap();
+        let ahora = NaiveTime::from_hms_opt(18, 0, 0).unwrap();
+        assert!(!esta_en_rango(central, 119, ahora));
+    }
+
+    #[test]
+    fn rango_cruce_medianoche() {
+        // Central 02:00, ahora 23:30 → distancia circular 150 min, dentro de 180
+        let central = NaiveTime::from_hms_opt(2, 0, 0).unwrap();
+        let ahora = NaiveTime::from_hms_opt(23, 30, 0).unwrap();
+        assert!(esta_en_rango(central, 180, ahora));
+        // Ahora 21:00 → distancia circular 300 min, fuera
+        let fuera = NaiveTime::from_hms_opt(21, 0, 0).unwrap();
+        assert!(!esta_en_rango(central, 180, fuera));
+    }
+
+    #[test]
+    fn validar_temperatura_normal() {
+        let tipo = tipo_base();
+        assert!(matches!(validar_temperatura(5.0, &tipo, "máxima"), ValidacionResultado::Ok));
+    }
+
+    #[test]
+    fn validar_temperatura_advertencia() {
+        let tipo = tipo_base();
+        assert!(matches!(validar_temperatura(20.0, &tipo, "máxima"), ValidacionResultado::Advertencia(_)));
+    }
+
+    #[test]
+    fn validar_temperatura_rechazo_fisico() {
+        let tipo = tipo_base();
+        assert!(matches!(validar_temperatura(-50.0, &tipo, "mínima"), ValidacionResultado::Rechazo(_)));
+    }
+
+    #[test]
+    fn validar_humedad_sin_capacidad_da_error() {
+        let tipo = tipo_base();
+        assert!(validar_humedad(50.0, &tipo).is_err());
+    }
+
+    #[test]
+    fn validar_humedad_advertencia() {
+        let tipo = tipo_con_humedad();
+        let res = validar_humedad(70.0, &tipo).unwrap();
+        assert!(matches!(res, ValidacionResultado::Advertencia(_)));
+    }
+
+    #[test]
+    fn validar_registro_max_menor_que_min_error() {
+        let tipo = tipo_base();
+        let res = validar_registro(3.0, 5.0, None, &tipo);
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn validar_registro_ok() {
+        let tipo = tipo_base();
+        let (fuera, advertencias) = validar_registro(6.0, 4.0, None, &tipo).unwrap();
+        assert!(!fuera);
+        assert!(advertencias.is_empty());
+    }
+
+    #[test]
+    fn validar_registro_humedad_requerida() {
+        let tipo = tipo_con_humedad();
+        assert!(validar_registro(6.0, 4.0, None, &tipo).is_err());
+    }
+
+    #[test]
+    fn validar_registro_ok_con_humedad() {
+        let tipo = tipo_con_humedad();
+        let (fuera, advertencias) = validar_registro(6.0, 4.0, Some(50.0), &tipo).unwrap();
+        assert!(!fuera);
+        assert!(advertencias.is_empty());
+    }
+
+    #[test]
+    fn validar_registro_marca_fuera_rango() {
+        let tipo = tipo_base();
+        let (fuera, advertencias) = validar_registro(20.0, 4.0, None, &tipo).unwrap();
+        assert!(fuera);
+        assert!(!advertencias.is_empty());
+    }
+}

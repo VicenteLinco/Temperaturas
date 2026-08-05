@@ -88,6 +88,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/registros/:id", put(handlers::actualizar_registro))
         .route("/api/termometros/reportar-fuera-servicio", post(handlers::reportar_fuera_de_servicio))
         .route("/api/termometros/:id/reparar", post(handlers::reparar_termometro))
+        .route("/api/registros/informe-dia", get(handlers::generar_informe_dia))
         .route_layer(middleware::from_fn(auth::require_registrador));
 
     // Rutas de Administración
@@ -111,6 +112,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/admin/configuracion", put(handlers::actualizar_configuracion))
         .route("/api/admin/reportes/diario", get(handlers::generar_reporte_diario))
         .route("/api/admin/reportes/mensual", get(handlers::generar_reporte_mensual))
+        .route("/api/admin/graficos", get(handlers::obtener_graficos))
         .route_layer(middleware::from_fn(auth::require_admin));
 
     // Combinar todas las rutas

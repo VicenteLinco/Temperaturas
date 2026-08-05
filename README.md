@@ -1,6 +1,6 @@
 # Sistema de Registro de Temperaturas
 
-Sistema completo de gestión y registro de temperaturas para termómetros en áreas técnicas, desarrollado en Rust con Axum y SQLite.
+Sistema completo de gestión y registro de temperaturas para termómetros en áreas técnicas, desarrollado en Rust con Axum y PostgreSQL.
 
 ## 🚀 Inicio Rápido
 
@@ -66,7 +66,7 @@ Scripts/iniciar_servidor.bat          (tradicional - con ventana)
 ### Backend
 - **Rust** (Edition 2021)
 - **Axum** - Framework web asíncrono
-- **SQLx** - Base de datos SQLite asíncrona
+- **SQLx** - Base de datos PostgreSQL asíncrona
 - **Tower Sessions** - Manejo de sesiones
 - **BCrypt** - Hash de contraseñas
 - **Chrono** - Manejo de fechas y horas
@@ -97,7 +97,7 @@ cp .env.example .env
 
 3. (Opcional) Editar `.env` con tu configuración:
 ```env
-DATABASE_URL=sqlite:datos.db
+DATABASE_URL=postgresql://usuario:password@localhost:5432/temperaturas
 PORT=3000
 HOST=0.0.0.0
 REGISTRO_HORA_1=14:00
@@ -105,6 +105,8 @@ REGISTRO_HORA_2=02:00
 VENTANA_TOLERANCIA_MINUTOS=119
 SESSION_TIMEOUT_HORAS=8
 ```
+
+> **Nota sobre la base de datos**: el sistema usa **PostgreSQL**. Los scripts bajo `src/bin/` (`migrar_a_nube.rs`, `migracion_final.rs`, etc.) utilizan SQLite **únicamente** para leer el `datos.db` antiguo durante la migración inicial, no como base en producción.
 
 4. Compilar y ejecutar:
 ```bash
@@ -174,7 +176,7 @@ Temperaturas/
 ├── Archive/              # Archivos archivados (logs, certificados, etc.)
 ├── Cargo.toml            # Dependencias del proyecto
 ├── .env.example          # Ejemplo de configuración
-├── datos.db              # Base de datos SQLite (generada)
+├── datos.db              # Solo si aún no se migra: base SQLite antigua (origen de migración)
 └── README.md             # Este archivo
 ```
 
@@ -371,9 +373,9 @@ cargo test
 ### Base de Datos
 
 #### Error: "database is locked"
-- SQLite solo permite un escritor a la vez
-- El sistema está configurado con pool de 20 conexiones (optimizado v2.0)
-- Si persiste, reiniciar el servidor
+- Este error es propio de SQLite; con PostgreSQL no aplica. Si aparece un error de conexión:
+- Verificar que la URL en `DATABASE_URL` sea correcta y que el servicio PostgreSQL esté activo
+- PostgreSQL permite múltiples escritores concurrentes (pool de 20 conexiones configurado)
 
 ### Registros
 
