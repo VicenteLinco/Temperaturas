@@ -2,43 +2,53 @@
 .temp-stepper {
     display: flex;
     align-items: stretch;
-    gap: 4px;
+    gap: 6px;
 }
 .temp-stepper .btn {
-    font-weight: 700;
-    border-radius: 10px;
-    padding: 0.5rem 0.6rem;
-    min-width: 46px;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    min-width: 44px;
+    font-family: inherit;
 }
 .temp-stepper .btn-step-sm {
-    min-width: 40px;
-    padding: 0.25rem 0.3rem;
-    font-size: 0.8rem;
+    min-width: 38px;
+    padding: 0.25rem 0.4rem;
+    font-size: 0.85rem;
 }
 .temp-stepper input {
     text-align: center;
     font-weight: 700;
-    font-size: 1.25rem;
+    font-size: 1.2rem;
     flex: 1;
     min-width: 0;
+    font-family: inherit;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+}
+.temp-stepper input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 .lectura-hint {
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     color: #64748b;
-    margin-top: 4px;
+    margin-top: 6px;
+    line-height: 1.35;
 }
 .barra-termometro {
     position: relative;
-    height: 16px;
-    border-radius: 8px;
-    background: linear-gradient(90deg, #93c5fd, #fca5a5);
+    height: 14px;
+    border-radius: 7px;
+    background-color: #e2e8f0;
     margin: 34px 8px 44px;
+    border: 1px solid #cbd5e1;
 }
 .barra-termometro .zona-operativa {
     position: absolute;
     top: 0;
     bottom: 0;
-    background: rgba(34, 197, 94, 0.35);
+    background-color: #dcfce7;
     border-left: 2px solid #16a34a;
     border-right: 2px solid #16a34a;
     border-radius: 2px;
@@ -57,57 +67,69 @@
 }
 .barra-marker .etiqueta {
     font-size: 0.7rem;
-    font-weight: 800;
+    font-weight: 700;
     white-space: nowrap;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    color: #475569;
 }
 .barra-marker .pin {
-    width: 4px;
+    width: 3px;
     height: 14px;
     margin: 0 auto;
+    background-color: #475569;
     border-radius: 2px;
 }
 .barra-marker .valor {
     font-size: 0.85rem;
     font-weight: 700;
     color: #0f172a;
-    background: #fff;
-    border: 1px solid #e2e8f0;
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
     border-radius: 6px;
-    padding: 0 5px;
+    padding: 2px 6px;
     display: inline-block;
     margin-top: 3px;
-    box-shadow: var(--shadow-card, 0 1px 3px rgba(15,23,42,0.08));
+    box-shadow: 0 1px 3px rgba(15,23,42,0.08);
 }
 .tarjeta-lectura {
-    border-radius: 12px;
-    padding: 12px 6px;
+    border-radius: 10px;
+    padding: 12px 8px;
     text-align: center;
     border: 1px solid #e2e8f0;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 .tarjeta-lectura .tl-label {
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.4px;
+    text-transform: uppercase;
 }
 .tarjeta-lectura .tl-valor {
-    font-size: 1.6rem;
+    font-size: 1.5rem;
     font-weight: 800;
-    line-height: 1.1;
+    line-height: 1.2;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    font-feature-settings: "tnum";
 }
 .tarjeta-lectura .tl-unidad {
     font-size: 0.8rem;
     font-weight: 600;
 }
 .tarjeta-lectura.min {
-    background: #dbeafe;
-    border-color: #93c5fd;
+    background-color: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1e40af;
 }
 .tarjeta-lectura.max {
-    background: #fee2e2;
-    border-color: #fca5a5;
+    background-color: #fef2f2;
+    border-color: #fecaca;
+    color: #991b1b;
 }
 .tarjeta-lectura.actual {
-    background: #dcfce7;
-    border-color: #86efac;
+    background-color: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #166534;
 }
+

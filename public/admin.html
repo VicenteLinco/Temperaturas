@@ -3,30 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Sistema de Temperaturas - Administración</title>
+    <title>Sistema de Control Térmico - Panel de Administración</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="lecturas.css">
     <style>
         :root {
-            /* Paleta plana (sin degradados) */
+            /* Paleta plana sobria y elegante */
             --brand: #2563eb;
             --brand-dark: #1d4ed8;
-            --ink: #1e293b;
+            --ink: #0f172a;
             --slate: #0f172a;
-            --bg: #f1f5f9;
+            --bg: #f8fafc;
             --muted: #64748b;
 
             --sidebar-width: 260px;
             --header-height: 60px;
-            --radius: 14px;
+            --radius: 12px;
             --shadow-card: 0 1px 3px rgba(15,23,42,0.08), 0 1px 2px rgba(15,23,42,0.06);
-            --shadow-hover: 0 8px 22px rgba(15,23,42,0.14);
+            --shadow-hover: 0 6px 16px rgba(15,23,42,0.12);
         }
 
         body {
             background-color: var(--bg);
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: var(--ink);
             padding-top: 0;
         }
 
@@ -42,11 +46,12 @@
             border-bottom: 3px solid var(--brand);
         }
         .navbar-brand {
-            font-weight: 600;
+            font-weight: 700;
             font-size: 1.15rem;
+            letter-spacing: -0.01em;
         }
         #btnSidebarToggle {
-            border-radius: 9px;
+            border-radius: 8px;
             padding: 0.35rem 0.6rem;
             font-size: 1.2rem;
         }
@@ -55,7 +60,7 @@
             border-color: var(--brand);
         }
 
-        /* Sidebar & Content (Desktop Default) */
+        /* Sidebar & Content */
         .sidebar {
             position: sticky;
             top: 0;
@@ -70,7 +75,7 @@
         }
 
         .content-area {
-            padding: 20px;
+            padding: 24px;
             min-height: calc(100vh - var(--header-height));
         }
 
@@ -79,7 +84,7 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
+            from { opacity: 0; transform: translateY(6px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
@@ -89,6 +94,7 @@
             border-left: 3px solid transparent;
             transition: all 0.15s ease;
             font-size: 0.95rem;
+            font-weight: 500;
         }
 
         .sidebar .nav-link:hover {
@@ -114,15 +120,30 @@
             display: none;
         }
 
+        /* Flexbox seguro para acciones sin solapamientos */
+        .table-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
         .table-actions .btn {
-            margin-right: 5px;
-            margin-bottom: 3px;
+            margin: 0;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.825rem;
+            font-weight: 600;
+            padding: 0.35rem 0.65rem;
+            border-radius: 6px;
         }
 
         /* Secciones */
         .content-section > h2 {
             font-weight: 700;
             color: var(--ink);
+            letter-spacing: -0.02em;
         }
 
         /* Tarjetas */
