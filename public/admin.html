@@ -959,7 +959,7 @@
                                         <div class="col-6">
                                             <label class="form-label small fw-semibold">Agrupar Por</label>
                                             <select class="form-select form-select-sm" id="reporte_estabilidad_agrupacion">
-                                                <option value="area">Por Área Técnico</option>
+                                                <option value="area">Por Área Técnica</option>
                                                 <option value="termometro">Por Termómetro Individual</option>
                                             </select>
                                         </div>
@@ -1143,7 +1143,9 @@
                                         <i class="bi bi-activity text-success me-1"></i> Análisis visual interactivo
                                     </div>
                                 </div>
-                                <canvas id="chartTendencias" height="110"></canvas>
+                                <div style="position: relative; width: 100%; height: 380px; max-height: 400px; overflow: hidden;">
+                                    <canvas id="chartTendencias"></canvas>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1155,7 +1157,9 @@
                                     <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Alertas Fuera de Rango por Día</h5>
                                 </div>
                                 <div class="card-body">
-                                    <canvas id="chartAlertas" height="140"></canvas>
+                                    <div style="position: relative; width: 100%; height: 260px; max-height: 280px; overflow: hidden;">
+                                        <canvas id="chartAlertas"></canvas>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1165,7 +1169,9 @@
                                     <h5 class="mb-0"><i class="bi bi-building"></i> Registros y Alertas por Área</h5>
                                 </div>
                                 <div class="card-body">
-                                    <canvas id="chartAreas" height="140"></canvas>
+                                    <div style="position: relative; width: 100%; height: 260px; max-height: 280px; overflow: hidden;">
+                                        <canvas id="chartAreas"></canvas>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -3507,6 +3513,7 @@
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: {
                         y: { beginAtZero: true, ticks: { precision: 0, color: textColor }, grid: { color: gridColor } },
@@ -3534,6 +3541,7 @@
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
                     plugins: { legend: { position: 'bottom', labels: { color: textColor, usePointStyle: true } } },
                     scales: {
                         y: { beginAtZero: true, ticks: { precision: 0, color: textColor }, grid: { color: gridColor } },

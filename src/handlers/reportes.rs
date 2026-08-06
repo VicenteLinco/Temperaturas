@@ -184,6 +184,94 @@ pub async fn generar_reporte_mensual(
     }
 }
 
+#[derive(Deserialize)]
+pub struct FiltrosReporteIncidencias {
+    pub tipo: Option<String>,
+    pub incluir_observaciones: Option<String>,
+    pub formato: String,
+}
+
+pub async fn generar_reporte_incidencias(
+    _current_user: CurrentUser,
+    State(pool): State<PgPool>,
+    Query(filtros): Query<FiltrosReporteIncidencias>,
+) -> Result<(StatusCode, Vec<u8>), StatusCode> {
+    let rows = sqlx::query(
+        r#"
+        SELECT
+            r.id, r.fecha_registro, r.ventana_horaria,
+            a.nombre as area_nombre, t.nombre as termometro_nombre, t.id as termometro_id,
+            ti.nombre as tipo_nombre,
+            r.temp_maxima, r.temp_minima, r.humedad,
+            r.fuera_rango_operativo, r.observaciones,
+            u.username as usuario_nombre
+        FROM registros r
+        JOIN termometros t ON r.termometro_id = t.id
+        JOIN areas a ON t.area_id = a.id
+        JOIN tipos_termometro ti ON t.tipo_id = ti.id
+        JOIN usuarios u ON r.usuario_id = u.id
+        WHERE r.fuera_rango_operativo = true
+        ORDER BY r.fecha_registro DESC
+        "#
+    )
+    .fetch_all(&pool)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let fecha_tag = chrono::Utc::now().with_timezone(&chrono_tz::America::Santiago).format("%Y-%m-%d").to_string();
+
+    if filtros.formato == "csv" {
+        generar_csv_diario(rows, &fecha_tag)
+    } else {
+        generar_pdf_diario(rows, &format!("Auditoría de Incidencias HACCP ({})", fecha_tag))
+    }
+}
+
+#[derive(Deserialize)]
+pub struct FiltrosReporteEstabilidad {
+    pub dias: Option<i64>,
+    pub agrupar_por: Option<String>,
+    pub formato: String,
+}
+
+pub async fn generar_reporte_estabilidad(
+    _current_user: CurrentUser,
+    State(pool): State<PgPool>,
+    Query(filtros): Query<FiltrosReporteEstabilidad>,
+) -> Result<(StatusCode, Vec<u8>), StatusCode> {
+    let num_dias = filtros.dias.unwrap_or(30);
+    let rows = sqlx::query(
+        r#"
+        SELECT
+            r.id, r.fecha_registro, r.ventana_horaria,
+            a.nombre as area_nombre, t.nombre as termometro_nombre, t.id as termometro_id,
+            ti.nombre as tipo_nombre,
+            r.temp_maxima, r.temp_minima, r.humedad,
+            r.fuera_rango_operativo, r.observaciones,
+            u.username as usuario_nombre
+        FROM registros r
+        JOIN termometros t ON r.termometro_id = t.id
+        JOIN areas a ON t.area_id = a.id
+        JOIN tipos_termometro ti ON t.tipo_id = ti.id
+        JOIN usuarios u ON r.usuario_id = u.id
+        WHERE r.fecha_registro >= NOW() - (INTERVAL '1 day' * $1)
+        ORDER BY a.nombre, t.nombre, r.fecha_registro DESC
+        "#
+    )
+    .bind(num_dias as f64)
+    .fetch_all(&pool)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let etiqueta = format!("Análisis Estabilidad (Últimos {} Días)", num_dias);
+
+    if filtros.formato == "csv" {
+        generar_csv_diario(rows, &etiqueta)
+    } else {
+        generar_pdf_diario(rows, &etiqueta)
+    }
+}
+
 fn generar_csv_diario(rows: Vec<PgRow>, _fecha: &str) -> Result<(StatusCode, Vec<u8>), StatusCode> {
     let mut wtr = csv::Writer::from_writer(vec![]);
 
@@ -548,6 +636,17 @@ fn truncar(texto: &str, max: usize) -> String {
     }
 }
 
+fn sanitize_pdf_str(input: &str) -> String {
+    input
+        .replace('°', " ")
+        .replace('⚠', "[!]")
+        .replace('✓', "[OK]")
+        .replace('á', "a").replace('é', "e").replace('í', "i").replace('ó', "o").replace('ú', "u")
+        .replace('Á', "A").replace('É', "E").replace('Í', "I").replace('Ó', "O").replace('Ú', "U")
+        .replace('ñ', "n").replace('Ñ', "N")
+        .replace('ü', "u").replace('Ü', "U")
+}
+
 /// Escritor de PDF simple con soporte para orientación Portrait/Landscape y paginación
 struct PdfEscritor {
     doc: PdfDocumentReference,
@@ -597,8 +696,9 @@ impl PdfEscritor {
     }
 
     fn texto(&self, texto: &str, size: f32, x: f32, y: f32, bold: bool) {
+        let clean_text = sanitize_pdf_str(texto);
         let font = if bold { &self.font_bold } else { &self.font_regular };
-        self.layer.use_text(texto, size, Mm(x), Mm(y), font);
+        self.layer.use_text(&clean_text, size, Mm(x), Mm(y), font);
     }
 
     /// Escribe una línea en la posición actual y baja la coordenada vertical

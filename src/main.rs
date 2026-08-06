@@ -115,6 +115,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/admin/configuracion", put(handlers::actualizar_configuracion))
         .route("/api/admin/reportes/diario", get(handlers::generar_reporte_diario))
         .route("/api/admin/reportes/mensual", get(handlers::generar_reporte_mensual))
+        .route("/api/admin/reportes/incidencias", get(handlers::generar_reporte_incidencias))
+        .route("/api/admin/reportes/estabilidad", get(handlers::generar_reporte_estabilidad))
         .route("/api/admin/graficos", get(handlers::obtener_graficos))
         .route_layer(middleware::from_fn(auth::require_admin));
 
