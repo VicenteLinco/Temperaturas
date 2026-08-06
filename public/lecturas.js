@@ -217,6 +217,16 @@ function evaluarRangoEnTiempoReal(t, actual, minima, maxima, alertContainerId) {
         alertEl.style.display = 'block';
         alertEl.className = 'alert alert-success p-2 mb-3 rounded-3 shadow-sm border-success';
         alertEl.innerHTML = `
+            <div class="d-flex align-items-center gap-2 fw-bold text-success small">
+                <i class="bi bi-check-circle-fill fs-6"></i>
+                <span>Dentro del rango operativo (${minOp}°C a ${maxOp}°C)</span>
+            </div>
+        `;
+    } else {
+        alertEl.style.display = 'none';
+    }
+}
+
 // 10. Flujo Inteligente de Teclado (Numpad / Enter Automático)
 function setupNumpadEnterFlow(modalId) {
     const modalEl = document.getElementById(modalId);

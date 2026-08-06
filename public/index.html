@@ -799,13 +799,6 @@
         async function inicializarApp() {
             await cargarTodasLasAreas();
 
-            const modalReg = document.getElementById('modalRegistro');
-            if (modalReg) {
-                modalReg.addEventListener('hidden.bs.modal', () => {
-                    reanudarScannerSiPausado();
-                });
-            }
-
             // Verificar si viene un ID por URL (cuando se abre escaneando con la cámara del celular)
             const urlParams = new URLSearchParams(window.location.search);
             const termId = urlParams.get('termometro') || urlParams.get('id') || urlParams.get('termometro_id') || urlParams.get('termo') || urlParams.get('t');
