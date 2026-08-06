@@ -1491,18 +1491,30 @@
                         </div>
                     </div>
 
-                    <!-- 3. MEDICIÓN Y LÍMITES -->
+                    <!-- 3. MEDICIÓN DE 3 PUNTOS Y LÍMITES -->
                     <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <div class="p-3 rounded-3 text-center border bg-white h-100 shadow-2xs">
-                                <span class="text-secondary small d-block mb-1 fw-medium" style="font-size: 0.78rem;">Temp. Actual</span>
-                                <h3 id="detalleLecturaTempActual" class="fw-extrabold mb-0 text-primary">-- °C</h3>
+                        <div class="col-4">
+                            <div class="p-2.5 rounded-3 text-center border bg-white h-100 shadow-2xs">
+                                <span class="text-secondary small d-block mb-1 fw-medium" style="font-size: 0.72rem;">Temp. Actual</span>
+                                <h4 id="detalleLecturaTempActual" class="fw-extrabold mb-0 text-primary">-- °C</h4>
                             </div>
                         </div>
-                        <div class="col-6">
-                            <div class="p-3 rounded-3 text-center border bg-white h-100 shadow-2xs">
-                                <span class="text-secondary small d-block mb-1 fw-medium" style="font-size: 0.78rem;">Rango Operativo Seguro</span>
-                                <h6 id="detalleLecturaRango" class="fw-bold mb-0 text-dark pt-1">-- °C a -- °C</h6>
+                        <div class="col-4">
+                            <div class="p-2.5 rounded-3 text-center border bg-white h-100 shadow-2xs">
+                                <span class="text-secondary small d-block mb-1 fw-medium" style="font-size: 0.72rem;">Temp. Máxima</span>
+                                <h4 id="detalleLecturaTempMax" class="fw-extrabold mb-0 text-warning">-- °C</h4>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2.5 rounded-3 text-center border bg-white h-100 shadow-2xs">
+                                <span class="text-secondary small d-block mb-1 fw-medium" style="font-size: 0.72rem;">Temp. Mínima</span>
+                                <h4 id="detalleLecturaTempMin" class="fw-extrabold mb-0" style="color: #30b0c7;">-- °C</h4>
+                            </div>
+                        </div>
+                        <div class="col-12 mt-1">
+                            <div class="p-2.5 rounded-3 text-center border bg-light">
+                                <span class="text-secondary small fw-medium me-1" style="font-size: 0.75rem;">Rango Operativo Seguro:</span>
+                                <strong id="detalleLecturaRango" class="text-dark" style="font-size: 0.85rem;">-- °C a -- °C</strong>
                             </div>
                         </div>
                     </div>
@@ -3534,8 +3546,10 @@
                 motivoTextoEl.textContent = motivoTexto;
             }
 
-            // Temperatura y Límites
+            // Temperatura Actual, Máxima y Mínima
             document.getElementById('detalleLecturaTempActual').textContent = item.temp_actual != null ? `${item.temp_actual} °C` : '-';
+            document.getElementById('detalleLecturaTempMax').textContent = item.temp_maxima != null ? `${item.temp_maxima} °C` : '-';
+            document.getElementById('detalleLecturaTempMin').textContent = item.temp_minima != null ? `${item.temp_minima} °C` : '-';
             
             const minOp = item.temp_min_operativa != null ? `${item.temp_min_operativa} °C` : 'N/A';
             const maxOp = item.temp_max_operativa != null ? `${item.temp_max_operativa} °C` : 'N/A';
@@ -3669,7 +3683,6 @@
             const ctx = canvasEl.getContext('2d');
             const mostrarLimites = document.getElementById('chkMostrarLimites').checked;
             const mostrarAlertas = document.getElementById('chkResaltarAlertas').checked;
-            const mostrarMaxMin = document.getElementById('chkMostrarMaxMin') ? document.getElementById('chkMostrarMaxMin').checked : false;
             const optDensidad = document.getElementById('densidadDatosGrafico') ? document.getElementById('densidadDatosGrafico').value : 'smart';
 
             if (!lecturasOriginales || lecturasOriginales.length === 0) {
@@ -3690,63 +3703,79 @@
 
             const totalPuntos = lecturas.length;
             const esModoSmart = (optDensidad === 'smart' && totalPuntos > 35);
-            const radiusBase = esModoSmart ? 0 : (totalPuntos > 60 ? 1 : (totalPuntos > 25 ? 3 : 5));
+            const radiusBase = esModoSmart ? 0 : (totalPuntos > 60 ? 1 : (totalPuntos > 25 ? 2.5 : 4));
 
             let datasets = [];
             const labels = lecturas.map(l => formatearFechaEjeX(l.fecha_registro));
 
             if (termometrosSeleccionadosGraficos.size === 1) {
-                // Termómetro individual: Puntos verdes cuadrados para En Norma, X roja para Alertas
-                const pointBg = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? '#ff3b30' : '#34c759');
-                const pointBorder = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? '#ff3b30' : '#248a3d');
-                const pointRadius = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? 8 : (radiusBase || 5));
-                const pointHoverRadius = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? 11 : 9);
-                const pointStyle = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? 'crossRot' : 'rect');
+                // 1. Temp Actual (Azul #0071e3)
+                const pointBgAct = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? '#ff3b30' : '#34c759');
+                const pointBorderAct = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? '#ff3b30' : '#248a3d');
+                const pointStyleAct = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? 'crossRot' : 'rect');
+                const pointRadiusAct = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? 8 : (radiusBase || 5));
 
                 datasets.push({
                     label: 'Temp. Actual (°C)',
                     data: lecturas.map(l => l.temp_actual),
-                    borderColor: '#0071e3', // Azul para la línea de temperatura
+                    borderColor: '#0071e3', // Azul vibrante
                     backgroundColor: 'transparent',
                     tension: 0.35,
-                    pointBackgroundColor: pointBg,
-                    pointBorderColor: pointBorder,
-                    pointRadius: pointRadius,
-                    pointHoverRadius: pointHoverRadius,
-                    pointStyle: pointStyle,
+                    pointBackgroundColor: pointBgAct,
+                    pointBorderColor: pointBorderAct,
+                    pointRadius: pointRadiusAct,
+                    pointHoverRadius: 10,
+                    pointStyle: pointStyleAct,
                     borderWidth: 2.8,
-                    fill: false, // SOLO LA LÍNEA, SIN ÁREA SOMBREADA AZUL
+                    fill: false,
                     order: 1
                 });
 
-                if (mostrarMaxMin) {
-                    datasets.push({
-                        label: 'Temp. Máxima (°C)',
-                        data: lecturas.map(l => l.temp_maxima),
-                        borderColor: '#ff9500',
-                        borderDash: [4, 4],
-                        tension: 0.3,
-                        pointRadius: 0,
-                        pointHoverRadius: 6,
-                        borderWidth: 1.5,
-                        fill: false,
-                        order: 2
-                    });
-                    datasets.push({
-                        label: 'Temp. Mínima (°C)',
-                        data: lecturas.map(l => l.temp_minima),
-                        borderColor: '#30b0c7',
-                        borderDash: [4, 4],
-                        tension: 0.3,
-                        pointRadius: 0,
-                        pointHoverRadius: 6,
-                        borderWidth: 1.5,
-                        fill: false,
-                        order: 3
-                    });
-                }
+                // 2. Temp Máxima (Naranja #ff9500)
+                const pointBgMax = lecturas.map(l => (mostrarAlertas && l.temp_maxima != null && l.temp_max_operativa != null && l.temp_maxima > l.temp_max_operativa) ? '#ff3b30' : '#ff9500');
+                const pointBorderMax = lecturas.map(l => (mostrarAlertas && l.temp_maxima != null && l.temp_max_operativa != null && l.temp_maxima > l.temp_max_operativa) ? '#ff3b30' : '#e08200');
+                const pointStyleMax = lecturas.map(l => (mostrarAlertas && l.temp_maxima != null && l.temp_max_operativa != null && l.temp_maxima > l.temp_max_operativa) ? 'crossRot' : 'rect');
+                const pointRadiusMax = lecturas.map(l => (mostrarAlertas && l.temp_maxima != null && l.temp_max_operativa != null && l.temp_maxima > l.temp_max_operativa) ? 8 : (radiusBase || 4));
+
+                datasets.push({
+                    label: 'Temp. Máxima (°C)',
+                    data: lecturas.map(l => l.temp_maxima),
+                    borderColor: '#ff9500', // Naranja
+                    backgroundColor: 'transparent',
+                    tension: 0.35,
+                    pointBackgroundColor: pointBgMax,
+                    pointBorderColor: pointBorderMax,
+                    pointRadius: pointRadiusMax,
+                    pointHoverRadius: 9,
+                    pointStyle: pointStyleMax,
+                    borderWidth: 2.2,
+                    fill: false,
+                    order: 2
+                });
+
+                // 3. Temp Mínima (Cyan #30b0c7)
+                const pointBgMin = lecturas.map(l => (mostrarAlertas && l.temp_minima != null && l.temp_min_operativa != null && l.temp_minima < l.temp_min_operativa) ? '#ff3b30' : '#30b0c7');
+                const pointBorderMin = lecturas.map(l => (mostrarAlertas && l.temp_minima != null && l.temp_min_operativa != null && l.temp_minima < l.temp_min_operativa) ? '#ff3b30' : '#0284c7');
+                const pointStyleMin = lecturas.map(l => (mostrarAlertas && l.temp_minima != null && l.temp_min_operativa != null && l.temp_minima < l.temp_min_operativa) ? 'crossRot' : 'rect');
+                const pointRadiusMin = lecturas.map(l => (mostrarAlertas && l.temp_minima != null && l.temp_min_operativa != null && l.temp_minima < l.temp_min_operativa) ? 8 : (radiusBase || 4));
+
+                datasets.push({
+                    label: 'Temp. Mínima (°C)',
+                    data: lecturas.map(l => l.temp_minima),
+                    borderColor: '#30b0c7', // Cyan / Celeste
+                    backgroundColor: 'transparent',
+                    tension: 0.35,
+                    pointBackgroundColor: pointBgMin,
+                    pointBorderColor: pointBorderMin,
+                    pointRadius: pointRadiusMin,
+                    pointHoverRadius: 9,
+                    pointStyle: pointStyleMin,
+                    borderWidth: 2.2,
+                    fill: false,
+                    order: 3
+                });
             } else {
-                // Multi-termómetro: Colores por sensor, Alertas con X ROJA prominente, En norma con rect verdoso/color
+                // Multi-termómetro: Colores por sensor con trazados diferenciados por métrica
                 const termMap = new Map();
                 lecturas.forEach(l => {
                     if (!termMap.has(l.termometro_id)) {
@@ -3770,15 +3799,18 @@
                     colorIdx++;
 
                     const termLecturas = lecturas.map(l => (l.termometro_id === term.id ? l : null));
-                    const termData = termLecturas.map(l => (l ? l.temp_actual : null));
+                    const termDataActual = termLecturas.map(l => (l ? l.temp_actual : null));
+                    const termDataMax = termLecturas.map(l => (l ? l.temp_maxima : null));
+                    const termDataMin = termLecturas.map(l => (l ? l.temp_minima : null));
+
                     const pointBg = termLecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? '#ff3b30' : '#34c759');
                     const pointBorder = termLecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? '#ff3b30' : colorLine);
-                    const pointRadius = termLecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? 8 : (radiusBase || 5));
+                    const pointRadius = termLecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? 8 : (radiusBase || 4));
                     const pointStyle = termLecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? 'crossRot' : 'rect');
 
                     datasets.push({
-                        label: term.nombre,
-                        data: termData,
+                        label: `${term.nombre} (Actual)`,
+                        data: termDataActual,
                         borderColor: colorLine,
                         backgroundColor: 'transparent',
                         tension: 0.3,
@@ -3787,10 +3819,38 @@
                         pointRadius: pointRadius,
                         pointHoverRadius: 9,
                         pointStyle: pointStyle,
-                        borderWidth: 2.2,
+                        borderWidth: 2.5,
                         spanGaps: true,
-                        fill: false, // SOLO LA LÍNEA, SIN ÁREA SOMBREADA
+                        fill: false,
                         order: 1
+                    });
+                    datasets.push({
+                        label: `${term.nombre} (Máx)`,
+                        data: termDataMax,
+                        borderColor: '#ff9500',
+                        borderDash: [5, 4],
+                        backgroundColor: 'transparent',
+                        tension: 0.3,
+                        pointRadius: 0,
+                        pointHoverRadius: 6,
+                        borderWidth: 1.5,
+                        spanGaps: true,
+                        fill: false,
+                        order: 2
+                    });
+                    datasets.push({
+                        label: `${term.nombre} (Mín)`,
+                        data: termDataMin,
+                        borderColor: '#30b0c7',
+                        borderDash: [3, 3],
+                        backgroundColor: 'transparent',
+                        tension: 0.3,
+                        pointRadius: 0,
+                        pointHoverRadius: 6,
+                        borderWidth: 1.5,
+                        spanGaps: true,
+                        fill: false,
+                        order: 3
                     });
                 });
             }
@@ -3802,7 +3862,7 @@
                 datasets.push({
                     label: `Límite Mín (${tempMinOp}°C)`,
                     data: labels.map(() => tempMinOp),
-                    borderColor: '#ff3b30', // Rojo para límites operativos
+                    borderColor: '#ff3b30',
                     borderWidth: 2,
                     borderDash: [6, 4],
                     pointRadius: 0,
@@ -3812,7 +3872,7 @@
                 datasets.push({
                     label: `Límite Máx (${tempMaxOp}°C)`,
                     data: labels.map(() => tempMaxOp),
-                    borderColor: '#ff3b30', // Rojo para límites operativos
+                    borderColor: '#ff3b30',
                     borderWidth: 2,
                     borderDash: [6, 4],
                     pointRadius: 0,
@@ -3899,10 +3959,14 @@
                                         return `➖ ${label}: ${val} °C`;
                                     }
 
+                                    let prefixIcon = '🌡️';
+                                    if (label.includes('Máx')) prefixIcon = '🟠';
+                                    else if (label.includes('Mín')) prefixIcon = '🔷';
+                                    else if (label.includes('Actual')) prefixIcon = '🔵';
+
                                     const esAlerta = item ? esAlertaLectura(item) : false;
                                     const badge = esAlerta ? '🔴 ALERTA' : '✅ OK';
-                                    const term = item ? item.termometro_nombre : label;
-                                    return `🌡️ ${term}: ${val} °C  [${badge}]`;
+                                    return `${prefixIcon} ${label}: ${val} °C  [${badge}]`;
                                 },
                                 footer: (items) => {
                                     if (!items.length) return '';
