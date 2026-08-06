@@ -815,82 +815,161 @@
 
                 <!-- Reportes Section -->
                 <div id="section-reportes" class="content-section" style="display: none;">
-                    <h2 class="mb-4">Reportes</h2>
-
-                    <!-- Reporte Diario -->
-                    <div class="card mb-3">
-                        <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0"><i class="bi bi-calendar-day"></i> Reporte Diario</h5>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h2 class="mb-0 fw-bold"><i class="bi bi-file-earmark-text text-primary me-2"></i>Centro de Reportes & Exportación Auditable</h2>
+                            <p class="text-muted small mb-0 mt-1">Generación de informes consolidados de control térmico, trazabilidad y cumplimiento normativo (HACCP / ISO).</p>
                         </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <label class="form-label">Fecha</label>
-                                    <input type="date" class="form-control" id="reporte_diario_fecha">
+                    </div>
+
+                    <div class="row g-3">
+                        <!-- 1. Reporte Diario Auditable -->
+                        <div class="col-md-6">
+                            <div class="card h-100 shadow-sm border-0 bg-body-tertiary">
+                                <div class="card-header bg-primary text-white py-2.5">
+                                    <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-calendar-day me-2"></i>1. Reporte Diario de Inspección</h5>
                                 </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Área</label>
-                                    <select class="form-select" id="reporte_diario_area">
-                                        <option value="">Todas las áreas</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Formato</label>
-                                    <div class="btn-group w-100 mt-2" role="group">
-                                        <button type="button" class="btn btn-outline-primary" onclick="generarReporteDiario('csv')">
-                                            <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+                                <div class="card-body">
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <label class="form-label small fw-semibold">Fecha</label>
+                                            <input type="date" class="form-control form-control-sm" id="reporte_diario_fecha">
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small fw-semibold">Sector / Área</label>
+                                            <select class="form-select form-select-sm" id="reporte_diario_area">
+                                                <option value="">Todas las áreas</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 pt-2 border-top d-flex justify-content-end gap-2">
+                                        <button type="button" class="btn btn-sm btn-outline-primary px-3 fw-bold" onclick="generarReporteDiario('csv')">
+                                            <i class="bi bi-file-earmark-spreadsheet me-1"></i> Excel / CSV
                                         </button>
-                                        <button type="button" class="btn btn-outline-primary" onclick="generarReporteDiario('pdf')">
-                                            <i class="bi bi-file-earmark-pdf"></i> PDF
+                                        <button type="button" class="btn btn-sm btn-primary px-3 fw-bold" onclick="generarReporteDiario('pdf')">
+                                            <i class="bi bi-file-earmark-pdf me-1"></i> Exportar PDF
                                         </button>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Reporte Mensual -->
-                    <div class="card">
-                        <div class="card-header bg-success text-white">
-                            <h5 class="mb-0"><i class="bi bi-calendar-month"></i> Reporte Mensual</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-3">
-                                    <label class="form-label">Mes</label>
-                                    <select class="form-select" id="reporte_mensual_mes">
-                                        <option value="1">Enero</option>
-                                        <option value="2">Febrero</option>
-                                        <option value="3">Marzo</option>
-                                        <option value="4">Abril</option>
-                                        <option value="5">Mayo</option>
-                                        <option value="6">Junio</option>
-                                        <option value="7">Julio</option>
-                                        <option value="8">Agosto</option>
-                                        <option value="9">Septiembre</option>
-                                        <option value="10">Octubre</option>
-                                        <option value="11">Noviembre</option>
-                                        <option value="12">Diciembre</option>
-                                    </select>
+                        <!-- 2. Reporte Mensual / Periódico -->
+                        <div class="col-md-6">
+                            <div class="card h-100 shadow-sm border-0 bg-body-tertiary">
+                                <div class="card-header bg-success text-white py-2.5">
+                                    <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-calendar-month me-2"></i>2. Reporte Consolidado Mensual</h5>
                                 </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Año</label>
-                                    <input type="number" class="form-control" id="reporte_mensual_anio" min="2020" max="2100">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Área</label>
-                                    <select class="form-select" id="reporte_mensual_area">
-                                        <option value="">Todas las áreas</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Formato</label>
-                                    <div class="btn-group w-100 mt-2" role="group">
-                                        <button type="button" class="btn btn-outline-success" onclick="generarReporteMensual('csv')">
-                                            <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+                                <div class="card-body">
+                                    <div class="row g-2">
+                                        <div class="col-4">
+                                            <label class="form-label small fw-semibold">Mes</label>
+                                            <select class="form-select form-select-sm" id="reporte_mensual_mes">
+                                                <option value="1">Enero</option>
+                                                <option value="2">Febrero</option>
+                                                <option value="3">Marzo</option>
+                                                <option value="4">Abril</option>
+                                                <option value="5">Mayo</option>
+                                                <option value="6">Junio</option>
+                                                <option value="7">Julio</option>
+                                                <option value="8">Agosto</option>
+                                                <option value="9">Septiembre</option>
+                                                <option value="10">Octubre</option>
+                                                <option value="11">Noviembre</option>
+                                                <option value="12">Diciembre</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-4">
+                                            <label class="form-label small fw-semibold">Año</label>
+                                            <input type="number" class="form-control form-control-sm" id="reporte_mensual_anio" min="2020" max="2100">
+                                        </div>
+                                        <div class="col-4">
+                                            <label class="form-label small fw-semibold">Área</label>
+                                            <select class="form-select form-select-sm" id="reporte_mensual_area">
+                                                <option value="">Todas</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 pt-2 border-top d-flex justify-content-end gap-2">
+                                        <button type="button" class="btn btn-sm btn-outline-success px-3 fw-bold" onclick="generarReporteMensual('csv')">
+                                            <i class="bi bi-file-earmark-spreadsheet me-1"></i> Excel / CSV
                                         </button>
-                                        <button type="button" class="btn btn-outline-success" onclick="generarReporteMensual('pdf')">
-                                            <i class="bi bi-file-earmark-pdf"></i> PDF
+                                        <button type="button" class="btn btn-sm btn-success px-3 fw-bold" onclick="generarReporteMensual('pdf')">
+                                            <i class="bi bi-file-earmark-pdf me-1"></i> Exportar PDF
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Reporte de Auditoría de Incidencias & Desvíos Críticos -->
+                        <div class="col-md-6">
+                            <div class="card h-100 shadow-sm border-0 bg-body-tertiary">
+                                <div class="card-header bg-danger text-white py-2.5">
+                                    <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-shield-exclamation me-2"></i>3. Auditoría de Desvíos & Incidencias (HACCP)</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="small text-muted mb-2">Exporta únicamente las lecturas que sobrepasaron los límites operativos o presentaron fallas de servicio.</p>
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <label class="form-label small fw-semibold">Filtro de Estado</label>
+                                            <select class="form-select form-select-sm" id="reporte_incidencias_tipo">
+                                                <option value="todos">Desvíos Mín/Máx & Fallas</option>
+                                                <option value="fuera_rango">Solo Fuera de Rango</option>
+                                                <option value="fuera_servicio">Solo Fuera de Servicio</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small fw-semibold">Incluir Observaciones</label>
+                                            <select class="form-select form-select-sm" id="reporte_incidencias_obs">
+                                                <option value="si">Sí, con Acciones Correctivas</option>
+                                                <option value="no">Solo Mediciones</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 pt-2 border-top d-flex justify-content-end gap-2">
+                                        <button type="button" class="btn btn-sm btn-outline-danger px-3 fw-bold" onclick="generarReporteIncidencias('csv')">
+                                            <i class="bi bi-file-earmark-spreadsheet me-1"></i> Exportar CSV
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-danger px-3 fw-bold" onclick="generarReporteIncidencias('pdf')">
+                                            <i class="bi bi-file-earmark-pdf me-1"></i> Exportar PDF Auditoría
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. Reporte de Estabilidad & Variabilidad Térmica por Equipo -->
+                        <div class="col-md-6">
+                            <div class="card h-100 shadow-sm border-0 bg-body-tertiary">
+                                <div class="card-header bg-dark text-white py-2.5">
+                                    <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-bar-chart-steps me-2"></i>4. Análisis de Estabilidad Térmica por Equipo</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="small text-muted mb-2">Calcula promedios, desviaciones estándar y % de operactividad dentro de norma por sensor.</p>
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <label class="form-label small fw-semibold">Periodo de Análisis</label>
+                                            <select class="form-select form-select-sm" id="reporte_estabilidad_periodo">
+                                                <option value="7">Últimos 7 días</option>
+                                                <option value="30" selected>Últimos 30 días</option>
+                                                <option value="90">Último Trimestre (90 días)</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small fw-semibold">Agrupar Por</label>
+                                            <select class="form-select form-select-sm" id="reporte_estabilidad_agrupacion">
+                                                <option value="area">Por Área Técnico</option>
+                                                <option value="termometro">Por Termómetro Individual</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 pt-2 border-top d-flex justify-content-end gap-2">
+                                        <button type="button" class="btn btn-sm btn-outline-dark px-3 fw-bold" onclick="generarReporteEstabilidad('csv')">
+                                            <i class="bi bi-file-earmark-spreadsheet me-1"></i> Exportar CSV Análisis
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-dark px-3 fw-bold" onclick="generarReporteEstabilidad('pdf')">
+                                            <i class="bi bi-file-earmark-pdf me-1"></i> Exportar PDF Ejecutivo
                                         </button>
                                     </div>
                                 </div>
@@ -2688,6 +2767,58 @@
                 document.body.removeChild(a);
             } catch (error) {
                 alert('Error al generar reporte: ' + error.message);
+            }
+        }
+
+        async function generarReporteIncidencias(formato) {
+            const tipo = document.getElementById('reporte_incidencias_tipo').value;
+            const obs = document.getElementById('reporte_incidencias_obs').value;
+            try {
+                const params = new URLSearchParams({
+                    tipo: tipo,
+                    incluir_observaciones: obs,
+                    formato: formato
+                });
+                const response = await fetch(`/api/admin/reportes/incidencias?${params}`);
+                if (!response.ok) throw new Error('No se pudo generar el reporte de incidencias');
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `auditoria_incidencias_haccp_${new Date().toISOString().slice(0,10)}.${formato}`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (error) {
+                alert('Error al generar reporte de incidencias: ' + error.message);
+            }
+        }
+
+        async function generarReporteEstabilidad(formato) {
+            const dias = document.getElementById('reporte_estabilidad_periodo').value;
+            const agrupacion = document.getElementById('reporte_estabilidad_agrupacion').value;
+            try {
+                const params = new URLSearchParams({
+                    dias: dias,
+                    agrupar_por: agrupacion,
+                    formato: formato
+                });
+                const response = await fetch(`/api/admin/reportes/estabilidad?${params}`);
+                if (!response.ok) throw new Error('No se pudo generar el reporte de estabilidad');
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `analisis_estabilidad_termica_${dias}dias.${formato}`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (error) {
+                alert('Error al generar reporte de estabilidad: ' + error.message);
             }
         }
 

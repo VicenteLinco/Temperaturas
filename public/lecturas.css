@@ -461,3 +461,37 @@ body {
     max-width: 420px;
     margin-bottom: 0;
 }
+
+/* ===== Mobile & Cellphone Ergonomic Optimizations (Registrador) ===== */
+@media (max-width: 768px) {
+    body {
+        font-size: 15px;
+    }
+    .btn, .form-control, .form-select {
+        min-height: 46px;
+        font-size: 1rem;
+    }
+    .temp-stepper .btn {
+        min-width: 48px;
+        min-height: 48px;
+        font-size: 1.1rem;
+    }
+    .temp-stepper input {
+        font-size: 1.35rem;
+        height: 48px;
+    }
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+    .modal-content {
+        border-radius: 20px !important;
+    }
+    .termometro-card {
+        padding: 16px 14px;
+        min-height: 68px;
+    }
+    .scrollbar-none::-webkit-scrollbar {
+        display: none;
+    }
+}
+

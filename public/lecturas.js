@@ -82,7 +82,7 @@ function renderTarjetasLecturas(containerId, actual, minima, maxima) {
     el.innerHTML = cards;
 }
 
-// 6. Renderizado de Barra Termómetro Visual (Mín / Actual / Máx / Rango Operativo)
+// 6. Renderizado de Barra Termómetro Visual (3 Zonas: Óptima / Advertencia / Crítica)
 function renderBarra(containerId, minima, actual, maxima, t) {
     const el = document.getElementById(containerId);
     if (!el) return;
@@ -91,11 +91,22 @@ function renderBarra(containerId, minima, actual, maxima, t) {
     const span = (hi - lo) || 1;
     const pos = v => Math.max(2, Math.min(98, ((v - lo) / span) * 100));
 
-    let zona = '';
+    let zonaVerde = '';
+    let zonaAmarillaL = '', zonaAmarillaR = '';
     if (t && t.temp_min_operativa !== undefined && t.temp_max_operativa !== undefined) {
-        const zl = Math.max(0, ((t.temp_min_operativa - lo) / span) * 100);
-        const zr = Math.min(100, ((t.temp_max_operativa - lo) / span) * 100);
-        zona = `<div class="zona-operativa" style="left:${zl}%;width:${Math.max(0, zr - zl)}%;" title="Rango Operativo Seguro: ${t.temp_min_operativa}°C a ${t.temp_max_operativa}°C"></div>`;
+        const minOp = t.temp_min_operativa;
+        const maxOp = t.temp_max_operativa;
+        const buffer = Math.max(0.5, Math.round(((maxOp - minOp) * 0.15) * 10) / 10);
+        
+        const zl = Math.max(0, ((minOp - lo) / span) * 100);
+        const zr = Math.min(100, ((maxOp - lo) / span) * 100);
+        
+        const zOptL = Math.max(0, (((minOp + buffer) - lo) / span) * 100);
+        const zOptR = Math.min(100, (((maxOp - buffer) - lo) / span) * 100);
+
+        zonaAmarillaL = `<div class="zona-advertencia" style="position:absolute;top:0;bottom:0;left:${zl}%;width:${Math.max(0, zOptL - zl)}%;background:rgba(255,149,0,0.25);" title="Advertencia Preventiva Mínima: ${minOp}°C a ${(minOp+buffer).toFixed(1)}°C"></div>`;
+        zonaVerde = `<div class="zona-operativa" style="position:absolute;top:0;bottom:0;left:${zOptL}%;width:${Math.max(0, zOptR - zOptL)}%;background:rgba(52,199,89,0.3);border-left:2px solid #34c759;border-right:2px solid #34c759;" title="Zona Óptima de Laboratorio: ${(minOp+buffer).toFixed(1)}°C a ${(maxOp-buffer).toFixed(1)}°C"></div>`;
+        zonaAmarillaR = `<div class="zona-advertencia" style="position:absolute;top:0;bottom:0;left:${zOptR}%;width:${Math.max(0, zr - zOptR)}%;background:rgba(255,149,0,0.25);" title="Advertencia Preventiva Máxima: ${(maxOp-buffer).toFixed(1)}°C a ${maxOp}°C"></div>`;
     }
 
     const marker = (v, color, label, cls) => `
@@ -107,7 +118,9 @@ function renderBarra(containerId, minima, actual, maxima, t) {
 
     el.innerHTML = `
         <div class="barra-termometro">
-            ${zona}
+            ${zonaAmarillaL}
+            ${zonaVerde}
+            ${zonaAmarillaR}
             ${marker(minima, '#0071e3', 'MIN', 'top')}
             ${marker(actual, '#34c759', 'ACTUAL', 'bottom')}
             ${marker(maxima, '#ff9500', 'MAX', 'top')}
@@ -127,28 +140,155 @@ function renderConfirmacionLecturas(containerTarjetas, containerBarra, container
     if (confMaxId) document.getElementById(confMaxId).textContent = maxima.toFixed(1);
 }
 
-// 7. Filtro Rápido en Tiempo Real para Tablas o Listas de Tarjetas
-function setupLiveFilter(inputId, itemsContainerSelector, itemCardSelector, searchFields) {
-    const input = document.getElementById(inputId);
-    if (!input) return;
+// 8. Chips Rápidos para Acciones Correctivas Sanitarias (HACCP)
+function renderChipsAccionCorrectiva(containerId, textareaId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
 
-    input.addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase().trim();
-        const container = document.querySelector(itemsContainerSelector);
-        if (!container) return;
+    const chips = [
+        { label: '🚪 Puerta mal cerrada', text: 'Se encontró puerta entornada o mal cerrada. Se cerró correctamente.' },
+        { label: '🌡️ Ajuste de termostato', text: 'Se realizó regulación de termostato para estabilizar temperatura.' },
+        { label: '⚡ Falla / Corte de energía', text: 'Reporte de interrupción en suministro eléctrico o reinicio de equipo.' },
+        { label: '❄️ Ciclo de deshielo', text: 'Equipo se encontraba en ciclo de deshielo automático programado.' },
+        { label: '🛠️ Avisado a Mantenimiento', text: 'Se notificó a Mantenimiento para evitar fallas mayores o mermas.' },
+        { label: '📦 Carga masiva de producto', text: 'Ingreso reciente de insumos a temperatura ambiente.' }
+    ];
 
-        const items = container.querySelectorAll(itemCardSelector);
-        items.forEach(item => {
-            const textToSearch = searchFields.map(attr => {
-                if (attr.startsWith('.')) return (item.querySelector(attr)?.textContent || '');
-                return item.getAttribute(attr) || item.textContent || '';
-            }).join(' ').toLowerCase();
+    container.innerHTML = `
+        <div class="small fw-semibold text-muted mb-1"><i class="bi bi-shield-check me-1 text-primary"></i>Acciones Preventivas / Correctivas Rápidas:</div>
+        <div class="apple-chip-group mb-2">
+            ${chips.map((c, idx) => `<span class="apple-chip" onclick="insertarChipTexto('${textareaId}', '${c.text}')">${c.label}</span>`).join('')}
+        </div>
+    `;
+}
 
-            if (textToSearch.includes(query)) {
-                item.style.display = '';
-            } else {
-                item.style.display = 'none';
+function insertarChipTexto(textareaId, texto) {
+    const txt = document.getElementById(textareaId);
+    if (!txt) return;
+    if (txt.value.trim().length > 0) {
+        txt.value = txt.value.trim() + '. ' + texto;
+    } else {
+        txt.value = texto;
+    }
+    txt.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+// 9. Evaluación Visual Sencilla durante el Ingreso (Sin Popups Invasivos)
+function evaluarRangoEnTiempoReal(t, actual, minima, maxima, alertContainerId) {
+    const alertEl = document.getElementById(alertContainerId);
+    if (!alertEl) return;
+
+    if (!t || t.temp_min_operativa === undefined || t.temp_max_operativa === undefined) {
+        alertEl.style.display = 'none';
+        return;
+    }
+
+    const minOp = t.temp_min_operativa;
+    const maxOp = t.temp_max_operativa;
+
+    const fueraDeRangoCritico = [];
+
+    const chequearValor = (nombre, val) => {
+        if (val === null || isNaN(val)) return;
+        if (val < minOp || val > maxOp) {
+            fueraDeRangoCritico.push(`${nombre} (${val.toFixed(1)}°C)`);
+        }
+    };
+
+    chequearValor('Actual', actual);
+    chequearValor('Mínima', minima);
+    chequearValor('Máxima', maxima);
+
+    if (fueraDeRangoCritico.length > 0) {
+        // FUERA DE RANGO OPERATIVO (Umbral Mín / Máx)
+        alertEl.style.display = 'block';
+        alertEl.className = 'alert alert-danger p-2.5 mb-3 rounded-3 shadow-sm border-danger';
+        alertEl.innerHTML = `
+            <div class="d-flex align-items-center gap-2 fw-bold text-danger small">
+                <i class="bi bi-exclamation-triangle-fill fs-6"></i>
+                <span>FUERA DE RANGO OPERATIVO (Límite: <strong>${minOp}°C a ${maxOp}°C</strong>)</span>
+            </div>
+            <div class="small mt-1 text-danger-emphasis">
+                Medición <strong>${fueraDeRangoCritico.join(', ')}</strong> fuera de norma. Se registrará la observación.
+            </div>
+        `;
+    } else if (actual !== null || minima !== null || maxima !== null) {
+        // DENTRO DE RANGO OPERATIVO
+        alertEl.style.display = 'block';
+        alertEl.className = 'alert alert-success p-2 mb-3 rounded-3 shadow-sm border-success';
+        alertEl.innerHTML = `
+// 10. Flujo Inteligente de Teclado (Numpad / Enter Automático)
+function setupNumpadEnterFlow(modalId) {
+    const modalEl = document.getElementById(modalId);
+    if (!modalEl) return;
+
+    modalEl.addEventListener('shown.bs.modal', () => {
+        const inputActual = document.getElementById('tempActual');
+        if (inputActual && !inputActual.disabled) {
+            inputActual.focus();
+            inputActual.select();
+        }
+    });
+
+    const fields = ['tempActual', 'lectura2', 'lectura3'];
+    fields.forEach((fieldId, index) => {
+        const input = document.getElementById(fieldId);
+        if (!input) return;
+
+        input.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const nextFieldId = fields[index + 1];
+                if (nextFieldId) {
+                    const nextInput = document.getElementById(nextFieldId);
+                    if (nextInput) {
+                        nextInput.focus();
+                        nextInput.select();
+                    }
+                } else {
+                    // Si es el último campo de temperatura, pasar a revisar
+                    const btnRevisar = document.getElementById('btnGuardar');
+                    if (btnRevisar && btnRevisar.style.display !== 'none') {
+                        btnRevisar.click();
+                    }
+                }
             }
-        });
+        };
     });
 }
+
+// 11. Indicador Intuitivo de Tendencia Térmica (Diferencial de Temperatura)
+function calcularBadgeTendencia(tempActual, tempPrevia) {
+    if (tempActual === null || tempActual === undefined || tempPrevia === null || tempPrevia === undefined) {
+        return '';
+    }
+    const diff = Math.round((tempActual - tempPrevia) * 10) / 10;
+    if (Math.abs(diff) < 0.1) {
+        return `<span class="badge bg-light text-secondary border ms-2" title="Temperatura estable frente a la medición anterior"><i class="bi bi-arrow-right me-1"></i>Estable</span>`;
+    } else if (diff > 0) {
+        return `<span class="badge bg-warning-subtle text-warning border border-warning-subtle ms-2" title="Ascenso de temperatura de +${diff}°C"><i class="bi bi-arrow-up-right me-1"></i>+${diff.toFixed(1)}°C</span>`;
+    } else {
+        return `<span class="badge bg-info-subtle text-info border border-info-subtle ms-2" title="Descenso de temperatura de ${diff}°C"><i class="bi bi-arrow-down-right me-1"></i>${diff.toFixed(1)}°C</span>`;
+    }
+}
+
+// 12. Atajos de Teclado Globales (Ctrl+K o / para buscar)
+function setupGlobalShortcuts() {
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+            e.preventDefault();
+            const searchInput = document.querySelector('.search-filter-box input, #searchBarGlobal');
+            if (searchInput) {
+                searchInput.focus();
+                searchInput.select();
+            }
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    setupGlobalShortcuts();
+});
+
+
+
