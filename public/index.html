@@ -1047,39 +1047,29 @@
         async function procesarTermometro(termometroId) {
             try {
                 const response = await fetch(`/api/termometros/${termometroId}`);
-                if (!response.ok) throw new Error('No encontrado');
+                if (!response.ok) {
+                    mostrarEstado(`Termómetro ID ${termometroId} no encontrado en base de datos`, 'danger');
+                    setTimeout(reanudarScannerSiPausado, 1500);
+                    return;
+                }
                 const termometro = await response.json();
 
-                // Identificar estado
+                // Identificar si ya posee registro completado hoy en esta ventana
                 const areaData = areasData[termometro.area_id];
                 const registro = areaData?.completados.find(r => r.termometro_id === termometro.id);
                 
-                // Cambiar a área del termómetro si es diferente
+                // Cambiar a la pestaña del área correspondiente si es diferente
                 if (areaActualId !== termometro.area_id) {
                     await cambiarAreaActual(termometro.area_id);
                 }
 
-                // Caso 1: Fuera de servicio
-                if (termometro.fuera_de_servicio) {
-                    await abrirModalRegistro(termometro, null, true);
-                    return;
-                }
-
-                // Caso 2: Modo Edición Normal (Ya existe registro)
-                if (registro) {
-                    // Ya existe: preguntar si editar
-                    const editar = await mostrarConfirmacion(
-                        'Ya registrado', 
-                        `El termómetro <strong>${termometro.nombre}</strong> ya tiene datos.<br>Estado: <strong>COMPLETO</strong><br><br>¿Deseas editarlo?`
-                    );
-                    if (editar) await abrirModalRegistro(termometro, registro, false);
-                } else {
-                    // Nuevo registro
-                    await abrirModalRegistro(termometro, null, false);
-                }
+                // Abrir DIRECTAMENTE el modal para registrar o editar sus variables
+                await abrirModalRegistro(termometro, registro || null, termometro.fuera_de_servicio);
 
             } catch (error) {
-                mostrarEstado('Termómetro desconocido', 'danger');
+                console.error('Error procesando termómetro:', error);
+                mostrarEstado('Error al consultar termómetro', 'danger');
+                setTimeout(reanudarScannerSiPausado, 1500);
             }
         }
 
@@ -2158,11 +2148,23 @@
 
             // Al cerrar el modal, reiniciamos el scanner automáticamente
             console.log('Modal cerrado, reiniciando scanner...');
-            // Pequeño delay para dejar que el modal termine su animación
             setTimeout(() => {
-                inicializarScanner();
-            }, 300);
+                reanudarScannerSiPausado();
+            }, 200);
         });
+
+        const modalConfirm = document.getElementById('confirmacionModal');
+        if (modalConfirm) {
+            modalConfirm.addEventListener('hidden.bs.modal', () => {
+                document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+                setTimeout(() => {
+                    reanudarScannerSiPausado();
+                }, 200);
+            });
+        }
 
         checkAuth();
     </script>
