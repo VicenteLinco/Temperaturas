@@ -403,21 +403,31 @@
                 <div id="qr-reader"></div>
                 <div id="scannerOverlay" class="scanner-overlay">
                     <i class="bi bi-camera-video mb-3" style="font-size: 3rem; color: var(--apple-blue);"></i>
-                    <h5 class="mb-2 fw-bold">Scanner de Código QR</h5>
+                    <h5 class="mb-2 fw-bold">Escáner de Código QR</h5>
                     <p class="text-muted small mb-3">Apunte la cámara al código QR del termómetro para iniciar el registro automáticamente</p>
                     <button class="btn btn-primary btn-lg" onclick="inicializarScanner()">
                         <i class="bi bi-power me-1"></i> Activar Cámara
                     </button>
                 </div>
             </div>
+
+            <!-- Controles Adicionales del Escáner (Linterna, Cambiar Cámara) -->
+            <div id="scannerControls" class="d-none mt-2 d-flex justify-content-center align-items-center gap-2">
+                <button id="btnTorch" class="btn btn-sm btn-outline-warning rounded-pill px-3" onclick="toggleTorch()" title="Encender Linterna">
+                    <i class="bi bi-lightbulb-fill me-1"></i> Linterna
+                </button>
+                <button id="btnSwitchCam" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="cambiarCamaraScanner()" title="Cambiar Cámara">
+                    <i class="bi bi-camera-reverse me-1"></i> Cambiar Cámara
+                </button>
+            </div>
             <div id="scannerStatus" class="scanner-status d-none"></div>
 
-            <!-- Entrada Manual por ID -->
+            <!-- Entrada Manual por ID o Búsqueda Rápida -->
             <div class="mt-3 container" style="max-width: 400px;">
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text"><i class="bi bi-hash"></i></span>
-                    <input type="number" id="inputManualId" class="form-control" placeholder="ID manual (ej: 5)..." onkeypress="if(event.key==='Enter') buscarManualId()">
-                    <button class="btn btn-outline-primary fw-semibold" onclick="buscarManualId()"><i class="bi bi-search"></i> Buscar</button>
+                <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden border">
+                    <span class="input-group-text bg-light border-0"><i class="bi bi-hash"></i></span>
+                    <input type="number" id="inputManualId" class="form-control border-0 bg-light" placeholder="ID manual (ej: 5)..." onkeypress="if(event.key==='Enter') buscarManualId()">
+                    <button class="btn btn-primary fw-semibold px-3" onclick="buscarManualId()"><i class="bi bi-search me-1"></i> Buscar</button>
                 </div>
             </div>
         </div>
@@ -782,7 +792,13 @@
 
         async function inicializarApp() {
             await cargarTodasLasAreas();
-            // inicializarScanner(); // Ya no iniciamos automáticamente
+
+            const modalReg = document.getElementById('modalRegistro');
+            if (modalReg) {
+                modalReg.addEventListener('hidden.bs.modal', () => {
+                    reanudarScannerSiPausado();
+                });
+            }
 
             // Verificar si viene un ID por URL (cuando se abre escaneando con la cámara del celular)
             const urlParams = new URLSearchParams(window.location.search);
@@ -796,29 +812,106 @@
             }
         }
 
+        let torchActive = false;
+        let currentFacingMode = "environment";
+
+        function playScanSound(type = 'success') {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'success') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(880, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.12);
+                    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.12);
+                } else {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(300, ctx.currentTime);
+                    osc.frequency.setValueAtTime(200, ctx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.25);
+                }
+            } catch (e) {}
+        }
+
+        async function toggleTorch() {
+            if (!html5QrCode) return;
+            try {
+                torchActive = !torchActive;
+                await html5QrCode.applyVideoConstraints({
+                    advanced: [{ torch: torchActive }]
+                });
+                const btn = document.getElementById('btnTorch');
+                if (btn) {
+                    btn.classList.toggle('btn-warning', torchActive);
+                    btn.classList.toggle('btn-outline-warning', !torchActive);
+                    btn.classList.toggle('text-dark', torchActive);
+                }
+            } catch (e) {
+                mostrarEstado('La linterna no está disponible en este dispositivo.', 'info');
+            }
+        }
+
+        async function cambiarCamaraScanner() {
+            if (!html5QrCode) return;
+            currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+            try {
+                await html5QrCode.stop();
+                inicializarScanner();
+            } catch (e) {
+                console.error("Error al cambiar cámara:", e);
+            }
+        }
+
+        function reanudarScannerSiPausado() {
+            if (html5QrCode && typeof html5QrCode.getState === 'function') {
+                try {
+                    const state = html5QrCode.getState();
+                    if (state === Html5QrcodeScannerState.PAUSED) {
+                        html5QrCode.resume();
+                    }
+                } catch (e) {}
+            }
+        }
+
         function inicializarScanner() {
-            // Mostrar estado de carga en el botón
             const btn = document.querySelector('#scannerOverlay button');
-            const originalText = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Iniciando...';
+            const originalText = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Iniciando...';
+            }
 
             if (!html5QrCode) {
                 html5QrCode = new Html5Qrcode("qr-reader");
             }
 
-            const config = { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 1.0 };
-            
-            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanError)
+            const config = { fps: 15, qrbox: { width: 230, height: 230 }, aspectRatio: 1.0 };
+
+            html5QrCode.start({ facingMode: currentFacingMode }, config, onScanSuccess, onScanError)
                 .then(() => {
-                    // Ocultar overlay al tener éxito
                     document.getElementById('scannerOverlay').style.display = 'none';
+                    const controls = document.getElementById('scannerControls');
+                    if (controls) controls.classList.remove('d-none');
                 })
                 .catch(err => {
                     console.error('Error scanner:', err);
-                    btn.disabled = false;
-                    btn.innerHTML = originalText;
-                    mostrarEstado('Error al acceder a la cámara. Verifique permisos.', 'danger');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = originalText;
+                    }
+                    mostrarEstado('Error al acceder a la cámara. Verifique los permisos del navegador.', 'danger');
                 });
         }
 
@@ -826,21 +919,26 @@
 
         async function onScanSuccess(decodedText, decodedResult) {
             console.log('QR detectado:', decodedText);
+
+            // Pausar escáner inmediatamente para evitar lecturas duplicadas mientras se abre el modal
+            if (html5QrCode && typeof html5QrCode.getState === 'function') {
+                try {
+                    if (html5QrCode.getState() === Html5QrcodeScannerState.SCANNING) {
+                        html5QrCode.pause(true);
+                    }
+                } catch (e) {}
+            }
+
             let termometroId = NaN;
-            
-            // Limpiar el texto de espacios o caracteres extraños
             const cleanText = decodedText.trim();
 
-            // 1. Intentar como URL usando el objeto URL
             if (cleanText.includes('termometro=')) {
                 try {
-                    // Si es una URL completa
                     if (cleanText.startsWith('http')) {
                         const url = new URL(cleanText);
                         const paramId = url.searchParams.get('termometro');
                         if (paramId) termometroId = parseInt(paramId);
                     } else {
-                        // Si por alguna razón el escáner solo devuelve parte de la query string
                         const match = cleanText.match(/termometro=(\d+)/);
                         if (match) termometroId = parseInt(match[1]);
                     }
@@ -849,26 +947,33 @@
                 }
             }
 
-            // 2. Si sigue siendo NaN, intentar parsear el texto limpio directamente como número
             if (isNaN(termometroId)) {
                 termometroId = parseInt(cleanText);
             }
 
-            // 3. Fallback: buscar cualquier número en el texto si nada funcionó
             if (isNaN(termometroId)) {
                 const genericMatch = cleanText.match(/(\d+)/);
                 if (genericMatch) termometroId = parseInt(genericMatch[0]);
             }
 
-            if (isNaN(termometroId)) { 
-                mostrarEstado(`QR no válido: ${cleanText.substring(0, 15)}...`, 'warning'); 
-                return; 
+            if (isNaN(termometroId)) {
+                playScanSound('error');
+                if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                mostrarEstado(`Código QR no válido: ${cleanText.substring(0, 15)}...`, 'warning');
+                setTimeout(reanudarScannerSiPausado, 2000);
+                return;
             }
 
-            try { await procesarTermometro(termometroId); }
-            catch (error) { 
-                console.error(error); 
-                mostrarEstado('Error procesando termómetro', 'danger'); 
+            // Éxito: audio feedback + vibración
+            playScanSound('success');
+            if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+
+            try {
+                await procesarTermometro(termometroId);
+            } catch (error) {
+                console.error(error);
+                mostrarEstado('Error procesando termómetro', 'danger');
+                setTimeout(reanudarScannerSiPausado, 2000);
             }
         }
 

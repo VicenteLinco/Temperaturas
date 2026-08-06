@@ -247,93 +247,72 @@ fn periodo_mensual(mes: u32, anio: i32) -> String {
 }
 
 fn generar_pdf_diario(rows: Vec<PgRow>, fecha: &str) -> Result<(StatusCode, Vec<u8>), StatusCode> {
-    // Crear documento PDF en orientación HORIZONTAL (Landscape)
-    let (doc, page1, layer1) = PdfDocument::new("Reporte de Temperaturas", Mm(297.0), Mm(210.0), "Capa 1");
-    let current_layer = doc.get_page(page1).get_layer(layer1);
+    let mut pdf = PdfEscritor::nuevo("Reporte de Control de Temperaturas", true)?;
 
-    // Fuentes
-    let font_bold = doc.add_builtin_font(BuiltinFont::HelveticaBold)
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    let font_regular = doc.add_builtin_font(BuiltinFont::Helvetica)
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    pdf.escribir_linea("REPORTE DE CONTROL DE TEMPERATURAS", 14.0, 6.0, 10.0, true);
+    pdf.escribir_linea(&format!("Período: {}", fecha), 10.0, 6.0, 8.0, false);
+    pdf.y -= 4.0;
 
-    // Título y fecha
-    current_layer.use_text("REPORTE DE CONTROL DE TEMPERATURAS", 14.0, Mm(10.0), Mm(195.0), &font_bold);
-    current_layer.use_text(&format!("Período: {}", fecha), 11.0, Mm(10.0), Mm(188.0), &font_regular);
+    let columnas = vec![
+        ("ID".to_string(), 6.0),
+        ("Fecha".to_string(), 16.0),
+        ("Ventana".to_string(), 37.0),
+        ("Área".to_string(), 52.0),
+        ("Termómetro".to_string(), 84.0),
+        ("Tipo".to_string(), 132.0),
+        ("T.Máx".to_string(), 160.0),
+        ("T.Mín".to_string(), 176.0),
+        ("Hum.".to_string(), 192.0),
+        ("Estado".to_string(), 207.0),
+        ("Usuario".to_string(), 226.0),
+        ("Obs.".to_string(), 250.0),
+    ];
 
-    // Encabezados de tabla
-    let mut y_pos = 175.0;
-    current_layer.use_text("ID", 9.0, Mm(5.0), Mm(y_pos), &font_bold);
-    current_layer.use_text("Fecha", 9.0, Mm(12.0), Mm(y_pos), &font_bold);
-    current_layer.use_text("Ventana", 9.0, Mm(32.0), Mm(y_pos), &font_bold);
-    current_layer.use_text("Área", 9.0, Mm(47.0), Mm(y_pos), &font_bold);
-    current_layer.use_text("Termómetro", 9.0, Mm(80.0), Mm(y_pos), &font_bold);
-    current_layer.use_text("Tipo", 9.0, Mm(140.0), Mm(y_pos), &font_bold);
-    current_layer.use_text("T.Máx", 9.0, Mm(165.0), Mm(y_pos), &font_bold);
-    current_layer.use_text("T.Mín", 9.0, Mm(180.0), Mm(y_pos), &font_bold);
-    current_layer.use_text("Hum.", 9.0, Mm(195.0), Mm(y_pos), &font_bold);
-    current_layer.use_text("Estado", 9.0, Mm(210.0), Mm(y_pos), &font_bold);
-    current_layer.use_text("Usuario", 9.0, Mm(230.0), Mm(y_pos), &font_bold);
-    current_layer.use_text("Obs.", 9.0, Mm(255.0), Mm(y_pos), &font_bold);
+    escribir_encabezados(&mut pdf, &columnas);
 
-    // Datos
-    y_pos -= 10.0;
-    for row in rows.iter().take(300) {
-        let id: i32 = row.get("id");
-        let fecha_registro: chrono::DateTime<chrono::Utc> = row.get("fecha_registro");
-        let ventana: String = row.get("ventana_horaria");
-        let area: String = row.get("area_nombre");
-        
-        let termometro_id: i32 = row.get("termometro_id");
-        let termometro_nombre: String = row.try_get::<String, _>("termometro_nombre").unwrap_or_default();
-        let mut termo = if !termometro_nombre.is_empty() {
-            format!("{}({})", termometro_id, termometro_nombre)
-        } else {
-            termometro_id.to_string()
-        };
+    let filas: Vec<Vec<String>> = rows
+        .iter()
+        .map(|row| {
+            let id: i32 = row.get("id");
+            let fecha_registro: chrono::DateTime<chrono::Utc> = row.get("fecha_registro");
+            let ventana: String = row.get("ventana_horaria");
+            let area: String = row.get("area_nombre");
+            let termometro_id: i32 = row.get("termometro_id");
+            let termometro_nombre: String = row.try_get::<String, _>("termometro_nombre").unwrap_or_default();
+            let termo_full = if !termometro_nombre.is_empty() {
+                format!("{}({})", termometro_id, termometro_nombre)
+            } else {
+                termometro_id.to_string()
+            };
+            let tipo: String = row.get("tipo_nombre");
+            let temp_max: f32 = row.get("temp_maxima");
+            let temp_min: f32 = row.get("temp_minima");
+            let humedad: Option<f64> = row.try_get::<Option<f64>, _>("humedad").unwrap_or(None);
+            let fuera_rango: bool = row.get("fuera_rango_operativo");
+            let usuario: String = row.get("usuario_nombre");
+            let observaciones: Option<String> = row.try_get::<Option<String>, _>("observaciones").unwrap_or(None);
 
-        // Truncar solo si es extremadamente largo (para una columna de ~60mm)
-        if termo.len() > 45 {
-            termo = format!("{}...", &termo[..42]);
-        }
+            vec![
+                id.to_string(),
+                fecha_registro.format("%Y-%m-%d").to_string(),
+                ventana,
+                truncar(&area, 16),
+                truncar(&termo_full, 24),
+                truncar(&tipo, 14),
+                format!("{:.1}°C", temp_max),
+                format!("{:.1}°C", temp_min),
+                humedad.map(|h| format!("{:.1}%", h)).unwrap_or_else(|| "-".to_string()),
+                if fuera_rango { "⚠ Alerta".to_string() } else { "✓ OK".to_string() },
+                truncar(&usuario, 12),
+                truncar(&observaciones.unwrap_or_else(|| "-".to_string()), 22),
+            ]
+        })
+        .collect();
 
-        let tipo: String = row.get("tipo_nombre");
-        let temp_max: f32 = row.get("temp_maxima");
-        let temp_min: f32 = row.get("temp_minima");
-        let humedad: Option<f64> = row.try_get::<Option<f64>, _>("humedad").unwrap_or(None);
-        let fuera_rango: bool = row.get("fuera_rango_operativo");
-        let usuario: String = row.get("usuario_nombre");
-        let observaciones: Option<String> = row.try_get::<Option<String>, _>("observaciones").unwrap_or(None);
+    escribir_filas(&mut pdf, &columnas, &filas);
 
-        let fecha_str = fecha_registro.format("%Y-%m-%d").to_string();
-        let obs_corta = observaciones
-            .map(|o| if o.len() > 30 { format!("{}...", &o[..27]) } else { o.clone() })
-            .unwrap_or_else(|| "-".to_string());
-
-        let estado = if fuera_rango { "⚠ Alert" } else { "✓ OK" };
-
-        current_layer.use_text(&id.to_string(), 8.0, Mm(5.0), Mm(y_pos), &font_regular);
-        current_layer.use_text(&fecha_str, 8.0, Mm(12.0), Mm(y_pos), &font_regular);
-        current_layer.use_text(&ventana, 8.0, Mm(32.0), Mm(y_pos), &font_regular);
-        current_layer.use_text(&area, 8.0, Mm(47.0), Mm(y_pos), &font_regular);
-        current_layer.use_text(&termo, 8.0, Mm(80.0), Mm(y_pos), &font_regular);
-        current_layer.use_text(&tipo, 7.0, Mm(140.0), Mm(y_pos), &font_regular);
-        current_layer.use_text(&format!("{:.1}°C", temp_max), 8.0, Mm(165.0), Mm(y_pos), &font_regular);
-        current_layer.use_text(&format!("{:.1}°C", temp_min), 8.0, Mm(180.0), Mm(y_pos), &font_regular);
-        current_layer.use_text(
-            &humedad.map(|h| format!("{:.1}%", h)).unwrap_or_else(|| "-".to_string()),
-            8.0, Mm(195.0), Mm(y_pos), &font_regular
-        );
-        current_layer.use_text(estado, 8.0, Mm(210.0), Mm(y_pos), &font_regular);
-        current_layer.use_text(&usuario, 8.0, Mm(230.0), Mm(y_pos), &font_regular);
-        current_layer.use_text(&obs_corta, 7.0, Mm(255.0), Mm(y_pos), &font_regular);
-
-        y_pos -= 5.5;
-        if y_pos < 15.0 { break; }
-    }
-
-    let pdf_bytes = doc.save_to_bytes().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    Ok((StatusCode::OK, pdf_bytes))
+    let bytes = pdf.guardar()?;
+    Ok((StatusCode::OK, bytes))
 }
 
 fn generar_pdf_mensual(rows: Vec<PgRow>, mes: u32, anio: i32) -> Result<(StatusCode, Vec<u8>), StatusCode> {
@@ -554,29 +533,36 @@ pub async fn enviar_informe_franja(
 
 // ===== GENERACIÓN DE PDF DEL INFORME DE FRANJA =====
 
-/// Recorta un texto para que quepa en una columna del PDF
+/// Recorta un texto para que quepa en una columna del PDF sin solapamiento
 fn truncar(texto: &str, max: usize) -> String {
-    if texto.chars().count() > max {
-        let recortado: String = texto.chars().take(max.saturating_sub(3)).collect();
-        format!("{}...", recortado)
+    let clean = texto.trim();
+    if clean.chars().count() > max {
+        if max <= 3 {
+            clean.chars().take(max).collect()
+        } else {
+            let recortado: String = clean.chars().take(max - 3).collect();
+            format!("{}...", recortado.trim_end())
+        }
     } else {
-        texto.to_string()
+        clean.to_string()
     }
 }
 
-/// Escritor de PDF simple: gestiona paginación automática y dibujo de texto
+/// Escritor de PDF simple con soporte para orientación Portrait/Landscape y paginación
 struct PdfEscritor {
     doc: PdfDocumentReference,
     layer: PdfLayerReference,
+    width: f32,
+    height: f32,
     y: f32,
     font_bold: IndirectFontRef,
     font_regular: IndirectFontRef,
 }
 
 impl PdfEscritor {
-    fn nuevo(titulo: &str) -> Result<Self, StatusCode> {
-        // Orientación vertical (portrait): 210mm x 297mm
-        let (doc, page, layer) = PdfDocument::new(titulo, Mm(210.0), Mm(297.0), "Capa 1");
+    fn nuevo(titulo: &str, landscape: bool) -> Result<Self, StatusCode> {
+        let (w, h) = if landscape { (297.0, 210.0) } else { (210.0, 297.0) };
+        let (doc, page, layer) = PdfDocument::new(titulo, Mm(w), Mm(h), "Capa 1");
         let layer_ref = doc.get_page(page).get_layer(layer);
         let font_bold = doc
             .add_builtin_font(BuiltinFont::HelveticaBold)
@@ -587,21 +573,26 @@ impl PdfEscritor {
         Ok(Self {
             doc,
             layer: layer_ref,
-            y: 285.0,
+            width: w,
+            height: h,
+            y: h - 15.0,
             font_bold,
             font_regular,
         })
     }
 
     fn nueva_pagina(&mut self) {
-        let (page, layer) = self.doc.add_page(Mm(210.0), Mm(297.0), "Capa 1");
+        let (page, layer) = self.doc.add_page(Mm(self.width), Mm(self.height), "Capa 1");
         self.layer = self.doc.get_page(page).get_layer(layer);
-        self.y = 285.0;
+        self.y = self.height - 15.0;
     }
 
-    fn asegurar_espacio(&mut self, alto: f32) {
-        if self.y - alto < 15.0 {
+    fn asegurar_espacio(&mut self, alto: f32) -> bool {
+        if self.y - alto < 12.0 {
             self.nueva_pagina();
+            true
+        } else {
+            false
         }
     }
 
@@ -625,38 +616,41 @@ impl PdfEscritor {
 fn escribir_encabezados(pdf: &mut PdfEscritor, columnas: &[(String, f32)]) {
     pdf.asegurar_espacio(10.0);
     for (texto, x) in columnas {
-        pdf.texto(texto, 9.0, *x, pdf.y, true);
+        pdf.texto(texto, 8.5, *x, pdf.y, true);
     }
-    pdf.y -= 8.0;
+    pdf.y -= 7.0;
 }
 
 fn escribir_filas(pdf: &mut PdfEscritor, columnas: &[(String, f32)], filas: &[Vec<String>]) {
     for fila in filas {
-        pdf.asegurar_espacio(7.0);
-        for (i, celda) in fila.iter().enumerate() {
-            let x = columnas.get(i).map(|c| c.1).unwrap_or(10.0);
-            pdf.texto(celda, 8.0, x, pdf.y, false);
+        let creo_nueva_pagina = pdf.asegurar_espacio(6.0);
+        if creo_nueva_pagina {
+            escribir_encabezados(pdf, columnas);
         }
-        pdf.y -= 5.5;
+        for (i, celda) in fila.iter().enumerate() {
+            let x = columnas.get(i).map(|c| c.1).unwrap_or(8.0);
+            pdf.texto(celda, 7.5, x, pdf.y, false);
+        }
+        pdf.y -= 5.0;
     }
-    pdf.y -= 4.0;
+    pdf.y -= 3.0;
 }
 
 /// Construye el PDF del informe de franja horaria
 fn generar_pdf_informe_franja(
     informe: &InformeFranjaResponse,
 ) -> Result<(StatusCode, Vec<u8>), StatusCode> {
-    let mut pdf = PdfEscritor::nuevo("Informe de Franja Horaria")?;
+    let mut pdf = PdfEscritor::nuevo("Informe de Franja Horaria", false)?;
 
     // Encabezado
-    pdf.escribir_linea("INFORME DE FRANJA HORARIA", 16.0, 10.0, 12.0, true);
-    pdf.escribir_linea(&format!("Fecha: {}", informe.fecha), 11.0, 10.0, 8.0, false);
-    pdf.escribir_linea(&format!("Ventana horaria: {}", informe.ventana_horaria), 11.0, 10.0, 8.0, false);
+    pdf.escribir_linea("INFORME DE FRANJA HORARIA", 15.0, 8.0, 10.0, true);
+    pdf.escribir_linea(&format!("Fecha: {}", informe.fecha), 10.0, 8.0, 7.0, false);
+    pdf.escribir_linea(&format!("Ventana horaria: {}", informe.ventana_horaria), 10.0, 8.0, 7.0, false);
     pdf.escribir_linea(
         &format!("Total de mediciones de la franja: {}", informe.total_mediciones),
-        11.0,
         10.0,
-        10.0,
+        8.0,
+        9.0,
         false,
     );
 
@@ -664,42 +658,42 @@ fn generar_pdf_informe_franja(
     let fr = &informe.fuera_de_rango;
     pdf.escribir_linea(
         &format!("REGISTROS FUERA DE RANGO OPERATIVO ({})", fr.len()),
-        12.0,
-        10.0,
-        10.0,
+        11.0,
+        8.0,
+        9.0,
         true,
     );
 
     if fr.is_empty() {
-        pdf.escribir_linea("No hay registros fuera de rango operativo.", 9.0, 10.0, 7.0, false);
+        pdf.escribir_linea("No hay registros fuera de rango operativo.", 9.0, 8.0, 6.0, false);
     } else {
         let columnas = vec![
-            ("Área".to_string(), 10.0),
-            ("Termómetro".to_string(), 45.0),
-            ("T.Máx".to_string(), 88.0),
-            ("T.Mín".to_string(), 103.0),
-            ("Hum.".to_string(), 118.0),
-            ("Observaciones".to_string(), 135.0),
-            ("Usuario".to_string(), 180.0),
+            ("Área".to_string(), 8.0),
+            ("Termómetro".to_string(), 40.0),
+            ("T.Máx".to_string(), 82.0),
+            ("T.Mín".to_string(), 98.0),
+            ("Hum.".to_string(), 114.0),
+            ("Observaciones".to_string(), 129.0),
+            ("Usuario".to_string(), 178.0),
         ];
         escribir_encabezados(&mut pdf, &columnas);
         let filas: Vec<Vec<String>> = fr
             .iter()
             .map(|r| {
                 vec![
-                    truncar(&r.area_nombre, 22),
+                    truncar(&r.area_nombre, 15),
                     truncar(
                         &r.termometro_nombre
                             .clone()
                             .unwrap_or_else(|| format!("ID {}", r.termometro_id)),
-                        26,
+                        20,
                     ),
                     format!("{:.1}°C", r.temp_maxima),
                     format!("{:.1}°C", r.temp_minima),
                     r.humedad.map(|h| format!("{:.1}%", h)).unwrap_or_else(|| "-".to_string()),
                     truncar(
                         &r.observaciones.clone().unwrap_or_else(|| "-".to_string()),
-                        28,
+                        24,
                     ),
                     truncar(&r.usuario_nombre, 12),
                 ]
@@ -708,46 +702,46 @@ fn generar_pdf_informe_franja(
         escribir_filas(&mut pdf, &columnas, &filas);
     }
 
-    pdf.y -= 6.0;
+    pdf.y -= 4.0;
 
     // Sección: Termómetros sin funcionamiento
     let fs = &informe.fuera_de_servicio;
     pdf.escribir_linea(
         &format!("TERMÓMETROS SIN FUNCIONAMIENTO ({})", fs.len()),
-        12.0,
-        10.0,
-        10.0,
+        11.0,
+        8.0,
+        9.0,
         true,
     );
 
     if fs.is_empty() {
-        pdf.escribir_linea("No hay termómetros sin funcionamiento.", 9.0, 10.0, 7.0, false);
+        pdf.escribir_linea("No hay termómetros sin funcionamiento.", 9.0, 8.0, 6.0, false);
     } else {
         let columnas = vec![
-            ("Área".to_string(), 10.0),
-            ("Termómetro".to_string(), 45.0),
-            ("Tipo".to_string(), 88.0),
-            ("Motivo".to_string(), 120.0),
-            ("Comentarios".to_string(), 150.0),
-            ("Fecha".to_string(), 185.0),
+            ("Área".to_string(), 8.0),
+            ("Termómetro".to_string(), 40.0),
+            ("Tipo".to_string(), 82.0),
+            ("Motivo".to_string(), 110.0),
+            ("Comentarios".to_string(), 135.0),
+            ("Fecha".to_string(), 182.0),
         ];
         escribir_encabezados(&mut pdf, &columnas);
         let filas: Vec<Vec<String>> = fs
             .iter()
             .map(|r| {
                 vec![
-                    truncar(&r.area_nombre, 22),
+                    truncar(&r.area_nombre, 15),
                     truncar(
                         &r.termometro_nombre
                             .clone()
                             .unwrap_or_else(|| format!("ID {}", r.termometro_id)),
-                        26,
+                        20,
                     ),
-                    truncar(&r.tipo_nombre, 20),
-                    truncar(&r.motivo, 18),
+                    truncar(&r.tipo_nombre, 13),
+                    truncar(&r.motivo, 12),
                     truncar(
                         &r.comentarios_reporte.clone().unwrap_or_else(|| "-".to_string()),
-                        22,
+                        24,
                     ),
                     r.fecha_reporte.format("%Y-%m-%d").to_string(),
                 ]
