@@ -1175,33 +1175,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <div class="card h-100 shadow-sm">
-                                <div class="card-header bg-warning text-dark py-2">
-                                    <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Alertas Fuera de Rango por Día</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div style="position: relative; width: 100%; height: 260px; max-height: 280px; overflow: hidden;">
-                                        <canvas id="chartAlertas"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="card h-100 shadow-sm">
-                                <div class="card-header bg-info text-white py-2">
-                                    <h5 class="mb-0"><i class="bi bi-building"></i> Registros y Alertas por Área</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div style="position: relative; width: 100%; height: 260px; max-height: 280px; overflow: hidden;">
-                                        <canvas id="chartAreas"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -3034,8 +3007,6 @@
                 renderizarKPIsGraficos(data.resumen);
                 actualizarBannerLimites(data.limites);
                 renderizarGraficoSegunModo();
-                crearChartAlertas(data.tendencias);
-                crearChartAreas(data.areas);
             } catch (error) {
                 console.error('Error cargando gráficos:', error);
                 document.getElementById('graficos_kpis').innerHTML =
