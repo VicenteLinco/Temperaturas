@@ -502,19 +502,6 @@
         }
         .btn-volver-modal:active { background: rgba(0, 113, 227, 0.12); }
 
-        .btn-humedad-falla {
-            display: block;
-            width: 100%;
-            margin-top: 6px;
-            padding: 9px 10px;
-            font-size: 0.82rem;
-            font-weight: 600;
-            color: #b45309;
-            background: rgba(245, 158, 11, 0.10);
-            border: 1px dashed rgba(245, 158, 11, 0.55);
-            border-radius: 12px;
-        }
-
         /* Lectura fuera de rango: se marca al teclear, nunca bloquea el guardado */
         .lectura-fuera-rango {
             border-color: #dc2626 !important;
@@ -845,8 +832,8 @@
                                        enterkeyhint="done" aria-label="Humedad en porcentaje">
                                 <!-- El sensor de humedad falla a menudo: sin esta salida el operador
                                      no puede cerrar el registro del equipo. -->
-                                <button type="button" class="btn-humedad-falla" id="btnHumedadFalla" onclick="registrarSinHumedad()">
-                                    <i class="bi bi-exclamation-octagon"></i> El lector de humedad no marca
+                                <button type="button" class="btn btn-sm btn-outline-secondary w-100 mt-2" id="btnHumedadFalla" onclick="registrarSinHumedad()">
+                                    <i class="bi bi-slash-circle me-1"></i> El lector no marca
                                 </button>
                             </div>
 
@@ -1024,6 +1011,9 @@
         let termometroSeleccionado = null;
         // El operador confirmó que el lector de humedad no marca: se guarda humedad nula
         let humedadSinLectura = false;
+        // Ventana de registro: si está cerrada, el servidor rechazará el guardado, así que
+        // conviene decirlo antes de que el operador teclee tres temperaturas para nada.
+        let estadoVentana = { activa: true, proximaApertura: null };
         let enfocarPrimeraLectura = false;
 
         // ===== INICIALIZACIÓN =====
@@ -1250,34 +1240,43 @@
                             return parseInt(last, 10);
                         }
                     }
-                    // Buscar números SOLO dentro del query string (?id=5) para evitar extraer números del dominio o IP
-                    const queryMatch = url.search.match(/(\d+)/);
-                    if (queryMatch) {
-                        return parseInt(queryMatch[0], 10);
-                    }
                 } catch (e) {
                     console.error('Error parseando URL del QR:', e);
                 }
+                // Una URL que no trae un identificador reconocible no es un equipo:
+                // rebuscar cualquier número dentro daba con puertos, fechas o IDs ajenos.
+                return NaN;
             }
 
-            // 2. Si contiene patrones clave=valor (ej: termometro=5, id=5, t=5)
+            // 2. Patrones clave=valor explícitos (ej: termometro=5, id=5, t=5)
             const kvMatch = cleanText.match(/(?:termometro|termometro_id|id|termo|t)\s*=\s*(\d+)/i);
             if (kvMatch) {
                 return parseInt(kvMatch[1], 10);
             }
 
-            // 3. Si el texto es estrictamente un número puro (ej: "5" o "005")
-            if (/^\d+$/.test(cleanText)) {
-                return parseInt(cleanText, 10);
-            }
-
-            // 4. Si contiene prefijos típicos como "T-5", "TERMO 5", "TERMOMETRO-5", "ID: 5"
-            const prefixMatch = cleanText.match(/(?:termometro|termo|t|id)?\s*[-:#]?\s*(\d+)/i);
-            if (prefixMatch && prefixMatch[1]) {
+            // 3. Prefijo explícito + separador (ej: "T-5", "TERMOMETRO: 15", "ID #3").
+            // El prefijo y el separador son OBLIGATORIOS: sin ellos esta regla capturaba
+            // el primer número de cualquier texto ("Sala 2" abría el termómetro 2).
+            const prefixMatch = cleanText.match(/^(?:termometro|termometro_id|termo|id|t)\s*[-:#]\s*(\d{1,5})$/i);
+            if (prefixMatch) {
                 return parseInt(prefixMatch[1], 10);
             }
 
+            // 4. Número puro, que es lo que imprime imprimir_qr.html (ej: "5" o "005").
+            // Se acotan los dígitos para no confundirlo con un código de barras.
+            if (/^\d{1,5}$/.test(cleanText)) {
+                return parseInt(cleanText, 10);
+            }
+
             return NaN;
+        }
+
+        // Segunda red: aunque el texto tenga forma de ID, solo se abre si ese equipo
+        // existe entre los ya cargados. Evita que un QR ajeno caiga sobre otro termómetro.
+        function idConocido(id) {
+            return Object.values(areasData).some(d =>
+                (d.pendientes || []).some(t => t.id === id) ||
+                (d.completados || []).some(r => r.termometro_id === id));
         }
 
         // ===== LOGICA PRINCIPAL =====
@@ -1307,6 +1306,16 @@
                     if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
                     mostrarEstado(`Código QR no válido: ${decodedText.substring(0, 20)}...`, 'warning');
                     setTimeout(reanudarScannerSiPausado, 2000);
+                    return;
+                }
+
+                // El equipo debe estar entre los cargados. Sin esto, un QR ajeno cuyo
+                // número coincidiera con otro ID abría el formulario del equipo equivocado.
+                if (Object.keys(areasData).length > 0 && !idConocido(termometroId)) {
+                    playScanSound('error');
+                    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                    mostrarEstado(`Ese código no corresponde a un termómetro de esta ronda (leído: ${termometroId})`, 'warning');
+                    setTimeout(reanudarScannerSiPausado, 2500);
                     return;
                 }
 
@@ -1398,6 +1407,10 @@
                                 pendientes: pendData.pendientes || [],
                                 completados: pendData.completados || []
                             };
+                            estadoVentana = {
+                                activa: pendData.ventana_activa !== false,
+                                proximaApertura: pendData.proxima_apertura || null
+                            };
                         } catch (e) {
                             console.error(`Error cargando área ${area.id}:`, e);
                         } finally {
@@ -1455,6 +1468,10 @@
                     ventana: data.ventana_horaria,
                     pendientes: data.pendientes || [],
                     completados: data.completados || []
+                };
+                estadoVentana = {
+                    activa: data.ventana_activa !== false,
+                    proximaApertura: data.proxima_apertura || null
                 };
                 renderizarAreas();
             } catch (e) {
@@ -1559,6 +1576,13 @@
                         </button>
                     </div>
                 </div>
+
+                ${estadoVentana.activa ? '' : `
+                    <div class="alert alert-warning py-2 px-3 small mt-3 mb-0">
+                        <i class="bi bi-clock-fill me-1"></i>
+                        <strong>Fuera del horario de registro.</strong>
+                        Puedes consultar lo registrado, pero no guardar mediciones${estadoVentana.proximaApertura ? ` hasta las <strong>${estadoVentana.proximaApertura}</strong>` : ''}.
+                    </div>`}
 
                 <div class="small text-muted mb-2 mt-3"><i class="bi bi-clock-history me-1"></i>${formatearTextoVentana(ventana)}</div>
 
@@ -2644,6 +2668,15 @@
                     await refrescarAreaActual();
                     // Al cerrar el último equipo se ofrece (sin bloquear) el cierre de ronda
                     verificarCierreRonda();
+                } else if (res.status === 409) {
+                    // Otro operador registró el equipo mientras este tenía el modal abierto.
+                    // Se recargan los datos y se reabre sobre el registro real para corregir,
+                    // en vez de dejar un error sin salida.
+                    const idTermometro = payload.termometro_id;
+                    mostrarToast('Este equipo ya fue registrado por otra persona. Se abre el registro guardado para que lo revises.', 'warning', 7000);
+                    bootstrap.Modal.getInstance(document.getElementById('registroModal')).hide();
+                    await cargarTodasLasAreas();
+                    setTimeout(() => seleccionarTermometro(idTermometro), 350);
                 } else {
                     // Mensaje específico del backend (el modal queda abierto con los datos)
                     const errText = await res.text();
@@ -2739,8 +2772,11 @@
             const backdrops = document.querySelectorAll('.modal-backdrop');
 
             if (abiertos.length > 0) {
-                // Sobra uno por cada modal ya cerrado: se deja solo el último
-                for (let i = 0; i < backdrops.length - 1; i++) backdrops[i].remove();
+                // Mientras quede un modal vivo no se toca ningún backdrop: cada modal
+                // borra el suyo al cerrarse y no hay forma fiable de saber desde el DOM
+                // cuál sobra. Borrar por posición se llevaba por delante el backdrop del
+                // modal visible y dejaba encima el del que se acababa de cerrar, que
+                // interceptaba todos los toques y bloqueaba la pantalla.
                 document.body.classList.add('modal-open');
                 return true;
             }

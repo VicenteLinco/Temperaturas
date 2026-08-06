@@ -438,10 +438,12 @@ pub struct FiltrosInformeFranja {
     ventana_horaria: Option<String>,
 }
 
-/// Fecha de hoy en zona horaria de Chile (America/Santiago)
+/// Día operativo actual: el que empieza a las 08:00 de Chile y termina a las 07:59
+/// del día siguiente. La ronda nocturna cruza medianoche, así que usar el día natural
+/// partía el informe en dos y dejaba fuera lo registrado antes de las 00:00.
 fn fecha_hoy_santiago() -> String {
-    chrono::Utc::now()
-        .with_timezone(&chrono_tz::America::Santiago)
+    (chrono::Utc::now().with_timezone(&chrono_tz::America::Santiago)
+        - chrono::Duration::hours(8))
         .format("%Y-%m-%d")
         .to_string()
 }
@@ -479,7 +481,7 @@ async fn consultar_informe_franja(
     let total: i64 = sqlx::query_scalar(
         "SELECT COUNT(*)::bigint FROM registros r
          JOIN termometros t ON r.termometro_id = t.id
-         WHERE (r.fecha_registro AT TIME ZONE 'America/Santiago')::date = $1::date
+         WHERE ((r.fecha_registro AT TIME ZONE 'America/Santiago') - INTERVAL '8 hours')::date = $1::date
            AND r.ventana_horaria = $2",
     )
     .bind(fecha)
@@ -504,7 +506,7 @@ async fn consultar_informe_franja(
         JOIN areas a ON t.area_id = a.id
         JOIN usuarios u ON r.usuario_id = u.id
         WHERE r.fuera_rango_operativo = TRUE
-          AND (r.fecha_registro AT TIME ZONE 'America/Santiago')::date = $1::date
+          AND ((r.fecha_registro AT TIME ZONE 'America/Santiago') - INTERVAL '8 hours')::date = $1::date
           AND r.ventana_horaria = $2
         ORDER BY a.nombre, t.nombre
         "#,

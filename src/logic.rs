@@ -103,6 +103,123 @@ pub fn determinar_ventana_actual(
     }
 }
 
+/// Estado de la ventana de registro en un instante dado.
+///
+/// Con la restricción activa solo se puede registrar dentro de la ventana. Cuando
+/// está cerrada hace falta saber a qué hora vuelve a abrir, para poder decírselo al
+/// operador en vez de dejarlo con un error sin explicación.
+#[derive(Debug, Clone)]
+pub struct EstadoVentana {
+    /// Ventana vigente; si ninguna lo está, la última que se cerró.
+    pub ventana: VentanaHoraria,
+    pub activa: bool,
+    /// Hora a la que abre la próxima ventana (solo tiene sentido si `activa` es falso).
+    pub proxima_apertura: NaiveTime,
+}
+
+fn minutos_de(t: NaiveTime) -> i64 {
+    t.num_seconds_from_midnight() as i64 / 60
+}
+
+/// Minutos que faltan desde `desde` hasta `hasta` avanzando en el reloj (0..1439).
+fn minutos_hacia_adelante(desde: i64, hasta: i64) -> i64 {
+    ((hasta - desde) % 1440 + 1440) % 1440
+}
+
+/// Calcula el estado de la ventana en la hora local de Chile.
+///
+/// Sin restricción se conserva el comportamiento histórico (siempre hay ventana, con
+/// el corte fijo 08:00/20:00) para no alterar instalaciones que no la usan.
+pub fn estado_ventana_actual(
+    hora_1: &str,
+    hora_2: &str,
+    tolerancia_minutos: i32,
+    restriccion_activa: bool,
+) -> Result<EstadoVentana> {
+    let ahora = Local::now().with_timezone(&chrono_tz::America::Santiago).time();
+    estado_ventana_en(hora_1, hora_2, tolerancia_minutos, restriccion_activa, ahora)
+}
+
+/// Igual que `estado_ventana_actual` pero con la hora inyectada, para poder probarla.
+pub fn estado_ventana_en(
+    hora_1: &str,
+    hora_2: &str,
+    tolerancia_minutos: i32,
+    restriccion_activa: bool,
+    ahora: NaiveTime,
+) -> Result<EstadoVentana> {
+    let central_1 = NaiveTime::parse_from_str(hora_1, "%H:%M")?;
+    let central_2 = NaiveTime::parse_from_str(hora_2, "%H:%M")?;
+
+    let inicio_dia = NaiveTime::from_hms_opt(8, 0, 0).ok_or_else(|| anyhow!("hora inválida"))?;
+    let fin_dia = NaiveTime::from_hms_opt(20, 0, 0).ok_or_else(|| anyhow!("hora inválida"))?;
+
+    let construir = |nombre: &str, central: NaiveTime, noche: bool| VentanaHoraria {
+        nombre: nombre.to_string(),
+        hora_central: central,
+        hora_inicio: if noche { fin_dia } else { inicio_dia },
+        hora_fin: if noche { inicio_dia } else { fin_dia },
+        es_turno_noche: noche,
+    };
+
+    if !restriccion_activa {
+        let de_dia = ahora >= inicio_dia && ahora < fin_dia;
+        let ventana = if de_dia {
+            construir(hora_1, central_1, false)
+        } else {
+            construir(hora_2, central_2, true)
+        };
+        return Ok(EstadoVentana { ventana, activa: true, proxima_apertura: ahora });
+    }
+
+    let candidatas = [(hora_1, central_1, false), (hora_2, central_2, true)];
+
+    // Ventana vigente
+    for (nombre, central, noche) in candidatas.iter() {
+        if esta_en_rango(*central, tolerancia_minutos, ahora) {
+            return Ok(EstadoVentana {
+                ventana: construir(nombre, *central, *noche),
+                activa: true,
+                proxima_apertura: ahora,
+            });
+        }
+    }
+
+    // Cerrada: se busca la que abre antes (para avisar) y la que cerró hace menos
+    // (para seguir mostrando la ronda recién terminada en vez de una pantalla vacía).
+    let ahora_min = minutos_de(ahora);
+    let tol = tolerancia_minutos as i64;
+
+    let mut proxima = None::<i64>;
+    let mut ultima: Option<(i64, &str, NaiveTime, bool)> = None;
+
+    for (nombre, central, noche) in candidatas.iter() {
+        let central_min = minutos_de(*central);
+        let apertura = ((central_min - tol) % 1440 + 1440) % 1440;
+        let cierre = ((central_min + tol) % 1440 + 1440) % 1440;
+
+        let falta = minutos_hacia_adelante(ahora_min, apertura);
+        if proxima.map_or(true, |p| falta < minutos_hacia_adelante(ahora_min, p)) {
+            proxima = Some(apertura);
+        }
+
+        let desde_cierre = minutos_hacia_adelante(cierre, ahora_min);
+        if ultima.as_ref().map_or(true, |(d, _, _, _)| desde_cierre < *d) {
+            ultima = Some((desde_cierre, nombre, *central, *noche));
+        }
+    }
+
+    let (_, nombre, central, noche) = ultima.ok_or_else(|| anyhow!("sin ventanas configuradas"))?;
+    let apertura = proxima.unwrap_or(0);
+
+    Ok(EstadoVentana {
+        ventana: construir(nombre, central, noche),
+        activa: false,
+        proxima_apertura: NaiveTime::from_hms_opt((apertura / 60) as u32, (apertura % 60) as u32, 0)
+            .ok_or_else(|| anyhow!("hora de apertura inválida"))?,
+    })
+}
+
 /// Calcula el día asignado para un registro basándose en el turno
 #[allow(dead_code)]
 pub fn calcular_dia_asignado(ventana: &VentanaHoraria, fecha_registro: &chrono::NaiveDateTime) -> NaiveDate {
@@ -413,5 +530,89 @@ mod tests {
         assert_eq!(actual, None);
         assert_eq!(maxima, -12.0);
         assert_eq!(minima, -18.0);
+    }
+
+    // ===== VENTANAS HORARIAS =====
+    // Configuración real del usuario: rondas de 14:00 y 02:00.
+
+    fn t(h: u32, m: u32) -> NaiveTime {
+        NaiveTime::from_hms_opt(h, m, 0).unwrap()
+    }
+
+    fn estado(hora: NaiveTime, tol: i32) -> EstadoVentana {
+        estado_ventana_en("14:00", "02:00", tol, true, hora).unwrap()
+    }
+
+    #[test]
+    fn dentro_de_la_ventana_de_las_14_se_registra_en_esa_ronda() {
+        for hora in [t(12, 0), t(13, 30), t(14, 0), t(15, 59), t(16, 0)] {
+            let e = estado(hora, 120);
+            assert!(e.activa, "{:?} debería estar dentro de la ventana", hora);
+            assert_eq!(e.ventana.nombre, "14:00");
+        }
+    }
+
+    #[test]
+    fn dentro_de_la_ventana_de_las_02_se_registra_en_esa_ronda() {
+        for hora in [t(0, 0), t(1, 15), t(2, 0), t(3, 59), t(4, 0)] {
+            let e = estado(hora, 120);
+            assert!(e.activa, "{:?} debería estar dentro de la ventana", hora);
+            assert_eq!(e.ventana.nombre, "02:00");
+        }
+    }
+
+    #[test]
+    fn fuera_de_ventana_no_se_puede_registrar() {
+        for hora in [t(4, 30), t(9, 0), t(11, 59), t(17, 0), t(20, 0), t(23, 59)] {
+            let e = estado(hora, 120);
+            assert!(!e.activa, "{:?} NO debería permitir registrar", hora);
+        }
+    }
+
+    #[test]
+    fn fuera_de_ventana_informa_cuando_abre_la_proxima() {
+        // A las 17:00 la siguiente en abrir es la de las 02:00 (abre a medianoche)
+        assert_eq!(estado(t(17, 0), 120).proxima_apertura, t(0, 0));
+        // A las 09:00 la siguiente es la de las 14:00 (abre a las 12:00)
+        assert_eq!(estado(t(9, 0), 120).proxima_apertura, t(12, 0));
+        // Justo tras cerrar la de las 02:00, la próxima es la de las 14:00
+        assert_eq!(estado(t(4, 30), 120).proxima_apertura, t(12, 0));
+    }
+
+    #[test]
+    fn fuera_de_ventana_conserva_la_ronda_recien_cerrada() {
+        // A las 17:00 acaba de cerrar la de las 14:00: es la que se sigue mostrando
+        assert_eq!(estado(t(17, 0), 120).ventana.nombre, "14:00");
+        // A las 09:00 la última cerrada fue la de las 02:00
+        assert_eq!(estado(t(9, 0), 120).ventana.nombre, "02:00");
+    }
+
+    #[test]
+    fn con_tolerancia_por_defecto_ninguna_ventana_cruza_medianoche() {
+        // Es lo que permite que el día natural baste para agrupar la ronda: si una
+        // ventana cruzara las 00:00, la misma ronda caería en dos días distintos y el
+        // índice único dejaría pasar un segundo registro del mismo equipo.
+        let tol = 119;
+        let e_antes = estado(t(23, 59), tol);
+        assert!(!e_antes.activa, "23:59 no debe pertenecer a ninguna ventana");
+        let e_despues = estado(t(0, 1), tol);
+        assert!(e_despues.activa && e_despues.ventana.nombre == "02:00");
+    }
+
+    #[test]
+    fn una_tolerancia_excesiva_si_cruza_medianoche_y_debe_rechazarse_en_config() {
+        // Documenta el límite: con 180 min la ventana de las 02:00 empieza a las 23:00
+        // del día anterior, y ahí el día natural ya no agrupa bien la ronda.
+        let e = estado(t(23, 30), 180);
+        assert!(e.activa, "con tolerancia 180 las 23:30 caen dentro de la ronda 02:00");
+        assert_eq!(e.ventana.nombre, "02:00");
+    }
+
+    #[test]
+    fn sin_restriccion_se_mantiene_el_comportamiento_anterior() {
+        let diurna = estado_ventana_en("14:00", "02:00", 120, false, t(9, 0)).unwrap();
+        assert!(diurna.activa && diurna.ventana.nombre == "14:00");
+        let nocturna = estado_ventana_en("14:00", "02:00", 120, false, t(23, 0)).unwrap();
+        assert!(nocturna.activa && nocturna.ventana.nombre == "02:00");
     }
 }

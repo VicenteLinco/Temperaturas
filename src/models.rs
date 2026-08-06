@@ -296,6 +296,11 @@ pub struct PendientesResponse {
     pub area_nombre: String,
     pub pendientes: Vec<TermometroConDetalles>,
     pub completados: Vec<RegistroConDetalles>,
+    /// Falso cuando la restricción está activa y la hora actual cae fuera de la ventana:
+    /// el registrador puede consultar, pero el guardado será rechazado.
+    pub ventana_activa: bool,
+    /// Hora "HH:MM" a la que abre la próxima ventana. Solo se envía si está cerrada.
+    pub proxima_apertura: Option<String>,
 }
 
 #[derive(Debug, Serialize)]

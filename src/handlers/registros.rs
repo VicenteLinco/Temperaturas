@@ -9,7 +9,7 @@ use sqlx::{PgPool, Row};
 use crate::{
     auth::CurrentUser,
     db::{get_config, log_auditoria},
-    logic::{determinar_ventana_actual, normalizar_lecturas, validar_registro},
+    logic::{estado_ventana_actual, normalizar_lecturas, validar_registro},
     models::*,
 };
 
@@ -157,10 +157,15 @@ pub async fn obtener_pendientes_area(
     let hora_2 = get_config(&pool, "registro_hora_2").await.unwrap_or_else(|_| "02:00".to_string());
     let tolerancia: i32 = get_config(&pool, "ventana_tolerancia_minutos").await.unwrap_or_else(|_| "119".to_string()).parse().unwrap_or(119);
     
-    // Determinar ventana (Usa lógica de Rust, no de DB)
-    let ventana = determinar_ventana_actual(&hora_1, &hora_2, tolerancia, false)
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .ok_or(StatusCode::BAD_REQUEST)?;
+    let restriccion_activa = get_config(&pool, "restriccion_ventana_activa").await
+        .unwrap_or_else(|_| "0".to_string()) == "1";
+
+    // La restricción se respeta igual que al guardar. Antes se forzaba a `false` aquí:
+    // la lista mostraba pendientes con normalidad y luego el POST los rechazaba por
+    // estar fuera de ventana, sin que el operador entendiera por qué.
+    let estado = estado_ventana_actual(&hora_1, &hora_2, tolerancia, restriccion_activa)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let ventana = estado.ventana;
 
     // 3. Obtener termómetros
     let termometros: Vec<TermometroConDetalles> = sqlx::query_as(
@@ -199,7 +204,12 @@ pub async fn obtener_pendientes_area(
         LEFT JOIN usuarios u ON r.usuario_id = u.id
         WHERE t.area_id = $1 
           AND r.ventana_horaria = $2
-          AND (r.fecha_registro AT TIME ZONE 'America/Santiago')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/Santiago')::date
+          -- Día OPERATIVO (08:00 → 08:00), no día natural. La ronda nocturna va de las
+          -- 20:00 a las 08:00 y cruza medianoche: agrupando por día natural, todo lo
+          -- registrado antes de las 00:00 desaparecía de la lista al cambiar el día y
+          -- los equipos volvían a aparecer como pendientes en mitad del turno.
+          AND ((r.fecha_registro AT TIME ZONE 'America/Santiago') - INTERVAL '8 hours')::date
+            = ((CURRENT_TIMESTAMP AT TIME ZONE 'America/Santiago') - INTERVAL '8 hours')::date
         "#
     )
     .bind(area_id as i32)
@@ -222,6 +232,12 @@ pub async fn obtener_pendientes_area(
         area_nombre: area.nombre,
         pendientes,
         completados: registros,
+        ventana_activa: estado.activa,
+        proxima_apertura: if estado.activa {
+            None
+        } else {
+            Some(estado.proxima_apertura.format("%H:%M").to_string())
+        },
     }))
 }
 
@@ -240,9 +256,18 @@ pub async fn crear_registro(
     let restriccion_activa = get_config(&pool, "restriccion_ventana_activa").await.unwrap_or_else(|_| "0".to_string()) == "1";
 
     // Verificar ventana
-    let ventana = determinar_ventana_actual(&hora_1, &hora_2, tolerancia, restriccion_activa)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error ventana: {}", e)))?
-        .ok_or((StatusCode::BAD_REQUEST, "No hay ventana horaria activa actualmente.".to_string()))?;
+    let estado = estado_ventana_actual(&hora_1, &hora_2, tolerancia, restriccion_activa)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error ventana: {}", e)))?;
+    if !estado.activa {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            format!(
+                "Fuera del horario de registro. La próxima ventana abre a las {}.",
+                estado.proxima_apertura.format("%H:%M")
+            ),
+        ));
+    }
+    let ventana = estado.ventana;
 
     // Obtener tipo de termómetro para validación
     let termometro: Termometro = sqlx::query_as("SELECT * FROM termometros WHERE id = $1")
