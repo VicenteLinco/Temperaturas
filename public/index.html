@@ -379,13 +379,16 @@
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top shadow">
         <div class="container-fluid">
             <span class="navbar-brand mb-0 h1">
-                <i class="bi bi-qr-code-scan"></i> Scanner
+                <i class="bi bi-qr-code-scan"></i> Control Térmico
             </span>
             <div class="d-flex align-items-center">
+                <button class="btn btn-outline-light btn-sm rounded-circle p-2 me-2" onclick="toggleTheme()" title="Cambiar Tema (Oscuro/Claro)">
+                    <i class="bi bi-moon-stars-fill" id="themeToggleIcon"></i>
+                </button>
                 <span class="text-white me-3 d-none d-sm-inline">
                     <i class="bi bi-person-circle"></i> <span id="username"></span>
                 </span>
-                <button class="btn btn-outline-light btn-sm" onclick="logout()">
+                <button class="btn btn-outline-light btn-sm" onclick="logout()" title="Cerrar Sesión">
                     <i class="bi bi-box-arrow-right"></i>
                 </button>
             </div>
@@ -395,18 +398,28 @@
     <div class="main-container">
         <!-- Scanner Section -->
         <div class="scanner-section">
-            <div style="position: relative; max-width: 400px; margin: 0 auto;">
+            <div style="position: relative; max-width: 400px; margin: 0 auto;" class="scanner-laser-container">
+                <div class="scan-laser-line"></div>
                 <div id="qr-reader"></div>
                 <div id="scannerOverlay" class="scanner-overlay">
-                    <i class="bi bi-camera-video mb-3" style="font-size: 3rem; color: #2563eb;"></i>
-                    <h5 class="mb-3">Scanner de QR</h5>
+                    <i class="bi bi-camera-video mb-3" style="font-size: 3rem; color: var(--apple-blue);"></i>
+                    <h5 class="mb-2 fw-bold">Scanner de Código QR</h5>
+                    <p class="text-muted small mb-3">Apunte la cámara al código QR del termómetro para iniciar el registro automáticamente</p>
                     <button class="btn btn-primary btn-lg" onclick="inicializarScanner()">
-                        <i class="bi bi-power"></i> Activar Cámara
+                        <i class="bi bi-power me-1"></i> Activar Cámara
                     </button>
-                    <p class="text-muted mt-2 small">Permite el acceso a la cámara</p>
                 </div>
             </div>
             <div id="scannerStatus" class="scanner-status d-none"></div>
+
+            <!-- Entrada Manual por ID -->
+            <div class="mt-3 container" style="max-width: 400px;">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text"><i class="bi bi-hash"></i></span>
+                    <input type="number" id="inputManualId" class="form-control" placeholder="ID manual (ej: 5)..." onkeypress="if(event.key==='Enter') buscarManualId()">
+                    <button class="btn btn-outline-primary fw-semibold" onclick="buscarManualId()"><i class="bi bi-search"></i> Buscar</button>
+                </div>
+            </div>
         </div>
 
         <!-- Tabs Container -->
@@ -976,6 +989,26 @@
             renderizarAreaActual();
         }
 
+        function buscarManualId() {
+            const input = document.getElementById('inputManualId');
+            if (!input || !input.value) return;
+            const id = parseInt(input.value.trim());
+            if (isNaN(id) || id <= 0) {
+                mostrarToast('Ingrese un ID numérico válido', 'warning');
+                return;
+            }
+            procesarTermometro(id);
+        }
+
+        function filtrarTermometrosEnArea(query) {
+            const q = query.toLowerCase().trim();
+            const cards = document.querySelectorAll('#areaActualContent .termometro-card');
+            cards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                card.style.display = text.includes(q) ? 'flex' : 'none';
+            });
+        }
+
         function renderizarAreaActual() {
              const container = document.getElementById('areaActualContent');
              if (!areaActualId || !areasData[areaActualId]) return;
@@ -983,33 +1016,79 @@
              const data = areasData[areaActualId];
              const total = data.pendientes.length + data.completados.length;
              const completados = data.completados.length;
+             const pendientes = data.pendientes.length;
              const progreso = total > 0 ? Math.round((completados / total) * 100) : 0;
 
              let html = `
-                <div class="area-header-card">
-                    <div class="d-flex justify-content-between">
-                        <div><h4 class="mb-1">${data.area.nombre}</h4><small>${formatearTextoVentana(data.ventana)}</small></div>
-                        <div class="badge bg-light text-dark">${completados}/${total}</div>
+                <!-- Selector de Área e Info Header -->
+                <div class="area-header-card mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                        <div>
+                            <h4 class="mb-0 fw-bold"><i class="bi bi-building text-primary me-2"></i>${data.area.nombre}</h4>
+                            <div class="small text-muted mt-1"><i class="bi bi-clock-history me-1"></i>${formatearTextoVentana(data.ventana)}</div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge ${progreso === 100 ? 'bg-success' : 'bg-primary'} fs-6 px-3 py-2 rounded-pill">
+                                ${progreso}% Completado
+                            </span>
+                        </div>
                     </div>
-                    <div class="progress-bar-custom mt-2"><div class="progress-fill" style="width: ${progreso}%"></div></div>
+
+                    <!-- KPI Cards Grid -->
+                    <div class="row g-2 mt-2">
+                        <div class="col-4">
+                            <div class="kpi-card-modern p-2 text-center">
+                                <div class="kpi-label" style="font-size:0.68rem;">EQUIPOS</div>
+                                <div class="kpi-value fs-4 mb-0 text-body">${total}</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="kpi-card-modern p-2 text-center">
+                                <div class="kpi-label text-success" style="font-size:0.68rem;">LISTOS</div>
+                                <div class="kpi-value fs-4 mb-0 text-success">${completados}</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="kpi-card-modern p-2 text-center">
+                                <div class="kpi-label text-warning" style="font-size:0.68rem;">PENDIENTES</div>
+                                <div class="kpi-value fs-4 mb-0 text-warning">${pendientes}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="progress-bar-custom mt-3"><div class="progress-fill" style="width: ${progreso}%"></div></div>
                 </div>
-                <div class="area-selector mb-3">
-                    <select class="form-select" onchange="cambiarAreaActual(parseInt(this.value))">
-                        ${Object.values(areasData).map(a => `<option value="${a.area.id}" ${a.area.id === areaActualId?'selected':''}>${a.area.nombre}</option>`).join('')}
-                    </select>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold text-muted mb-1">Cambiar de Área Técnico</label>
+                        <select class="form-select" onchange="cambiarAreaActual(parseInt(this.value))">
+                            ${Object.values(areasData).map(a => `<option value="${a.area.id}" ${a.area.id === areaActualId?'selected':''}>${a.area.nombre}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold text-muted mb-1">Buscar Termómetro</label>
+                        <div class="search-filter-box">
+                            <i class="bi bi-search"></i>
+                            <input type="text" class="form-control" placeholder="Buscar por nombre o tipo..." oninput="filtrarTermometrosEnArea(this.value)">
+                        </div>
+                    </div>
                 </div>
              `;
              
              // Pendientes
              if(data.pendientes.length > 0) {
-                 html += `<div class="termometros-section"><div class="section-title text-warning"><i class="bi bi-hourglass-split"></i> Pendientes</div>`;
+                 html += `<div class="termometros-section"><div class="section-title text-warning"><i class="bi bi-hourglass-split"></i> Pendientes de Registro (${data.pendientes.length})</div>`;
                  data.pendientes.forEach(t => {
                      html += `<div class="termometro-card pendiente" onclick="seleccionarTermometro(${t.id})">
                         <div>
                             <div class="termometro-nombre fw-bold">${t.nombre || 'ID: '+t.id}</div>
-                            <div class="small text-muted">${t.tipo_nombre}</div>
+                            <div class="small text-muted"><i class="bi bi-cpu me-1"></i>${t.tipo_nombre}</div>
                         </div>
-                        <i class="bi bi-chevron-right text-muted"></i>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-warning-subtle text-warning fw-semibold px-2 py-1" style="font-size:0.75rem;">Pendiente</span>
+                            <i class="bi bi-chevron-right text-muted"></i>
+                        </div>
                      </div>`;
                  });
                  html += `</div>`;
@@ -1017,14 +1096,17 @@
              
              // Completados
              if(data.completados.length > 0) {
-                 html += `<div class="termometros-section"><div class="section-title text-success"><i class="bi bi-check-circle"></i> Completados</div>`;
+                 html += `<div class="termometros-section mt-4"><div class="section-title text-success"><i class="bi bi-check-circle-fill"></i> Completados en este Turno (${data.completados.length})</div>`;
                  data.completados.forEach(r => {
                      html += `<div class="termometro-card completado" onclick="editarRegistro(${r.termometro_id})">
                         <div>
                             <div class="termometro-nombre fw-bold">${r.termometro_nombre}</div>
-                            <div class="small">Actual: <strong>${r.temp_actual ?? '-'}°C</strong></div>
+                            <div class="small text-muted">Actual: <strong class="text-success">${r.temp_actual ?? '-'}°C</strong> &bull; Mín: ${r.temp_minima}°C &bull; Máx: ${r.temp_maxima}°C</div>
                         </div>
-                        <i class="bi bi-chevron-right text-muted"></i>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-success-subtle text-success fw-semibold px-2 py-1" style="font-size:0.75rem;">Completo</span>
+                            <i class="bi bi-chevron-right text-muted"></i>
+                        </div>
                      </div>`;
                  });
                  html += `</div>`;
