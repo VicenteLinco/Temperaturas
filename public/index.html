@@ -397,6 +397,38 @@
         }
         .sector-listo i { font-size: 2.6rem; color: #16a34a; }
 
+        /* Rango operativo del equipo: es el dato que el operador debe tener a la vista
+           antes de teclear, así que va como píldora grande y no como badge gris. */
+        .rango-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border-radius: 999px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            line-height: 1.1;
+            letter-spacing: -0.01em;
+            color: #0b5ed7;
+            background: rgba(13, 110, 253, 0.12);
+            border: 1px solid rgba(13, 110, 253, 0.35);
+            white-space: nowrap;
+        }
+        .rango-pill i { font-size: 1rem; opacity: 0.9; }
+
+        .btn-humedad-falla {
+            display: block;
+            width: 100%;
+            margin-top: 6px;
+            padding: 9px 10px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #b45309;
+            background: rgba(245, 158, 11, 0.10);
+            border: 1px dashed rgba(245, 158, 11, 0.55);
+            border-radius: 12px;
+        }
+
         /* Lectura fuera de rango: se marca al teclear, nunca bloquea el guardado */
         .lectura-fuera-rango {
             border-color: #dc2626 !important;
@@ -487,8 +519,21 @@
             .modal .btn-lg {
                 font-size: 1rem;
             }
-            .modal-dialog {
+            .modal-dialog:not(.modal-fullscreen-sm-down) {
                 margin: 10px;
+            }
+            /* El margen genérico de .modal-dialog (aquí y en lecturas.css) pisaba el
+               margin:0 de Bootstrap y dejaba el modal descentrado y desbordado. */
+            .modal-fullscreen-sm-down {
+                margin: 0 !important;
+                width: 100% !important;
+                max-width: none !important;
+                height: 100% !important;
+            }
+            .modal-fullscreen-sm-down .modal-content {
+                height: 100%;
+                border: 0;
+                border-radius: 0 !important;
             }
             /* Fullscreen real: el modal no se corta bajo el notch ni bajo la barra de gestos */
             .modal-fullscreen-sm-down .modal-body {
@@ -666,7 +711,7 @@
                         <div class="modal-title fw-bold text-truncate" id="termometroNombre">Termómetro</div>
                         <div class="small text-muted d-flex align-items-center gap-2 flex-wrap">
                             <span id="termometroTipo"></span>
-                            <span id="termometroRango" class="badge bg-secondary"></span>
+                            <span id="termometroRango" class="rango-pill"><i class="bi bi-thermometer-half"></i><span id="termometroRangoTexto"></span></span>
                         </div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
@@ -716,6 +761,11 @@
                                 <input type="text" class="lectura-input" id="humedad"
                                        autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
                                        enterkeyhint="done" aria-label="Humedad en porcentaje">
+                                <!-- El sensor de humedad falla a menudo: sin esta salida el operador
+                                     no puede cerrar el registro del equipo. -->
+                                <button type="button" class="btn-humedad-falla" id="btnHumedadFalla" onclick="registrarSinHumedad()">
+                                    <i class="bi bi-exclamation-octagon"></i> El lector de humedad no marca
+                                </button>
                             </div>
 
                             <!-- Observaciones: ocultas salvo que se necesiten -->
@@ -890,6 +940,8 @@
         let escaneoEnProceso = false;
         let areaActualId = null;
         let termometroSeleccionado = null;
+        // El operador confirmó que el lector de humedad no marca: se guarda humedad nula
+        let humedadSinLectura = false;
         let informeNotificado = false;
         let enfocarPrimeraLectura = false;
 
@@ -2091,8 +2143,8 @@
             document.getElementById('termometroTipo').textContent = termometro.tipo_nombre;
 
             if (termometro.temp_min_operativa !== undefined && termometro.temp_max_operativa !== undefined) {
-                document.getElementById('termometroRango').textContent = `${termometro.temp_min_operativa}°C a ${termometro.temp_max_operativa}°C`;
-                document.getElementById('termometroRango').style.display = 'inline-block';
+                document.getElementById('termometroRangoTexto').textContent = `${termometro.temp_min_operativa}°C a ${termometro.temp_max_operativa}°C`;
+                document.getElementById('termometroRango').style.display = 'inline-flex';
             } else {
                 document.getElementById('termometroRango').style.display = 'none';
             }
@@ -2177,6 +2229,7 @@
             const divHum = document.getElementById('humedadGroup');
             divHum.style.display = termometro.tiene_humedad ? 'block' : 'none';
             document.getElementById('humedad').required = termometro.tiene_humedad;
+            humedadSinLectura = false;
 
             // Renderizar Chips de Acciones Correctivas
             renderChipsAccionCorrectiva('chipsAccionCorrectiva', 'observaciones');
@@ -2213,6 +2266,7 @@
             btnGuardar.style.display = editable ? 'block' : 'none';
             inputs.forEach(input => input.disabled = !editable);
             document.getElementById('btnToggleObs').style.display = editable ? 'block' : 'none';
+            document.getElementById('btnHumedadFalla').style.display = editable ? 'block' : 'none';
 
             // El teclado se abre solo en el primer campo: escanear y teclear sin taps intermedios
             enfocarPrimeraLectura = editable;
@@ -2262,6 +2316,31 @@
         }
 
         // --- FUNCIONES FUERA DE SERVICIO Y REPARACION ---
+
+        // El sensor de humedad falla con frecuencia: se registra el equipo igual, con
+        // humedad nula y constancia escrita del motivo para el informe.
+        const OBS_HUMEDAD_FALLA = 'Lector de humedad sin lectura: falla del sensor al momento del control.';
+
+        async function registrarSinHumedad() {
+            const seguro = await mostrarConfirmacion(
+                'Registrar sin humedad',
+                'El registro se guardará <strong>sin valor de humedad</strong> y se dejará constancia de la falla del lector en las observaciones.<br><br>¿Confirmas que el lector no marca?'
+            );
+            if (!seguro) return;
+
+            humedadSinLectura = true;
+            const humEl = document.getElementById('humedad');
+            humEl.value = '';
+            humEl.classList.remove('is-invalid-temp');
+
+            const obs = document.getElementById('observaciones');
+            if (!obs.value.includes(OBS_HUMEDAD_FALLA)) {
+                obs.value = obs.value.trim() ? obs.value.trim() + ' ' + OBS_HUMEDAD_FALLA : OBS_HUMEDAD_FALLA;
+            }
+            toggleObservaciones(true);
+
+            guardarRegistro();
+        }
 
         async function abrirModalFueraServicio() {
             if (!termometroSeleccionado) return;
@@ -2451,7 +2530,7 @@
             // Humedad obligatoria solo en equipos que la miden
             const humEl = document.getElementById('humedad');
             const pideHumedad = document.getElementById('humedadGroup').style.display !== 'none';
-            if (pideHumedad && isNaN(parseFloat(humEl.value))) {
+            if (pideHumedad && !humedadSinLectura && isNaN(parseFloat(humEl.value))) {
                 humEl.classList.add('is-invalid-temp');
                 humEl.focus();
                 mostrarToast('Falta la humedad (%) de este equipo', 'warning');
@@ -2497,7 +2576,7 @@
                         JSON.stringify({ actual, maxima, minima, ts: Date.now() }));
                     bootstrap.Modal.getInstance(document.getElementById('registroModal')).hide();
                     // Primero se registra, después se avisa el resultado
-                    mostrarAvisoRegistro(actual, minima, maxima, termometroSeleccionado || {});
+                    mostrarAvisoRegistro(actual, minima, maxima);
                     volverAlEscaner();
                     await refrescarAreaActual();
                     // Al cerrar el último equipo se ofrece (sin bloquear) el cierre de ronda
@@ -2515,22 +2594,12 @@
             }
         }
 
-        // Aviso posterior al registro: confirma lo guardado y alerta si quedó fuera de rango
-        function mostrarAvisoRegistro(actual, minima, maxima, t) {
+        // Aviso posterior al registro: solo confirma lo guardado.
+        // Los desvíos NO se avisan por lectura (interrumpían la ronda): se reportan
+        // juntos en el cierre de ronda. El desvío ya se ve en vivo dentro del modal.
+        function mostrarAvisoRegistro(actual, minima, maxima) {
             const resumen = `mín ${minima.toFixed(1)} · act ${actual.toFixed(1)} · máx ${maxima.toFixed(1)} °C`;
-            const min = t.temp_min_operativa, max = t.temp_max_operativa;
-            const fuera = [];
-            if (min !== undefined && min !== null && max !== undefined && max !== null) {
-                [['mínima', minima], ['actual', actual], ['máxima', maxima]].forEach(([nombre, v]) => {
-                    if (v < min || v > max) fuera.push(`${nombre} ${v.toFixed(1)}°C`);
-                });
-            }
-            if (fuera.length > 0) {
-                mostrarToast(
-                    `Registrado FUERA DE RANGO (${min}°C a ${max}°C): ${fuera.join(', ')}. Avisa al encargado y deja la acción correctiva.`,
-                    'danger', 8000
-                );
-            } else if ((maxima - minima) > 15) {
+            if ((maxima - minima) > 15) {
                 mostrarToast(`Registrado · ${resumen}. Hay más de 15°C entre mínima y máxima: verifica que no sea un error de tipeo.`, 'warning', 6000);
             } else {
                 mostrarToast(`Registrado · ${resumen}`, 'success');
