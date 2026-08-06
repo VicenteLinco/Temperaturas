@@ -1134,6 +1134,12 @@
 
                                 <div class="d-flex align-items-center gap-3 flex-wrap">
                                     <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" id="chkMostrarTooltip" checked onchange="renderizarGraficoSegunModo()">
+                                        <label class="form-check-label text-secondary fw-medium small text-nowrap" for="chkMostrarTooltip">
+                                            <i class="bi bi-chat-square-text text-primary"></i> Info al Hover
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch mb-0">
                                         <input class="form-check-input" type="checkbox" id="chkMostrarLimites" checked onchange="renderizarGraficoSegunModo()">
                                         <label class="form-check-label text-secondary fw-medium small text-nowrap" for="chkMostrarLimites">
                                             <i class="bi bi-dash-lg text-danger"></i> Límites Operativos
@@ -3683,6 +3689,7 @@
             const ctx = canvasEl.getContext('2d');
             const mostrarLimites = document.getElementById('chkMostrarLimites').checked;
             const mostrarAlertas = document.getElementById('chkResaltarAlertas').checked;
+            const mostrarTooltip = document.getElementById('chkMostrarTooltip') ? document.getElementById('chkMostrarTooltip').checked : true;
             const optDensidad = document.getElementById('densidadDatosGrafico') ? document.getElementById('densidadDatosGrafico').value : 'smart';
 
             if (!lecturasOriginales || lecturasOriginales.length === 0) {
@@ -3932,14 +3939,16 @@
                             }
                         } : {},
                         tooltip: {
-                            backgroundColor: isDark ? 'rgba(15, 23, 42, 0.94)' : 'rgba(15, 23, 42, 0.90)',
+                            enabled: mostrarTooltip,
+                            backgroundColor: isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(15, 23, 42, 0.78)',
                             titleColor: '#ffffff',
-                            bodyColor: '#f8fafc',
-                            titleFont: { family: '-apple-system, sans-serif', size: 12, weight: 'bold' },
-                            bodyFont: { family: '-apple-system, sans-serif', size: 12 },
-                            padding: 10,
-                            cornerRadius: 10,
-                            boxPadding: 4,
+                            bodyColor: '#f1f5f9',
+                            titleFont: { family: '-apple-system, sans-serif', size: 11, weight: 'bold' },
+                            bodyFont: { family: '-apple-system, sans-serif', size: 10.5 },
+                            padding: { top: 5, bottom: 5, left: 9, right: 9 },
+                            cornerRadius: 7,
+                            boxPadding: 2,
+                            caretSize: 4,
                             displayColors: false,
                             callbacks: {
                                 title: (items) => {
@@ -3956,27 +3965,18 @@
                                     if (val == null) return '';
 
                                     if (label.includes('Límite')) {
-                                        return `➖ ${label}: ${val} °C`;
+                                        return `➖ ${label}: ${val}°C`;
                                     }
 
-                                    let prefixIcon = '🌡️';
+                                    let prefixIcon = '🔵';
                                     if (label.includes('Máx')) prefixIcon = '🟠';
                                     else if (label.includes('Mín')) prefixIcon = '🔷';
-                                    else if (label.includes('Actual')) prefixIcon = '🔵';
 
                                     const esAlerta = item ? esAlertaLectura(item) : false;
                                     const badge = esAlerta ? '🔴 ALERTA' : '✅ OK';
-                                    return `${prefixIcon} ${label}: ${val} °C  [${badge}]`;
+                                    return `${prefixIcon} ${label}: ${val} °C ${badge}`;
                                 },
-                                footer: (items) => {
-                                    if (!items.length) return '';
-                                    const index = items[0].dataIndex;
-                                    const item = lecturas[index];
-                                    if (!item) return '';
-                                    const minStr = item.temp_min_operativa != null ? `${item.temp_min_operativa}°C` : '-';
-                                    const maxStr = item.temp_max_operativa != null ? `${item.temp_max_operativa}°C` : '-';
-                                    return `🏢 ${item.area_nombre || 'Área'}  |  🎯 Rango: ${minStr} a ${maxStr}\n💡 Clic para detalle completo`;
-                                }
+                                footer: () => ''
                             }
                         }
                     },
@@ -4008,6 +4008,7 @@
             const ctx = document.getElementById('chartTendencias').getContext('2d');
             const labels = tendencias.map(t => formatearFechaEjeX(t.fecha));
             const mostrarLimites = document.getElementById('chkMostrarLimites').checked;
+            const mostrarTooltip = document.getElementById('chkMostrarTooltip') ? document.getElementById('chkMostrarTooltip').checked : true;
 
             const isDark = document.body.classList.contains('dark-mode') || document.documentElement.getAttribute('data-bs-theme') === 'dark';
             const textColor = isDark ? '#e0e0e0' : '#1d1d1f';
@@ -4069,26 +4070,28 @@
                             }
                         },
                         tooltip: {
-                            backgroundColor: isDark ? 'rgba(15, 23, 42, 0.96)' : 'rgba(15, 23, 42, 0.92)',
+                            enabled: mostrarTooltip,
+                            backgroundColor: isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(15, 23, 42, 0.78)',
                             titleColor: '#ffffff',
                             bodyColor: '#e0e0e0',
-                            padding: 12,
-                            cornerRadius: 10,
+                            titleFont: { family: '-apple-system, sans-serif', size: 11, weight: 'bold' },
+                            bodyFont: { family: '-apple-system, sans-serif', size: 10.5 },
+                            padding: { top: 5, bottom: 5, left: 9, right: 9 },
+                            cornerRadius: 7,
+                            caretSize: 4,
                             callbacks: {
                                 title: (items) => {
                                     if (!items.length) return '';
                                     const index = items[0].dataIndex;
                                     const t = tendencias[index];
-                                    return t ? `📅 Fecha: ${t.fecha}` : items[0].label;
+                                    return t ? `📅 ${t.fecha}` : items[0].label;
                                 },
                                 footer: (items) => {
                                     if (!items.length) return '';
                                     const index = items[0].dataIndex;
                                     const t = tendencias[index];
                                     if (!t) return '';
-                                    let text = `Alertas Fuera de Rango: ${t.alertas || 0}`;
-                                    if (t.total_registros) text += `\nRegistros totales del día: ${t.total_registros}`;
-                                    return text;
+                                    return `Alertas: ${t.alertas || 0} | Total: ${t.total_registros || 0}`;
                                 }
                             }
                         }
