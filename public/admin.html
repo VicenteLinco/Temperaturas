@@ -3337,44 +3337,88 @@
             }
         }
 
-        // Determina si una lectura individual está en ALERTA / FUERA DE RANGO para la temperatura actual o límites
+        // Determina si una lectura individual está en ALERTA / FUERA DE RANGO evaluando las 3 mediciones (actual, máxima, mínima) y flags
         function esAlertaLectura(l) {
             if (!l) return false;
-            const temp = l.temp_actual;
+            if (l.fuera_rango_operativo) return true;
+
             const minOp = l.temp_min_operativa;
             const maxOp = l.temp_max_operativa;
 
-            if (temp != null && !isNaN(temp)) {
-                if (minOp != null && temp < minOp) return true;
-                if (maxOp != null && temp > maxOp) return true;
-                return false; // Si temp_actual está dentro del rango, NO es alerta para el gráfico
+            if (minOp == null && maxOp == null) return false;
+
+            // 1. Temp Actual
+            if (l.temp_actual != null && !isNaN(l.temp_actual)) {
+                if (minOp != null && l.temp_actual < minOp) return true;
+                if (maxOp != null && l.temp_actual > maxOp) return true;
             }
-            return !!l.fuera_rango_operativo;
+            // 2. Temp Máxima
+            if (l.temp_maxima != null && !isNaN(l.temp_maxima)) {
+                if (maxOp != null && l.temp_maxima > maxOp) return true;
+                if (minOp != null && l.temp_maxima < minOp) return true;
+            }
+            // 3. Temp Mínima
+            if (l.temp_minima != null && !isNaN(l.temp_minima)) {
+                if (minOp != null && l.temp_minima < minOp) return true;
+                if (maxOp != null && l.temp_minima > maxOp) return true;
+            }
+
+            return false;
         }
 
-        // Genera el texto explicativo con el motivo exacto del estado de una lectura
+        // Genera el texto explicativo detallando exactamente qué mediciones están fuera de rango
         function obtenerMotivoAlertaTexto(item) {
             if (!item) return '';
-            const temp = item.temp_actual;
             const minOp = item.temp_min_operativa;
             const maxOp = item.temp_max_operativa;
+            const motivos = [];
 
-            if (temp != null && !isNaN(temp)) {
-                if (minOp != null && temp < minOp) {
-                    const diff = (minOp - temp).toFixed(1);
-                    return `La temperatura actual (${temp.toFixed(1)} °C) es inferior al mínimo permitido (${minOp.toFixed(1)} °C) por ${diff} °C.`;
+            const tempAct = item.temp_actual;
+            const tempMax = item.temp_maxima;
+            const tempMin = item.temp_minima;
+
+            if (tempAct != null && !isNaN(tempAct)) {
+                if (minOp != null && tempAct < minOp) {
+                    const diff = (minOp - tempAct).toFixed(1);
+                    motivos.push(`La temperatura actual (${tempAct.toFixed(1)} °C) es inferior al mínimo permitido (${minOp.toFixed(1)} °C) por ${diff} °C.`);
+                } else if (maxOp != null && tempAct > maxOp) {
+                    const diff = (tempAct - maxOp).toFixed(1);
+                    motivos.push(`La temperatura actual (${tempAct.toFixed(1)} °C) excede el máximo permitido (${maxOp.toFixed(1)} °C) por ${diff} °C.`);
                 }
-                if (maxOp != null && temp > maxOp) {
-                    const diff = (temp - maxOp).toFixed(1);
-                    return `La temperatura actual (${temp.toFixed(1)} °C) excede el máximo permitido (${maxOp.toFixed(1)} °C) por ${diff} °C.`;
-                }
-                return `La temperatura actual (${temp.toFixed(1)} °C) se encuentra dentro del rango operativo seguro (${minOp != null ? minOp : '-'} °C a ${maxOp != null ? maxOp : '-'} °C).`;
             }
-            
+
+            if (tempMax != null && !isNaN(tempMax)) {
+                if (maxOp != null && tempMax > maxOp) {
+                    const diff = (tempMax - maxOp).toFixed(1);
+                    motivos.push(`La temperatura máxima (${tempMax.toFixed(1)} °C) excede el máximo permitido (${maxOp.toFixed(1)} °C) por ${diff} °C.`);
+                } else if (minOp != null && tempMax < minOp) {
+                    const diff = (minOp - tempMax).toFixed(1);
+                    motivos.push(`La temperatura máxima (${tempMax.toFixed(1)} °C) es inferior al mínimo permitido (${minOp.toFixed(1)} °C) por ${diff} °C.`);
+                }
+            }
+
+            if (tempMin != null && !isNaN(tempMin)) {
+                if (minOp != null && tempMin < minOp) {
+                    const diff = (minOp - tempMin).toFixed(1);
+                    motivos.push(`La temperatura mínima (${tempMin.toFixed(1)} °C) es inferior al mínimo permitido (${minOp.toFixed(1)} °C) por ${diff} °C.`);
+                } else if (maxOp != null && tempMin > maxOp) {
+                    const diff = (tempMin - maxOp).toFixed(1);
+                    motivos.push(`La temperatura mínima (${tempMin.toFixed(1)} °C) excede el máximo permitido (${maxOp.toFixed(1)} °C) por ${diff} °C.`);
+                }
+            }
+
+            if (motivos.length > 0) {
+                return motivos.join(' ');
+            }
+
             if (item.fuera_rango_operativo) {
                 return `Registro marcado fuera del rango operativo de la área o tipo de termómetro.`;
             }
-            return `Medición en norma dentro de parámetros normales.`;
+
+            const rangoTexto = (minOp != null || maxOp != null)
+                ? ` (${minOp != null ? minOp + ' °C' : 'sin mín.'} a ${maxOp != null ? maxOp + ' °C' : 'sin máx.'})`
+                : '';
+            return `Todas las mediciones se encuentran dentro del rango operativo seguro${rangoTexto}.`;
         }
 
         function obtenerTextoPeriodoActual() {
@@ -3972,8 +4016,24 @@
                                     if (label.includes('Máx')) prefixIcon = '🟠';
                                     else if (label.includes('Mín')) prefixIcon = '🔷';
 
-                                    const esAlerta = item ? esAlertaLectura(item) : false;
-                                    const badge = esAlerta ? '🔴 ALERTA' : '✅ OK';
+                                    let esAlertaMetrica = false;
+                                    if (item) {
+                                        const minOp = item.temp_min_operativa;
+                                        const maxOp = item.temp_max_operativa;
+                                        if (label.includes('Máx')) {
+                                            if (maxOp != null && val > maxOp) esAlertaMetrica = true;
+                                            if (minOp != null && val < minOp) esAlertaMetrica = true;
+                                        } else if (label.includes('Mín')) {
+                                            if (minOp != null && val < minOp) esAlertaMetrica = true;
+                                            if (maxOp != null && val > maxOp) esAlertaMetrica = true;
+                                        } else {
+                                            if (minOp != null && val < minOp) esAlertaMetrica = true;
+                                            if (maxOp != null && val > maxOp) esAlertaMetrica = true;
+                                            if (item.fuera_rango_operativo) esAlertaMetrica = true;
+                                        }
+                                    }
+
+                                    const badge = esAlertaMetrica ? '🔴 ALERTA' : '✅ OK';
                                     return `${prefixIcon} ${label}: ${val} °C ${badge}`;
                                 },
                                 footer: () => ''
