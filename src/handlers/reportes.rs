@@ -196,24 +196,38 @@ pub async fn generar_reporte_incidencias(
     State(pool): State<PgPool>,
     Query(filtros): Query<FiltrosReporteIncidencias>,
 ) -> Result<(StatusCode, Vec<u8>), StatusCode> {
-    let rows = sqlx::query(
+    // El filtro de estado viene del selector de la vista de reportes (admin.html)
+    let condicion = match filtros.tipo.as_deref() {
+        Some("fuera_rango") => "r.fuera_rango_operativo = true",
+        Some("fuera_servicio") => "t.fuera_de_servicio = true",
+        _ => "(r.fuera_rango_operativo = true OR t.fuera_de_servicio = true)",
+    };
+
+    // "Solo Mediciones" exporta las lecturas sin la columna de acciones correctivas
+    let columna_observaciones = match filtros.incluir_observaciones.as_deref() {
+        Some("no") => "NULL::text as observaciones",
+        _ => "r.observaciones",
+    };
+
+    let rows = sqlx::query(&format!(
         r#"
         SELECT
             r.id, r.fecha_registro, r.ventana_horaria,
             a.nombre as area_nombre, t.nombre as termometro_nombre, t.id as termometro_id,
             ti.nombre as tipo_nombre,
             r.temp_maxima, r.temp_minima, r.humedad,
-            r.fuera_rango_operativo, r.observaciones,
+            r.fuera_rango_operativo, {},
             u.username as usuario_nombre
         FROM registros r
         JOIN termometros t ON r.termometro_id = t.id
         JOIN areas a ON t.area_id = a.id
         JOIN tipos_termometro ti ON t.tipo_id = ti.id
         JOIN usuarios u ON r.usuario_id = u.id
-        WHERE r.fuera_rango_operativo = true
+        WHERE {}
         ORDER BY r.fecha_registro DESC
-        "#
-    )
+        "#,
+        columna_observaciones, condicion
+    ))
     .fetch_all(&pool)
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -240,7 +254,14 @@ pub async fn generar_reporte_estabilidad(
     Query(filtros): Query<FiltrosReporteEstabilidad>,
 ) -> Result<(StatusCode, Vec<u8>), StatusCode> {
     let num_dias = filtros.dias.unwrap_or(30);
-    let rows = sqlx::query(
+
+    // Determina el orden de las filas del análisis (selector "Agrupar Por" en admin.html)
+    let orden = match filtros.agrupar_por.as_deref() {
+        Some("termometro") => "t.nombre, a.nombre, r.fecha_registro DESC",
+        _ => "a.nombre, t.nombre, r.fecha_registro DESC",
+    };
+
+    let rows = sqlx::query(&format!(
         r#"
         SELECT
             r.id, r.fecha_registro, r.ventana_horaria,
@@ -255,9 +276,10 @@ pub async fn generar_reporte_estabilidad(
         JOIN tipos_termometro ti ON t.tipo_id = ti.id
         JOIN usuarios u ON r.usuario_id = u.id
         WHERE r.fecha_registro >= NOW() - (INTERVAL '1 day' * $1)
-        ORDER BY a.nombre, t.nombre, r.fecha_registro DESC
-        "#
-    )
+        ORDER BY {}
+        "#,
+        orden
+    ))
     .bind(num_dias as f64)
     .fetch_all(&pool)
     .await
