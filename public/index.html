@@ -181,8 +181,14 @@
         .termometro-card:active {
             transform: scale(0.99);
         }
-        .termometro-card.pendiente { border-left: 5px solid #f59e0b; }
-        .termometro-card.completado { border-left: 5px solid #16a34a; }
+        /* !important: lecturas.css fija border-color con !important y borraba el color de la franja */
+        .termometro-card.pendiente { border-left: 5px solid #f59e0b !important; }
+        .termometro-card.completado { border-left: 5px solid #16a34a !important; }
+        /* Registro guardado pero fuera del rango operativo: debe saltar a la vista */
+        .termometro-card.completado.desvio {
+            border-left: 5px solid #dc2626 !important;
+            background-color: rgba(220, 38, 38, 0.06) !important;
+        }
         .termometro-card .btn {
             flex-shrink: 0;
         }
@@ -374,6 +380,11 @@
             <div class="loader-text" id="loadingTitle">Cargando Sistema...</div>
             <div id="loadingStatus" class="small text-muted">Iniciando conexión...</div>
         </div>
+    </div>
+
+    <!-- Aviso de conexión: aparece solo cuando el dispositivo pierde la red -->
+    <div id="offlineBanner" class="offline-banner" style="display: none;">
+        <i class="bi bi-wifi-off me-2"></i>Sin conexión · no se pueden guardar registros
     </div>
 
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top shadow">
@@ -1146,7 +1157,11 @@
             procesarTermometro(id);
         }
 
+        // El filtro se conserva entre refrescos: la lista se re-renderiza tras cada registro
+        let filtroAreaActual = '';
+
         function filtrarTermometrosEnArea(query) {
+            filtroAreaActual = query;
             const q = query.toLowerCase().trim();
             const cards = document.querySelectorAll('#areaActualContent .termometro-card');
             cards.forEach(card => {
@@ -1163,6 +1178,7 @@
              const total = data.pendientes.length + data.completados.length;
              const completados = data.completados.length;
              const pendientes = data.pendientes.length;
+             const desvios = data.completados.filter(r => r.fuera_rango_operativo).length;
              const progreso = total > 0 ? Math.round((completados / total) * 100) : 0;
 
              // Píldoras Rápidas de Áreas para Cambio a 1 Tap
@@ -1204,24 +1220,31 @@
 
                     <!-- KPI Cards Grid -->
                     <div class="row g-2 mt-2">
-                        <div class="col-4">
+                        <div class="${desvios > 0 ? 'col-3' : 'col-4'}">
                             <div class="kpi-card-modern p-2 text-center">
                                 <div class="kpi-label" style="font-size:0.68rem;">EQUIPOS</div>
                                 <div class="kpi-value fs-4 mb-0 text-body">${total}</div>
                             </div>
                         </div>
-                        <div class="col-4">
+                        <div class="${desvios > 0 ? 'col-3' : 'col-4'}">
                             <div class="kpi-card-modern p-2 text-center">
                                 <div class="kpi-label text-success" style="font-size:0.68rem;">LISTOS</div>
                                 <div class="kpi-value fs-4 mb-0 text-success">${completados}</div>
                             </div>
                         </div>
-                        <div class="col-4">
+                        <div class="${desvios > 0 ? 'col-3' : 'col-4'}">
                             <div class="kpi-card-modern p-2 text-center">
                                 <div class="kpi-label text-warning" style="font-size:0.68rem;">PENDIENTES</div>
                                 <div class="kpi-value fs-4 mb-0 text-warning">${pendientes}</div>
                             </div>
                         </div>
+                        ${desvios > 0 ? `
+                        <div class="col-3">
+                            <div class="kpi-card-modern p-2 text-center border border-danger">
+                                <div class="kpi-label text-danger" style="font-size:0.68rem;">DESVÍOS</div>
+                                <div class="kpi-value fs-4 mb-0 text-danger">${desvios}</div>
+                            </div>
+                        </div>` : ''}
                     </div>
 
                     <div class="progress-bar-custom mt-3"><div class="progress-fill" style="width: ${progreso}%"></div></div>
@@ -1230,7 +1253,7 @@
                 <div class="mb-3">
                     <div class="search-filter-box">
                         <i class="bi bi-search"></i>
-                        <input type="text" class="form-control" placeholder="Buscar por equipo o sensor en este sector (Presiona Ctrl+K)..." oninput="filtrarTermometrosEnArea(this.value)">
+                        <input type="text" id="buscadorArea" class="form-control" value="${filtroAreaActual.replace(/"/g, '&quot;')}" placeholder="Buscar equipo o sensor en este sector (Ctrl+K)" oninput="filtrarTermometrosEnArea(this.value)">
                     </div>
                 </div>
              `;
@@ -1255,18 +1278,24 @@
              
              // Completados
              if(data.completados.length > 0) {
-                 html += `<div class="termometros-section mt-4"><div class="section-title text-success"><i class="bi bi-check-circle-fill"></i> Completados en este Turno (${data.completados.length})</div>`;
+                 html += `<div class="termometros-section mt-4"><div class="section-title text-success"><i class="bi bi-check-circle-fill"></i> Completados en este Turno (${data.completados.length})${desvios > 0 ? ` <span class="badge bg-danger ms-2">${desvios} con desvío</span>` : ''}</div>`;
                  data.completados.forEach(r => {
                      const prev = JSON.parse(localStorage.getItem('ultimaLectura_' + r.termometro_id) || 'null');
                      const prevVal = prev ? prev.actual : null;
                      const badgeTendencia = calcularBadgeTendencia(r.temp_actual, prevVal);
-                     html += `<div class="termometro-card completado" onclick="editarRegistro(${r.termometro_id})">
+                     const desvio = r.fuera_rango_operativo;
+                     const estadoBadge = desvio
+                        ? '<span class="badge bg-danger text-white fw-semibold px-2 py-1" style="font-size:0.75rem;">Fuera de rango</span>'
+                        : '<span class="badge bg-success-subtle text-success fw-semibold px-2 py-1" style="font-size:0.75rem;">Completo</span>';
+                     html += `<div class="termometro-card completado ${desvio ? 'desvio' : ''}" onclick="editarRegistro(${r.termometro_id})">
                         <div>
-                            <div class="termometro-nombre fw-bold d-flex align-items-center">${r.termometro_nombre} ${badgeTendencia}</div>
-                            <div class="small text-muted">Actual: <strong class="text-success">${r.temp_actual ?? '-'}°C</strong> &bull; Mín: ${r.temp_minima}°C &bull; Máx: ${r.temp_maxima}°C</div>
+                            <div class="termometro-nombre fw-bold d-flex align-items-center">${desvio ? '<i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>' : ''}${r.termometro_nombre} ${badgeTendencia}</div>
+                            <div class="small text-muted">Actual: <strong class="${desvio ? 'text-danger' : 'text-success'}">${r.temp_actual ?? '-'}°C</strong> &bull; Mín: ${r.temp_minima}°C &bull; Máx: ${r.temp_maxima}°C &bull; ${formatearHora(r.fecha_registro)}</div>
+                            ${desvio && r.observaciones ? `<div class="small text-danger fst-italic mt-1"><i class="bi bi-chat-left-text me-1"></i>${r.observaciones}</div>` : ''}
+                            ${desvio && !r.observaciones ? '<div class="small text-danger fw-semibold mt-1"><i class="bi bi-pencil-square me-1"></i>Falta la acción correctiva</div>' : ''}
                         </div>
                         <div class="d-flex align-items-center gap-2">
-                            <span class="badge bg-success-subtle text-success fw-semibold px-2 py-1" style="font-size:0.75rem;">Completo</span>
+                            ${estadoBadge}
                             <i class="bi bi-chevron-right text-muted"></i>
                         </div>
                      </div>`;
@@ -1274,6 +1303,9 @@
                  html += `</div>`;
              }
              container.innerHTML = html;
+
+             // Reaplicar el filtro escrito antes del refresco
+             if (filtroAreaActual) filtrarTermometrosEnArea(filtroAreaActual);
         }
 
         async function seleccionarTermometro(id) {
@@ -1303,15 +1335,16 @@
              const container = document.getElementById('resumenGlobalContent');
              if(!Object.keys(areasData).length) { container.innerHTML = '<div class="text-center py-5 text-muted"><i class="bi bi-inbox fs-1"></i><p>Sin datos de áreas disponibles.</p></div>'; return; }
              
-             let totalC = 0, totalP = 0, totalEquipos = 0, areasCompletas = 0;
+             let totalC = 0, totalP = 0, totalEquipos = 0, areasCompletas = 0, totalDesvios = 0;
              const areasList = Object.entries(areasData);
-             
+
              areasList.forEach(([id, data]) => {
                  const c = data.completados.length;
                  const p = data.pendientes.length;
-                 totalC += c; 
+                 totalC += c;
                  totalP += p;
                  totalEquipos += (c + p);
+                 totalDesvios += data.completados.filter(r => r.fuera_rango_operativo).length;
                  if (p === 0 && c > 0) areasCompletas++;
              });
 
@@ -1343,13 +1376,13 @@
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
-                        <div class="kpi-card-modern">
+                        <div class="kpi-card-modern ${totalDesvios > 0 ? 'border border-danger' : ''}">
                             <div class="d-flex justify-content-between align-items-start">
-                                <div class="kpi-label">Registros Listos</div>
-                                <div class="kpi-icon-wrap green"><i class="bi bi-thermometer-high"></i></div>
+                                <div class="kpi-label">Desvíos</div>
+                                <div class="kpi-icon-wrap ${totalDesvios > 0 ? 'orange' : 'green'}"><i class="bi bi-thermometer-high"></i></div>
                             </div>
-                            <div class="kpi-value text-success">${totalC}</div>
-                            <div class="small text-muted mt-1">Verificados este turno</div>
+                            <div class="kpi-value ${totalDesvios > 0 ? 'text-danger' : 'text-success'}">${totalDesvios}</div>
+                            <div class="small text-muted mt-1">${totalDesvios > 0 ? 'Fuera de rango operativo' : 'Todo dentro de rango'}</div>
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
@@ -1374,6 +1407,7 @@
                  const pct = tot > 0 ? Math.round((c / tot) * 100) : 0;
                  const esCompleto = p === 0 && c > 0;
                  const esSinIniciar = c === 0;
+                 const dArea = data.completados.filter(r => r.fuera_rango_operativo).length;
 
                  let statusBadge = '';
                  let cardBorder = '';
@@ -1397,7 +1431,9 @@
                                         <h5 class="fw-bold mb-0 text-body"><i class="bi bi-building me-2 text-primary"></i>${data.area.nombre}</h5>
                                         ${statusBadge}
                                     </div>
-                                    <div class="small text-muted mb-3"><i class="bi bi-cpu me-1"></i>${tot} termómetro${tot!==1?'s':''} en total</div>
+                                    <div class="small text-muted mb-3"><i class="bi bi-cpu me-1"></i>${tot} termómetro${tot!==1?'s':''} en total
+                                        ${dArea > 0 ? `<span class="badge bg-danger ms-2"><i class="bi bi-exclamation-triangle-fill me-1"></i>${dArea} desvío${dArea!==1?'s':''}</span>` : ''}
+                                    </div>
                                 </div>
                                 <div>
                                     <div class="d-flex justify-content-between small fw-semibold text-secondary mb-1">
@@ -1460,6 +1496,14 @@
              if (completo) cargarInformeFranja();
         }
 
+        // Hora local corta (HH:MM) a partir de la fecha ISO que entrega el backend
+        function formatearHora(iso) {
+            if (!iso) return '-';
+            const d = new Date(iso);
+            if (isNaN(d.getTime())) return '-';
+            return d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+        }
+
         function formatearFechaHoy() {
             const hoy = new Date();
             const anio = hoy.getFullYear();
@@ -1486,7 +1530,7 @@
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
             } catch (e) {
-                alert('Error al generar informe: ' + e.message);
+                mostrarToast('Error al generar informe: ' + e.message, 'danger', 6000);
             }
         }
 
@@ -1630,7 +1674,7 @@
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
             } catch (e) {
-                alert('Error al descargar informe: ' + e.message);
+                mostrarToast('Error al descargar informe: ' + e.message, 'danger', 6000);
             }
         }
 
@@ -1654,7 +1698,7 @@
         async function enviarInformeCorreo() {
             const input = document.getElementById('informeEmail');
             const email = input.value.trim();
-            if (!email) { alert('Ingrese el correo del encargado.'); input.focus(); return; }
+            if (!email) { mostrarToast('Ingrese el correo del encargado.', 'danger', 6000); input.focus(); return; }
 
             // Guardar correo configurable en localStorage para futuros envíos
             localStorage.setItem('email_encargado_configurado', email);
@@ -1676,10 +1720,10 @@
                     mostrarToast('Informe enviado exitosamente a ' + email, 'success');
                     bootstrap.Modal.getInstance(document.getElementById('enviarInformeModal')).hide();
                 } else {
-                    alert('Error al enviar el correo: ' + (data.message || data.error || 'Verifique el servidor SMTP.'));
+                    mostrarToast('Error al enviar el correo: ' + (data.message || data.error || 'Verifique el servidor SMTP.'), 'danger', 6000);
                 }
             } catch (e) {
-                alert('Error de red: ' + e.message);
+                mostrarToast('Error de red: ' + e.message, 'danger', 6000);
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = original;
@@ -1747,12 +1791,16 @@
                 footer.insertBefore(btnReparar, footer.firstChild);
                 
             } else if (registro) {
-                banner.className = 'alert alert-success text-center fw-bold mb-3';
-                banner.textContent = 'ESTADO: COMPLETO';
+                // Ya hay registro en esta ventana: se avisa quién y cuándo para no duplicar por error
+                const quien = registro.usuario_nombre ? ` por ${registro.usuario_nombre}` : '';
+                const desvio = registro.fuera_rango_operativo;
+                banner.className = `alert ${desvio ? 'alert-danger' : 'alert-success'} text-center mb-3`;
+                banner.innerHTML = `<div class="fw-bold">${desvio ? 'YA REGISTRADO · FUERA DE RANGO' : 'YA REGISTRADO EN ESTA FRANJA'}</div>
+                    <div class="small">${formatearHora(registro.fecha_registro)}${quien} · si guardas, corriges ese registro</div>`;
                 btnFueraServicio.style.display = 'inline-block';
             } else {
                 banner.className = 'alert alert-warning text-center fw-bold mb-3';
-                banner.textContent = 'ESTADO: PENDIENTE';
+                banner.textContent = 'PENDIENTE DE REGISTRO';
                 btnFueraServicio.style.display = 'inline-block';
             }
 
@@ -1760,7 +1808,7 @@
             form.reset();
             
             // Dejar el botón principal en su estado inicial
-            resetBotonRegistrar();
+            resetBotonRegistrar(!!registro);
 
             if (registro) {
                 document.getElementById('registroId').value = registro.id;
@@ -1828,12 +1876,16 @@
             };
         }
 
-        function resetBotonRegistrar() {
+        function resetBotonRegistrar(esCorreccion) {
             const btn = document.getElementById('btnGuardar');
             document.getElementById('formLecturas').style.display = 'block';
             btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-check-lg"></i> Registrar';
+            btn.innerHTML = esCorreccion
+                ? '<i class="bi bi-pencil-square"></i> Corregir registro'
+                : '<i class="bi bi-check-lg"></i> Registrar';
             btn.onclick = guardarRegistro;
+            ['tempActual', 'lectura2', 'lectura3'].forEach(id =>
+                document.getElementById(id).classList.remove('is-invalid-temp'));
         }
 
         // --- FUNCIONES FUERA DE SERVICIO Y REPARACION ---
@@ -1854,7 +1906,7 @@
 
         async function confirmarFueraServicio() {
             if (!termometroSeleccionado) {
-                alert('Error: No hay un termómetro seleccionado');
+                mostrarToast('Error: No hay un termómetro seleccionado', 'danger', 6000);
                 return;
             }
 
@@ -1884,10 +1936,10 @@
                     renderizarAreaActual();
                 } else {
                     const errText = await res.text();
-                    alert('Error al reportar fuera de servicio: ' + errText);
+                    mostrarToast('Error al reportar fuera de servicio: ' + errText, 'danger', 6000);
                 }
             } catch (e) {
-                alert('Error de red: ' + e.message);
+                mostrarToast('Error de red: ' + e.message, 'danger', 6000);
             } finally {
                 btn.disabled = false;
                 btn.textContent = originalText;
@@ -1925,10 +1977,10 @@
                     const termometro = await response.json();
                     abrirModalRegistro(termometro, null, false);
                 } else {
-                    alert('Error al marcar como reparado');
+                    mostrarToast('Error al marcar como reparado', 'danger', 6000);
                 }
             } catch (e) {
-                alert('Error de red: ' + e.message);
+                mostrarToast('Error de red: ' + e.message, 'danger', 6000);
             }
         }
 
@@ -2024,6 +2076,11 @@
                 document.getElementById(id).classList.remove('is-invalid-temp'));
             const { actual, minima, maxima } = ordenarValores(l.actual, l.l2, l.l3);
 
+            if (navigator.onLine === false) {
+                mostrarToast('Sin conexión: no se guardó. Recupera señal y vuelve a tocar Registrar (los valores siguen escritos).', 'danger', 7000);
+                return;
+            }
+
             const btn = document.getElementById('btnGuardar');
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Registrando...';
@@ -2058,15 +2115,15 @@
                     mostrarAvisoRegistro(actual, minima, maxima, termometroSeleccionado || {});
                     await refrescarAreaActual();
                 } else {
-                    // AQUI CAPTURAMOS EL ERROR DEL BACKEND MEJORADO
-                    const errText = await res.text(); 
-                    alert('Error: ' + errText); // Mostramos el mensaje especifico
+                    // Mensaje específico del backend (el modal queda abierto con los datos)
+                    const errText = await res.text();
+                    mostrarToast('No se pudo registrar: ' + errText, 'danger', 7000);
                 }
             } catch (e) {
-                alert('Error de red: ' + e.message);
+                mostrarToast('No se pudo registrar por falta de conexión. Los valores siguen escritos: reintenta.', 'danger', 7000);
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-check-lg"></i> Registrar';
+                resetBotonRegistrar(esEdicion);
             }
         }
 
@@ -2105,6 +2162,28 @@
         function mostrarEstado(m,t){ const s=document.getElementById('scannerStatus');s.className=`alert alert-${t}`;s.textContent=m;s.classList.remove('d-none');setTimeout(()=>s.classList.add('d-none'),3000)}
         function mostrarToast(m,t,ms){const d=document.createElement('div');d.className=`alert alert-${t} toast-msg`;d.textContent=m;d.onclick=()=>d.remove();document.body.appendChild(d);setTimeout(()=>d.remove(),ms||3000)}
         async function logout(){ await fetch('/api/logout',{method:'POST'}); window.location.href='/login.html';}
+
+        // ===== ESTADO DE CONEXIÓN =====
+        // El registro depende del backend: si no hay red conviene saberlo antes de teclear.
+        function actualizarEstadoConexion() {
+            const banner = document.getElementById('offlineBanner');
+            if (!banner) return;
+            banner.style.display = navigator.onLine === false ? 'block' : 'none';
+        }
+        window.addEventListener('online', () => {
+            actualizarEstadoConexion();
+            mostrarToast('Conexión recuperada', 'success');
+            refrescarAreaActual();
+        });
+        window.addEventListener('offline', actualizarEstadoConexion);
+        actualizarEstadoConexion();
+
+        // Al volver a la app (otro operador pudo registrar mientras tanto) se refresca el área
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && navigator.onLine !== false && areaActualId) {
+                refrescarAreaActual();
+            }
+        });
         
         // ===== EVENTOS DEL SCANNER =====
         // Estrategia: Detener completamente el scanner al abrir el modal y reiniciarlo al cerrar.

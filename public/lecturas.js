@@ -292,46 +292,6 @@ function evaluarRangoEnTiempoReal(t, actual, minima, maxima, alertContainerId) {
     }
 }
 
-// 10. Flujo Inteligente de Teclado (Numpad / Enter Automático)
-function setupNumpadEnterFlow(modalId) {
-    const modalEl = document.getElementById(modalId);
-    if (!modalEl) return;
-
-    modalEl.addEventListener('shown.bs.modal', () => {
-        const inputActual = document.getElementById('tempActual');
-        if (inputActual && !inputActual.disabled) {
-            inputActual.focus();
-            inputActual.select();
-        }
-    });
-
-    const fields = ['tempActual', 'lectura2', 'lectura3'];
-    fields.forEach((fieldId, index) => {
-        const input = document.getElementById(fieldId);
-        if (!input) return;
-
-        input.onkeydown = (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const nextFieldId = fields[index + 1];
-                if (nextFieldId) {
-                    const nextInput = document.getElementById(nextFieldId);
-                    if (nextInput) {
-                        nextInput.focus();
-                        nextInput.select();
-                    }
-                } else {
-                    // Si es el último campo de temperatura, pasar a revisar
-                    const btnRevisar = document.getElementById('btnGuardar');
-                    if (btnRevisar && btnRevisar.style.display !== 'none') {
-                        btnRevisar.click();
-                    }
-                }
-            }
-        };
-    });
-}
-
 // 11. Indicador Intuitivo de Tendencia Térmica (Diferencial de Temperatura)
 function calcularBadgeTendencia(tempActual, tempPrevia) {
     if (tempActual === null || tempActual === undefined || tempPrevia === null || tempPrevia === undefined) {
