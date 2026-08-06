@@ -264,6 +264,56 @@ body {
     border-color: var(--apple-red, #ff3b30);
 }
 
+/* Aviso de estado del registro: una línea, sin robar altura al teclado */
+.registro-banner {
+    font-size: 0.8rem;
+    line-height: 1.35;
+    padding: 8px 10px;
+    margin-bottom: 10px;
+    border-radius: var(--apple-radius-sm, 10px);
+    text-align: center;
+}
+.registro-banner.danger {
+    color: #b42318;
+    background: rgba(255, 59, 48, 0.12);
+}
+.registro-banner.success {
+    color: #1a7f37;
+    background: rgba(52, 199, 89, 0.14);
+}
+
+/* Observaciones plegadas: se muestran solo cuando hacen falta */
+.btn-obs-toggle {
+    display: block;
+    width: 100%;
+    margin: 4px 0 8px;
+    padding: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--apple-blue);
+    background: transparent;
+    border: 1px dashed var(--apple-border);
+    border-radius: var(--apple-radius-md, 12px);
+}
+.btn-obs-toggle.abierto {
+    color: var(--apple-text-secondary);
+    border-style: solid;
+}
+
+/* Registro a pantalla completa en móvil: el pie no se pierde bajo el teclado */
+.registro-footer {
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+}
+@media (max-width: 575.98px) {
+    #registroModal .modal-body {
+        padding: 12px 14px;
+    }
+    #registroModal .lectura-input {
+        height: 60px;
+        font-size: 1.5rem;
+    }
+}
+
 /* Stepper de temperaturas Apple style */
 .temp-stepper {
     display: flex;

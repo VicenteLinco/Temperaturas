@@ -511,40 +511,35 @@
 
     <!-- Modal para Registro/Edición/Consulta -->
     <div class="modal fade" id="registroModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="registroModalTitle">Termómetro</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="modal-header py-2">
+                    <div class="me-auto min-w-0">
+                        <div class="modal-title fw-bold text-truncate" id="termometroNombre">Termómetro</div>
+                        <div class="small text-muted d-flex align-items-center gap-2 flex-wrap">
+                            <span id="termometroTipo"></span>
+                            <span id="termometroRango" class="badge bg-secondary"></span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
                     <!-- Estado Banner -->
-                    <div id="statusBanner" class="alert text-center fw-bold mb-3" style="display: none;"></div>
+                    <div id="statusBanner" class="registro-banner" style="display: none;"></div>
 
                     <form id="registroForm">
                         <input type="hidden" id="termometroId">
                         <input type="hidden" id="registroId">
                         <input type="hidden" id="esEdicion">
 
-                        <div class="mb-3 text-center">
-                            <h5 id="termometroNombre" class="mb-1"></h5>
-                            <div class="d-flex justify-content-center align-items-center gap-2">
-                                <small id="termometroTipo" class="text-muted"></small>
-                                <span id="termometroRango" class="badge bg-secondary"></span>
-                            </div>
-                        </div>
-
                         <!-- FORMULARIO DE LECTURAS (3 Lecturas Obligatorias) -->
                         <div id="formLecturas">
                             <div class="lecturas-encabezado">
                                 <span class="lecturas-titulo">Temperaturas (°C)</span>
-                                <span class="lecturas-intro">Las 3 son obligatorias · el orden no importa</span>
+                                <span class="lecturas-intro">Las 3 · orden libre</span>
                             </div>
 
-                            <!-- Alerta de Evaluación en Tiempo Real -->
-                            <div id="liveRangeAlert" style="display: none;"></div>
-
-                            <div class="lecturas-grid mb-3">
+                            <div class="lecturas-grid mb-2">
                                 <div class="lectura-campo">
                                     <label for="tempActual" class="lectura-label">Actual</label>
                                     <input type="text" class="lectura-input" id="tempActual"
@@ -565,32 +560,33 @@
                                 </div>
                             </div>
 
-                            <div class="mb-3" id="humedadGroup" style="display: none;">
-                                <label for="humedad" class="form-label text-info">Humedad (%)</label>
-                                <input type="number" step="0.1" class="form-control text-center" id="humedad">
+                            <!-- Alerta de Evaluación en Tiempo Real -->
+                            <div id="liveRangeAlert" style="display: none;"></div>
+
+                            <div class="mb-2" id="humedadGroup" style="display: none;">
+                                <label for="humedad" class="lectura-label d-block text-start mb-1">Humedad (%)</label>
+                                <input type="text" class="lectura-input" id="humedad"
+                                       autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
+                                       enterkeyhint="done" aria-label="Humedad en porcentaje">
                             </div>
 
-                            <!-- Acciones Rápidas (Chips HACCP) -->
-                            <div id="chipsAccionCorrectiva" class="mb-2"></div>
-
-                            <div class="mb-3">
-                                <label for="observaciones" class="form-label fw-semibold">Observaciones / Acción Correctiva</label>
-                                <textarea class="form-control" id="observaciones" rows="2" placeholder="Describa cualquier anomalía o acción tomada..."></textarea>
+                            <!-- Observaciones: ocultas salvo que se necesiten -->
+                            <button type="button" class="btn-obs-toggle" id="btnToggleObs" onclick="toggleObservaciones()">
+                                <i class="bi bi-plus-circle"></i> <span id="btnToggleObsTexto">Añadir observación / acción correctiva</span>
+                            </button>
+                            <div id="obsWrap" style="display: none;">
+                                <div id="chipsAccionCorrectiva" class="mb-2"></div>
+                                <textarea class="form-control mb-2" id="observaciones" rows="2" placeholder="Anomalía detectada o acción tomada..."></textarea>
                             </div>
                         </div>
 
                     </form>
                 </div>
-                <div class="modal-footer flex-column gap-2">
-                    <div class="w-100 d-flex justify-content-between gap-2">
-                        <button type="button" class="btn btn-secondary btn-lg flex-grow-1" data-bs-dismiss="modal">
-                            <i class="bi bi-x-lg"></i> Cerrar
-                        </button>
-                        <button type="button" class="btn btn-primary btn-lg flex-grow-1" id="btnGuardar" onclick="guardarRegistro()">
-                            <i class="bi bi-check-lg"></i> Registrar
-                        </button>
-                    </div>
-                    <button type="button" class="btn btn-outline-danger btn-sm w-100 mt-2" id="btnFueraServicio" onclick="abrirModalFueraServicio()">
+                <div class="modal-footer flex-column gap-2 registro-footer">
+                    <button type="button" class="btn btn-primary btn-lg w-100" id="btnGuardar" onclick="guardarRegistro()">
+                        <i class="bi bi-check-lg"></i> Registrar
+                    </button>
+                    <button type="button" class="btn btn-link btn-sm text-danger text-decoration-none w-100 p-0" id="btnFueraServicio" onclick="abrirModalFueraServicio()">
                         <i class="bi bi-exclamation-triangle"></i> Reportar fuera de servicio
                     </button>
                 </div>
@@ -737,6 +733,7 @@
         let areaActualId = null;
         let termometroSeleccionado = null;
         let informeNotificado = false;
+        let enfocarPrimeraLectura = false;
 
         // ===== INICIALIZACIÓN =====
         // ... (checkAuth e inicializarApp iguales) ...
@@ -1742,13 +1739,13 @@
             const inputs = form.querySelectorAll('input, textarea');
             const banner = document.getElementById('statusBanner');
             
-            // Datos básicos
-            document.getElementById('termometroId').value = termometro.id;
+            // Datos básicos (termometroId se asigna DESPUÉS de form.reset(): reset()
+            // también limpia los inputs hidden y dejaba el registro sin termometro_id)
             document.getElementById('termometroNombre').textContent = termometro.nombre || `Termómetro ${termometro.id}`;
             document.getElementById('termometroTipo').textContent = termometro.tipo_nombre;
 
             if (termometro.temp_min_operativa !== undefined && termometro.temp_max_operativa !== undefined) {
-                document.getElementById('termometroRango').textContent = `Rango: ${termometro.temp_min_operativa}°C - ${termometro.temp_max_operativa}°C`;
+                document.getElementById('termometroRango').textContent = `${termometro.temp_min_operativa}°C a ${termometro.temp_max_operativa}°C`;
                 document.getElementById('termometroRango').style.display = 'inline-block';
             } else {
                 document.getElementById('termometroRango').style.display = 'none';
@@ -1765,22 +1762,22 @@
             if (btnMantenerExistente) btnMantenerExistente.remove();
 
             if (termometro.fuera_de_servicio) {
-                banner.className = 'alert alert-danger text-center fw-bold mb-3';
-                banner.textContent = 'ESTADO: FUERA DE SERVICIO';
+                banner.className = 'registro-banner danger';
+                banner.textContent = 'FUERA DE SERVICIO';
                 btnGuardar.style.display = 'none';
                 btnFueraServicio.style.display = 'none';
-                
+
                 // Opción 1: Reparar
                 const btnReparar = document.createElement('button');
                 btnReparar.id = 'btnReparar';
-                btnReparar.className = 'btn btn-success';
+                btnReparar.className = 'btn btn-success btn-lg w-100';
                 btnReparar.innerHTML = '<i class="bi bi-tools"></i> Reparar';
                 btnReparar.onclick = () => abrirModalReparacion();
-                
+
                 // Opción 2: Mantener deshabilitado
                 const btnMantener = document.createElement('button');
                 btnMantener.id = 'btnMantenerDeshabilitado';
-                btnMantener.className = 'btn btn-outline-secondary';
+                btnMantener.className = 'btn btn-outline-secondary w-100';
                 btnMantener.innerHTML = '<i class="bi bi-pause-circle"></i> Mantener deshabilitado';
                 btnMantener.onclick = () => {
                     bootstrap.Modal.getInstance(document.getElementById('registroModal')).hide();
@@ -1794,19 +1791,21 @@
                 // Ya hay registro en esta ventana: se avisa quién y cuándo para no duplicar por error
                 const quien = registro.usuario_nombre ? ` por ${registro.usuario_nombre}` : '';
                 const desvio = registro.fuera_rango_operativo;
-                banner.className = `alert ${desvio ? 'alert-danger' : 'alert-success'} text-center mb-3`;
-                banner.innerHTML = `<div class="fw-bold">${desvio ? 'YA REGISTRADO · FUERA DE RANGO' : 'YA REGISTRADO EN ESTA FRANJA'}</div>
-                    <div class="small">${formatearHora(registro.fecha_registro)}${quien} · si guardas, corriges ese registro</div>`;
-                btnFueraServicio.style.display = 'inline-block';
+                banner.className = `registro-banner ${desvio ? 'danger' : 'success'}`;
+                banner.innerHTML = `<strong>${desvio ? 'Ya registrado · fuera de rango' : 'Ya registrado en esta franja'}</strong>
+                    · ${formatearHora(registro.fecha_registro)}${quien} · si guardas, lo corriges`;
+                btnFueraServicio.style.display = 'block';
             } else {
-                banner.className = 'alert alert-warning text-center fw-bold mb-3';
-                banner.textContent = 'PENDIENTE DE REGISTRO';
-                btnFueraServicio.style.display = 'inline-block';
+                banner.style.display = 'none';
+                btnFueraServicio.style.display = 'block';
             }
 
             // Resetear y llenar datos
             form.reset();
-            
+
+            // Los hidden se rellenan siempre después del reset (reset() los vacía)
+            document.getElementById('termometroId').value = termometro.id;
+
             // Dejar el botón principal en su estado inicial
             resetBotonRegistrar(!!registro);
 
@@ -1819,11 +1818,15 @@
                 if(registro.humedad) document.getElementById('humedad').value = registro.humedad;
                 if(registro.observaciones) document.getElementById('observaciones').value = registro.observaciones;
             } else {
+                document.getElementById('registroId').value = '';
                 document.getElementById('esEdicion').value = 'false';
                 // Campos vacíos: cada registro se teclea desde cero para evitar guardar
                 // por descuido la lectura anterior.
             }
-            
+
+            // Observaciones: colapsadas salvo que ya haya texto escrito
+            toggleObservaciones(!!(registro && registro.observaciones));
+
             // Humedad
             const divHum = document.getElementById('humedadGroup');
             divHum.style.display = termometro.tiene_humedad ? 'block' : 'none';
@@ -1832,12 +1835,23 @@
             // Renderizar Chips de Acciones Correctivas
             renderChipsAccionCorrectiva('chipsAccionCorrectiva', 'observaciones');
 
-            // Función interna para actualizar alerta en vivo
+            // Función interna para actualizar alerta en vivo.
+            // Si una lectura sale del rango, se abre sola la caja de acción correctiva:
+            // es justo cuando el operador la necesita y evita un tap extra.
+            let obsAbiertaPorDesvio = false;
             const updateLiveEval = () => {
                 const act = parseFloat(document.getElementById('tempActual').value);
                 const l2 = parseFloat(document.getElementById('lectura2').value);
                 const l3 = parseFloat(document.getElementById('lectura3').value);
                 evaluarRangoEnTiempoReal(termometro, isNaN(act)?null:act, isNaN(l3)?null:l3, isNaN(l2)?null:l2, 'liveRangeAlert');
+
+                const min = termometro.temp_min_operativa, max = termometro.temp_max_operativa;
+                if (obsAbiertaPorDesvio || min === undefined || max === undefined) return;
+                const fuera = [act, l2, l3].some(v => !isNaN(v) && (v < min || v > max));
+                if (fuera) {
+                    obsAbiertaPorDesvio = true;
+                    toggleObservaciones(true);
+                }
             };
 
             ['tempActual', 'lectura2', 'lectura3'].forEach(id => {
@@ -1849,15 +1863,13 @@
             updateLiveEval();
 
             // MODO LECTURA vs EDICION
-            if (soloLectura || termometro.fuera_de_servicio) {
-                document.getElementById('registroModalTitle').textContent = termometro.fuera_de_servicio ? 'Termómetro Fuera de Servicio' : 'Detalle (Solo Lectura)';
-                btnGuardar.style.display = 'none';
-                inputs.forEach(input => input.disabled = true);
-            } else {
-                document.getElementById('registroModalTitle').textContent = registro ? 'Editar Temperatura' : 'Registrar Temperatura';
-                btnGuardar.style.display = 'block';
-                inputs.forEach(input => input.disabled = false);
-            }
+            const editable = !(soloLectura || termometro.fuera_de_servicio);
+            btnGuardar.style.display = editable ? 'block' : 'none';
+            inputs.forEach(input => input.disabled = !editable);
+            document.getElementById('btnToggleObs').style.display = editable ? 'block' : 'none';
+
+            // El teclado se abre solo en el primer campo: escanear y teclear sin taps intermedios
+            enfocarPrimeraLectura = editable;
 
             new bootstrap.Modal(document.getElementById('registroModal')).show();
         }
@@ -1874,6 +1886,21 @@
                 actual, l2, l3,
                 ok: !isNaN(actual) && !isNaN(l2) && !isNaN(l3)
             };
+        }
+
+        // Observaciones plegadas: el 90% de los registros no necesitan texto.
+        // Sin argumento alterna; con booleano fuerza el estado.
+        function toggleObservaciones(abrir) {
+            const wrap = document.getElementById('obsWrap');
+            const btn = document.getElementById('btnToggleObs');
+            const visible = wrap.style.display !== 'none';
+            const mostrar = (abrir === undefined) ? !visible : abrir;
+            wrap.style.display = mostrar ? 'block' : 'none';
+            btn.classList.toggle('abierto', mostrar);
+            btn.querySelector('i').className = mostrar ? 'bi bi-dash-circle' : 'bi bi-plus-circle';
+            document.getElementById('btnToggleObsTexto').textContent = mostrar
+                ? 'Ocultar observación'
+                : 'Añadir observación / acción correctiva';
         }
 
         function resetBotonRegistrar(esCorreccion) {
@@ -2074,6 +2101,18 @@
             }
             ['tempActual', 'lectura2', 'lectura3'].forEach(id =>
                 document.getElementById(id).classList.remove('is-invalid-temp'));
+
+            // Humedad obligatoria solo en equipos que la miden
+            const humEl = document.getElementById('humedad');
+            const pideHumedad = document.getElementById('humedadGroup').style.display !== 'none';
+            if (pideHumedad && isNaN(parseFloat(humEl.value))) {
+                humEl.classList.add('is-invalid-temp');
+                humEl.focus();
+                mostrarToast('Falta la humedad (%) de este equipo', 'warning');
+                return;
+            }
+            humEl.classList.remove('is-invalid-temp');
+
             const { actual, minima, maxima } = ordenarValores(l.actual, l.l2, l.l3);
 
             if (navigator.onLine === false) {
@@ -2230,8 +2269,32 @@
             });
         }
 
-        ['tempActual', 'lectura2', 'lectura3'].forEach(configurarInputDecimal);
+        // Al abrir el modal, foco en la primera lectura: el teclado aparece solo
+        document.getElementById('registroModal').addEventListener('shown.bs.modal', () => {
+            if (!enfocarPrimeraLectura) return;
+            enfocarPrimeraLectura = false;
+            const primero = document.getElementById('tempActual');
+            if (primero && !primero.disabled) {
+                primero.focus();
+                try { primero.select(); } catch (e) {}
+            }
+        });
+
+        ['tempActual', 'lectura2', 'lectura3', 'humedad'].forEach(configurarInputDecimal);
         configurarNavegacionLecturas(['tempActual', 'lectura2', 'lectura3'], () => {
+            // Si el equipo mide humedad, ese es el siguiente salto antes de registrar
+            const hum = document.getElementById('humedad');
+            if (document.getElementById('humedadGroup').style.display !== 'none' && !hum.value) {
+                hum.focus();
+                return;
+            }
+            const btn = document.getElementById('btnGuardar');
+            if (btn && btn.style.display !== 'none' && !btn.disabled) guardarRegistro();
+        });
+        document.getElementById('humedad').addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            e.target.blur();
             const btn = document.getElementById('btnGuardar');
             if (btn && btn.style.display !== 'none' && !btn.disabled) guardarRegistro();
         });
