@@ -184,6 +184,69 @@ body {
     color: var(--apple-text-secondary);
 }
 
+/* Captura de lecturas (móvil primero): 3 campos limpios, teclado completo */
+.lecturas-encabezado {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+.lecturas-titulo {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--apple-text);
+}
+.lecturas-intro {
+    font-size: 0.74rem;
+    color: var(--apple-text-secondary);
+    text-align: right;
+}
+.lecturas-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+.lectura-campo {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+.lectura-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-align: center;
+    color: var(--apple-text-secondary);
+    opacity: 0.75;
+    white-space: nowrap;
+}
+.lectura-input {
+    width: 100%;
+    min-width: 0;
+    height: 56px;
+    text-align: center;
+    font-family: var(--apple-font);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--apple-text);
+    background-color: var(--apple-card-bg);
+    border: 1px solid var(--apple-border);
+    border-radius: var(--apple-radius-md);
+    padding: 0 4px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.lectura-input:focus {
+    border-color: var(--apple-blue);
+    box-shadow: 0 0 0 4px var(--apple-blue-soft);
+    outline: none;
+}
+.lectura-input.is-invalid-temp {
+    border-color: var(--apple-red, #ff3b30);
+}
+
 /* Stepper de temperaturas Apple style */
 .temp-stepper {
     display: flex;

@@ -78,6 +78,31 @@ function configurarInputDecimal(id) {
     });
 }
 
+// 2d. Navegación con Enter entre los campos de lectura (teclado completo en móvil):
+// Enter salta al siguiente campo y en el último cierra el teclado y ejecuta onFinish.
+function configurarNavegacionLecturas(ids, onFinish) {
+    ids.forEach((id, i) => {
+        const input = document.getElementById(id);
+        if (!input) return;
+        input.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            const siguiente = document.getElementById(ids[i + 1]);
+            if (siguiente) {
+                siguiente.focus();
+                siguiente.select();
+            } else {
+                input.blur();
+                if (typeof onFinish === 'function') onFinish();
+            }
+        });
+        // Al enfocar, seleccionar el contenido para sobrescribir de una sola vez
+        input.addEventListener('focus', () => {
+            try { input.select(); } catch (e) {}
+        });
+    });
+}
+
 // 3. Ordenamiento Automático de Lecturas
 function ordenarValores(actual, l2, l3) {
     return {
