@@ -808,9 +808,9 @@
 
             // Verificar si viene un ID por URL (cuando se abre escaneando con la cámara del celular)
             const urlParams = new URLSearchParams(window.location.search);
-            const termId = urlParams.get('termometro');
+            const termId = urlParams.get('termometro') || urlParams.get('id') || urlParams.get('termometro_id') || urlParams.get('termo') || urlParams.get('t');
             if (termId) {
-                const id = parseInt(termId);
+                const id = parseInt(termId, 10);
                 if (!isNaN(id)) {
                     // Pequeño delay para asegurar que todo cargó y el usuario está autenticado
                     setTimeout(() => procesarTermometro(id), 500);
@@ -818,107 +818,57 @@
             }
         }
 
-        let torchActive = false;
-        let currentFacingMode = "environment";
+        function extraerTermometroId(decodedText) {
+            if (!decodedText) return NaN;
+            const cleanText = decodedText.trim();
 
-        function playScanSound(type = 'success') {
-            try {
-                const AudioCtx = window.AudioContext || window.webkitAudioContext;
-                if (!AudioCtx) return;
-                const ctx = new AudioCtx();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-
-                if (type === 'success') {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(880, ctx.currentTime);
-                    osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.12);
-                    gain.gain.setValueAtTime(0.25, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
-                    osc.start(ctx.currentTime);
-                    osc.stop(ctx.currentTime + 0.12);
-                } else {
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(300, ctx.currentTime);
-                    osc.frequency.setValueAtTime(200, ctx.currentTime + 0.1);
-                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
-                    osc.start(ctx.currentTime);
-                    osc.stop(ctx.currentTime + 0.25);
-                }
-            } catch (e) {}
-        }
-
-        async function toggleTorch() {
-            if (!html5QrCode) return;
-            try {
-                torchActive = !torchActive;
-                await html5QrCode.applyVideoConstraints({
-                    advanced: [{ torch: torchActive }]
-                });
-                const btn = document.getElementById('btnTorch');
-                if (btn) {
-                    btn.classList.toggle('btn-warning', torchActive);
-                    btn.classList.toggle('btn-outline-warning', !torchActive);
-                    btn.classList.toggle('text-dark', torchActive);
-                }
-            } catch (e) {
-                mostrarEstado('La linterna no está disponible en este dispositivo.', 'info');
-            }
-        }
-
-        async function cambiarCamaraScanner() {
-            if (!html5QrCode) return;
-            currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
-            try {
-                await html5QrCode.stop();
-                inicializarScanner();
-            } catch (e) {
-                console.error("Error al cambiar cámara:", e);
-            }
-        }
-
-        function reanudarScannerSiPausado() {
-            if (html5QrCode && typeof html5QrCode.getState === 'function') {
+            // 1. Si es una URL completa (http:// o https://)
+            if (cleanText.startsWith('http://') || cleanText.startsWith('https://')) {
                 try {
-                    const state = html5QrCode.getState();
-                    if (state === Html5QrcodeScannerState.PAUSED) {
-                        html5QrCode.resume();
+                    const url = new URL(cleanText);
+                    // Probar parámetros comunes
+                    for (const param of ['termometro', 'id', 'termometro_id', 'termo', 't']) {
+                        const val = url.searchParams.get(param);
+                        if (val && !isNaN(parseInt(val, 10))) {
+                            return parseInt(val, 10);
+                        }
                     }
-                } catch (e) {}
-            }
-        }
-
-        function inicializarScanner() {
-            const btn = document.querySelector('#scannerOverlay button');
-            const originalText = btn ? btn.innerHTML : '';
-            if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Iniciando...';
-            }
-
-            if (!html5QrCode) {
-                html5QrCode = new Html5Qrcode("qr-reader");
-            }
-
-            const config = { fps: 15, qrbox: { width: 230, height: 230 }, aspectRatio: 1.0 };
-
-            html5QrCode.start({ facingMode: currentFacingMode }, config, onScanSuccess, onScanError)
-                .then(() => {
-                    document.getElementById('scannerOverlay').style.display = 'none';
-                    const controls = document.getElementById('scannerControls');
-                    if (controls) controls.classList.remove('d-none');
-                })
-                .catch(err => {
-                    console.error('Error scanner:', err);
-                    if (btn) {
-                        btn.disabled = false;
-                        btn.innerHTML = originalText;
+                    // Si el path termina en número (ej: /termometros/5)
+                    const pathSegments = url.pathname.split('/').filter(Boolean);
+                    if (pathSegments.length > 0) {
+                        const last = pathSegments[pathSegments.length - 1];
+                        if (/^\d+$/.test(last)) {
+                            return parseInt(last, 10);
+                        }
                     }
-                    mostrarEstado('Error al acceder a la cámara. Verifique los permisos del navegador.', 'danger');
-                });
+                    // Buscar números SOLO dentro del query string (?id=5) para evitar extraer números del dominio o IP
+                    const queryMatch = url.search.match(/(\d+)/);
+                    if (queryMatch) {
+                        return parseInt(queryMatch[0], 10);
+                    }
+                } catch (e) {
+                    console.error('Error parseando URL del QR:', e);
+                }
+            }
+
+            // 2. Si contiene patrones clave=valor (ej: termometro=5, id=5, t=5)
+            const kvMatch = cleanText.match(/(?:termometro|termometro_id|id|termo|t)\s*=\s*(\d+)/i);
+            if (kvMatch) {
+                return parseInt(kvMatch[1], 10);
+            }
+
+            // 3. Si el texto es estrictamente un número puro (ej: "5" o "005")
+            if (/^\d+$/.test(cleanText)) {
+                return parseInt(cleanText, 10);
+            }
+
+            // 4. Si contiene prefijos típicos como "T-5", "TERMO 5", "TERMOMETRO-5", "ID: 5"
+            const prefixMatch = cleanText.match(/(?:termometro|termo|t|id)?\s*[-:#]?\s*(\d+)/i);
+            if (prefixMatch && prefixMatch[1]) {
+                return parseInt(prefixMatch[1], 10);
+            }
+
+            return NaN;
         }
 
         // ===== LOGICA PRINCIPAL =====
@@ -935,37 +885,12 @@
                 } catch (e) {}
             }
 
-            let termometroId = NaN;
-            const cleanText = decodedText.trim();
-
-            if (cleanText.includes('termometro=')) {
-                try {
-                    if (cleanText.startsWith('http')) {
-                        const url = new URL(cleanText);
-                        const paramId = url.searchParams.get('termometro');
-                        if (paramId) termometroId = parseInt(paramId);
-                    } else {
-                        const match = cleanText.match(/termometro=(\d+)/);
-                        if (match) termometroId = parseInt(match[1]);
-                    }
-                } catch (e) {
-                    console.error('Error parseando URL:', e);
-                }
-            }
-
-            if (isNaN(termometroId)) {
-                termometroId = parseInt(cleanText);
-            }
-
-            if (isNaN(termometroId)) {
-                const genericMatch = cleanText.match(/(\d+)/);
-                if (genericMatch) termometroId = parseInt(genericMatch[0]);
-            }
+            const termometroId = extraerTermometroId(decodedText);
 
             if (isNaN(termometroId)) {
                 playScanSound('error');
                 if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-                mostrarEstado(`Código QR no válido: ${cleanText.substring(0, 15)}...`, 'warning');
+                mostrarEstado(`Código QR no válido: ${decodedText.substring(0, 20)}...`, 'warning');
                 setTimeout(reanudarScannerSiPausado, 2000);
                 return;
             }

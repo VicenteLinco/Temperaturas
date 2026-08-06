@@ -8,28 +8,40 @@ async fn main() -> anyhow::Result<()> {
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let pool = PgPool::connect(&database_url).await?;
 
-    let count_usuarios: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM usuarios").fetch_one(&pool).await?;
-    let count_areas: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM areas").fetch_one(&pool).await?;
-    let count_termometros: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM termometros").fetch_one(&pool).await?;
-    let count_registros: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM registros").fetch_one(&pool).await?;
+    println!("🔍 Comprobando JOIN de termómetros con áreas y tipos_termometro:");
+    
+    let total_termometros: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM termometros").fetch_one(&pool).await?;
+    println!("- Total en tabla 'termometros': {}", total_termometros.0);
 
-    println!("📊 Estadísticas de la Base de Datos:");
-    println!("- Usuarios: {}", count_usuarios.0);
-    println!("- Áreas: {}", count_areas.0);
-    println!("- Termómetros: {}", count_termometros.0);
-    println!("- Registros: {}", count_registros.0);
+    let join_termometros: Vec<(i32, Option<String>, i32, i32, Option<String>, Option<String>)> = sqlx::query_as(
+        r#"
+        SELECT t.id, t.nombre, t.area_id, t.tipo_id, a.nombre as area_nombre, ti.nombre as tipo_nombre
+        FROM termometros t
+        LEFT JOIN areas a ON t.area_id = a.id
+        LEFT JOIN tipos_termometro ti ON t.tipo_id = ti.id
+        "#
+    ).fetch_all(&pool).await?;
 
-    if count_registros.0 > 0 {
-        println!("
-📝 Últimos 5 registros:");
-        let registros: Vec<(i32, i32, i32, String, f32, f32, String)> = 
-            sqlx::query_as("SELECT id, termometro_id, usuario_id, ventana_horaria, temp_maxima, temp_minima, fecha_registro::text FROM registros ORDER BY id DESC LIMIT 5")
-            .fetch_all(&pool).await?;
-        
-        for r in registros {
-            println!("  ID: {}, Termo: {}, User: {}, Ventana: {}, Max: {}, Min: {}, Fecha: {}", r.0, r.1, r.2, r.3, r.4, r.5, r.6);
+    println!("- Total recuperados por JOIN: {}", join_termometros.len());
+
+    let mut huérfanos = 0;
+    for t in &join_termometros {
+        if t.4.is_none() || t.5.is_none() {
+            huérfanos += 1;
+            println!("  ⚠️ Termómetro ID {} ({:?}): Area={:?} (ID {}), Tipo={:?} (ID {})", 
+                t.0, t.1, t.4, t.2, t.5, t.3);
         }
     }
+
+    if huérfanos == 0 {
+        println!("✅ Todos los {} termómetros tienen áreas y tipos válidos.", join_termometros.len());
+    } else {
+        println!("⚠️ Se encontraron {} termómetros huérfanos.", huérfanos);
+    }
+
+    println!("\n📋 Lista de IDs de termómetros en la base de datos:");
+    let ids: Vec<i32> = join_termometros.iter().map(|t| t.0).collect();
+    println!("{:?}", ids);
 
     Ok(())
 }
