@@ -1145,16 +1145,10 @@
                                 <div id="chartKpiHeader" class="d-flex flex-wrap gap-2 mb-3 align-items-center justify-content-between border-bottom pb-2">
                                     <div class="d-flex flex-wrap gap-2 align-items-center">
                                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-2">
-                                            <i class="bi bi-thermometer-half me-1"></i> Promedio: <strong id="kpiAvgTemp">- °C</strong>
-                                        </span>
-                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-2">
-                                            <i class="bi bi-arrow-up-circle me-1"></i> Máxima: <strong id="kpiMaxTemp">- °C</strong>
-                                        </span>
-                                        <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-3 py-2">
-                                            <i class="bi bi-arrow-down-circle me-1"></i> Mínima: <strong id="kpiMinTemp">- °C</strong>
+                                            <i class="bi bi-thermometer-half me-1"></i> Temp. Promedio: <strong id="kpiAvgTemp">- °C</strong>
                                         </span>
                                         <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-3 py-2" id="kpiAlertsBadge">
-                                            <i class="bi bi-exclamation-triangle me-1"></i> Alertas: <strong id="kpiAlertCount">0</strong>
+                                            <i class="bi bi-exclamation-triangle me-1"></i> Alertas Fuera de Rango: <strong id="kpiAlertCount">0</strong>
                                         </span>
                                     </div>
                                     <div class="d-flex align-items-center gap-2 flex-wrap small">
@@ -3171,8 +3165,11 @@
             const container = document.getElementById('graficos_kpis');
             const alertaPct = resumen.total_registros > 0
                 ? Math.round((resumen.total_alertas / resumen.total_registros) * 100) : 0;
+            const normaCount = Math.max(0, resumen.total_registros - resumen.total_alertas);
+            const normaPct = resumen.total_registros > 0 ? (100 - alertaPct) : 100;
+
             container.innerHTML = `
-                <div class="col-md-3 col-6 mb-2">
+                <div class="col-md-4 col-12 mb-2">
                     <div class="card text-center h-100 shadow-sm border-0 bg-white" style="border-radius:12px;">
                         <div class="card-body py-3">
                             <h3 class="text-primary fw-bold mb-0">${resumen.total_registros}</h3>
@@ -3180,27 +3177,19 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3 col-6 mb-2">
+                <div class="col-md-4 col-6 mb-2">
+                    <div class="card text-center h-100 shadow-sm border-0 bg-white" style="border-radius:12px;">
+                        <div class="card-body py-3">
+                            <h3 class="text-success fw-bold mb-0">${normaCount}</h3>
+                            <div class="text-secondary small fw-medium">En Norma (${normaPct}%)</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 col-6 mb-2">
                     <div class="card text-center h-100 shadow-sm border-0 bg-white" style="border-radius:12px;">
                         <div class="card-body py-3">
                             <h3 class="text-danger fw-bold mb-0">${resumen.total_alertas}</h3>
                             <div class="text-secondary small fw-medium">Fuera de Rango (${alertaPct}%)</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-6 mb-2">
-                    <div class="card text-center h-100 shadow-sm border-0 bg-white" style="border-radius:12px;">
-                        <div class="card-body py-3">
-                            <h3 class="text-warning fw-bold mb-0">${resumen.promedio_max ?? '-'}&deg;C</h3>
-                            <div class="text-secondary small fw-medium">Promedio Máxima</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-6 mb-2">
-                    <div class="card text-center h-100 shadow-sm border-0 bg-white" style="border-radius:12px;">
-                        <div class="card-body py-3">
-                            <h3 class="text-info fw-bold mb-0">${resumen.promedio_min ?? '-'}&deg;C</h3>
-                            <div class="text-secondary small fw-medium">Promedio Mínima</div>
                         </div>
                     </div>
                 </div>`;
