@@ -1047,6 +1047,11 @@
         async function procesarTermometro(termometroId) {
             try {
                 const response = await fetch(`/api/termometros/${termometroId}`);
+                if (response.status === 401) {
+                    const currentUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                    window.location.href = `/login.html?redirect=${currentUrl}`;
+                    return;
+                }
                 if (!response.ok) {
                     mostrarEstado(`Termómetro ID ${termometroId} no encontrado en base de datos`, 'danger');
                     setTimeout(reanudarScannerSiPausado, 1500);
