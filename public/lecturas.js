@@ -38,6 +38,46 @@ function stepTemp(id, delta) {
     input.focus();
 }
 
+// 2b. Signo (+/-) para campos de temperatura con teclado decimal (sin tecla "-" nativa)
+function toggleSignoTemp(id) {
+    const input = document.getElementById(id);
+    if (!input) return;
+    const raw = (input.value || '').trim();
+    if (raw === '' || raw === '-') {
+        input.value = raw === '-' ? '' : '-';
+    } else {
+        const val = parseFloat(raw);
+        input.value = isNaN(val) || val === 0 ? raw : (-val).toString();
+    }
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.focus();
+}
+
+// 2c. Saneo en vivo: normaliza coma->punto y evita signos/puntos duplicados
+// mientras el usuario escribe (necesario porque el teclado decimal del
+// dispositivo puede insertar "," según el idioma configurado).
+function sanearDecimal(valor) {
+    if (typeof valor !== 'string') return valor;
+    const negativo = valor.trim().startsWith('-');
+    let v = valor.replace(/,/g, '.').replace(/[^0-9.]/g, '');
+    const partes = v.split('.');
+    if (partes.length > 2) v = partes[0] + '.' + partes.slice(1).join('');
+    return (negativo ? '-' : '') + v;
+}
+
+function configurarInputDecimal(id) {
+    const input = document.getElementById(id);
+    if (!input) return;
+    input.addEventListener('input', () => {
+        const limpio = sanearDecimal(input.value);
+        if (limpio !== input.value) {
+            const pos = input.selectionStart;
+            input.value = limpio;
+            try { input.setSelectionRange(pos, pos); } catch (e) {}
+        }
+    });
+}
+
 // 3. Ordenamiento Automático de Lecturas
 function ordenarValores(actual, l2, l3) {
     return {

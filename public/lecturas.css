@@ -494,6 +494,10 @@ body {
         min-height: 46px;
         font-size: 1rem;
     }
+    .temp-stepper {
+        flex-wrap: wrap;
+        row-gap: 8px;
+    }
     .temp-stepper .btn {
         min-width: 48px;
         min-height: 48px;
@@ -502,6 +506,18 @@ body {
     .temp-stepper input {
         font-size: 1.35rem;
         height: 48px;
+        /* Fila propia arriba de los botones: evita que el valor se corte en pantallas angostas */
+        order: -1;
+        flex: 1 1 100%;
+    }
+    .temp-stepper .btn-step,
+    .temp-stepper .btn-step-sm {
+        flex: 1 1 0;
+    }
+    /* Reduce texto secundario alrededor de los inputs en pantallas angostas */
+    .lectura-detalle,
+    .badge-text {
+        display: none;
     }
     .modal-dialog {
         margin: 0.5rem;
