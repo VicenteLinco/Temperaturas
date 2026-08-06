@@ -364,29 +364,99 @@
             color: #94a3b8;
         }
 
-        /* COMPLETADOS PLEGADOS */
-        .completados-acordeon > summary {
+        /* PESTAÑAS DE ESTADO: pendientes vs completados, el corte principal de la ronda */
+        .estado-tabs {
+            display: flex;
+            gap: 6px;
+            padding: 4px;
+            margin-bottom: 14px;
+            background: #eef2f7;
+            border-radius: 14px;
+        }
+        .estado-tab {
+            flex: 1 1 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            min-height: 44px;
+            padding: 8px 10px;
+            font-size: 0.86rem;
+            font-weight: 700;
+            color: #64748b;
+            background: transparent;
+            border: 0;
+            border-radius: 11px;
+            white-space: nowrap;
+            transition: background 0.15s ease, color 0.15s ease;
+        }
+        .estado-tab.activo {
+            color: var(--slate, #1e293b);
+            background: white;
+            box-shadow: var(--shadow-card, 0 1px 3px rgba(0,0,0,0.12));
+        }
+        .estado-tab-cifra {
+            padding: 1px 8px;
+            font-size: 0.78rem;
+            font-weight: 800;
+            border-radius: 999px;
+            background: rgba(100, 116, 139, 0.15);
+        }
+        .estado-tab.activo .estado-tab-cifra {
+            color: white;
+            background: var(--slate, #1e293b);
+        }
+
+        /* ACORDEÓN POR ÁREA: explorar dónde falta sin salir de la pantalla */
+        .area-acordeon { margin-bottom: 8px; }
+        .area-acordeon > summary {
             cursor: pointer;
             list-style: none;
             font-weight: 600;
-            font-size: 0.92rem;
-            color: #475569;
+            font-size: 0.95rem;
+            color: #334155;
             padding: 12px 14px;
             background: white;
             border: 1px solid #e2e8f0;
             border-radius: var(--radius);
             display: flex;
             align-items: center;
-            min-height: 48px;
+            gap: 8px;
+            min-height: 52px;
         }
-        .completados-acordeon > summary::-webkit-details-marker { display: none; }
-        .completados-acordeon > summary::after {
+        .area-acordeon > summary::-webkit-details-marker { display: none; }
+        .area-acordeon > summary::after {
             content: '\F282';
             font-family: 'bootstrap-icons';
-            margin-left: auto;
+            color: #94a3b8;
             transition: transform 0.2s ease;
         }
-        .completados-acordeon[open] > summary::after { transform: rotate(180deg); }
+        .area-acordeon[open] > summary::after { transform: rotate(180deg); }
+        .area-acordeon[open] > summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+        .area-nombre { flex: 1 1 auto; min-width: 0; }
+        .area-conteo {
+            flex-shrink: 0;
+            margin-left: auto;
+            padding: 2px 10px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            color: #b45309;
+            background: rgba(245, 158, 11, 0.15);
+            border-radius: 999px;
+        }
+        .area-conteo.completo {
+            color: #15803d;
+            background: rgba(22, 163, 74, 0.15);
+        }
+        .area-items {
+            padding: 10px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-top: 0;
+            border-bottom-left-radius: var(--radius);
+            border-bottom-right-radius: var(--radius);
+        }
+        .area-items .termometro-card:last-child { margin-bottom: 0; }
 
         .sector-listo {
             background: white;
@@ -484,6 +554,12 @@
             padding: 14px;
         }
         .cierre-lote .btn { min-height: 48px; }
+        .cierre-informe {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius);
+            padding: 14px;
+        }
         .cierre-ok i { font-size: 3rem; color: #16a34a; }
 
         /* Responsive */
@@ -641,12 +717,7 @@
             <ul class="nav nav-tabs container" id="mainTabs" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="area-tab" data-bs-toggle="tab" data-bs-target="#area-actual" type="button" role="tab">
-                        <i class="bi bi-building"></i> Área Actual
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="global-tab" data-bs-toggle="tab" data-bs-target="#resumen-global" type="button" role="tab" onclick="cargarTodasLasAreas()">
-                        <i class="bi bi-globe"></i> Global
+                        <i class="bi bi-building"></i> Áreas
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
@@ -667,18 +738,6 @@
                             <i class="bi bi-qr-code-scan" style="font-size: 3rem;"></i>
                             <p class="mt-3">Escanea un termómetro</p>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Resumen Global Tab -->
-            <div class="tab-pane fade" id="resumen-global" role="tabpanel">
-                <div class="container">
-                    <div class="mb-3">
-                        <p class="text-muted small"><strong id="ventanaGlobal">-</strong></p>
-                    </div>
-                    <div id="resumenGlobalContent">
-                        <!-- ... -->
                     </div>
                 </div>
             </div>
@@ -920,7 +979,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p id="confirmacionModalBody"></p>
+                    <div id="confirmacionModalBody"></div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" id="confirmacionBtnNo">No</button>
@@ -942,7 +1001,6 @@
         let termometroSeleccionado = null;
         // El operador confirmó que el lector de humedad no marca: se guarda humedad nula
         let humedadSinLectura = false;
-        let informeNotificado = false;
         let enfocarPrimeraLectura = false;
 
         // ===== INICIALIZACIÓN =====
@@ -1263,7 +1321,6 @@
             }
         }
 
-        // ... (cargarTodasLasAreas, cambiarAreaActual, renderizarAreaActual, seleccionarTermometro, editarRegistro, renderizarResumenGlobal iguales) ...
         
         async function cargarTodasLasAreas(silencioso = true) {
             const overlay = document.getElementById('loadingOverlay');
@@ -1314,7 +1371,7 @@
                     }));
                 }
 
-                renderizarResumenGlobal();
+                renderizarAreas();
                 
                 if (!silencioso) {
                     // Pequeño delay para que el usuario vea el 100%
@@ -1334,9 +1391,13 @@
             }
         }
 
+        // Al escanear un equipo su área pasa a ser la activa: se abre su acordeón y se
+        // vuelve a Pendientes, que es lo que el operador necesita ver a continuación.
         async function cambiarAreaActual(areaId) {
             areaActualId = areaId;
-            renderizarAreaActual();
+            areasAbiertas.add(areaId);
+            estadoTabActivo = 'pendientes';
+            renderizarAreas();
         }
 
         // Refresca solo el área activa (1 fetch) en vez de recargar todas las áreas.
@@ -1355,8 +1416,7 @@
                     pendientes: data.pendientes || [],
                     completados: data.completados || []
                 };
-                renderizarResumenGlobal();
-                renderizarAreaActual();
+                renderizarAreas();
             } catch (e) {
                 console.error('Error refrescando área actual, se recarga todo:', e);
                 await cargarTodasLasAreas();
@@ -1386,51 +1446,63 @@
         // El filtro se conserva entre refrescos: la lista se re-renderiza tras cada registro
         let filtroAreaActual = '';
 
+        // Al buscar se abren todas las áreas y se ocultan las que no tienen coincidencias:
+        // si no, el equipo buscado quedaría escondido dentro de un acordeón plegado.
         function filtrarTermometrosEnArea(query) {
             filtroAreaActual = query;
             const q = query.toLowerCase().trim();
-            // Buscar también dentro de los completados plegados
-            const acordeon = document.querySelector('#areaActualContent .completados-acordeon');
-            if (acordeon && q) acordeon.open = true;
-            const cards = document.querySelectorAll('#areaActualContent .termometro-card');
-            cards.forEach(card => {
-                const text = card.textContent.toLowerCase();
-                card.style.display = text.includes(q) ? 'flex' : 'none';
+
+            document.querySelectorAll('#areaActualContent .area-acordeon').forEach(area => {
+                let visibles = 0;
+                area.querySelectorAll('.termometro-card').forEach(card => {
+                    const coincide = !q || card.textContent.toLowerCase().includes(q);
+                    card.style.display = coincide ? 'flex' : 'none';
+                    if (coincide) visibles++;
+                });
+                area.style.display = visibles > 0 ? '' : 'none';
+                if (q) area.open = true;
             });
         }
 
-        function renderizarAreaActual() {
+        // Vista única de áreas: dos pestañas de estado (pendientes / completados) y,
+        // dentro de cada una, un acordeón por área con sus termómetros. Sustituye a la
+        // antigua pareja "Área Actual" + "Global", que mostraba lo mismo dos veces.
+        let estadoTabActivo = 'pendientes';
+        const areasAbiertas = new Set();
+
+        function cambiarEstadoTab(estado) {
+            estadoTabActivo = estado;
+            renderizarAreas();
+        }
+
+        // El <details> abre/cierra solo; aquí únicamente se recuerda el estado para
+        // que un refresco tras registrar no vuelva a plegar lo que el operador abrió.
+        function marcarAreaExpandida(areaId, abierta) {
+            if (abierta) areasAbiertas.add(areaId); else areasAbiertas.delete(areaId);
+        }
+
+        function renderizarAreas() {
              const container = document.getElementById('areaActualContent');
-             if (!areaActualId || !areasData[areaActualId]) return;
-             
-             const data = areasData[areaActualId];
-             const total = data.pendientes.length + data.completados.length;
-             const completados = data.completados.length;
-             const pendientes = data.pendientes.length;
-             const desvios = data.completados.filter(r => r.fuera_rango_operativo).length;
+             if (!container) return;
+
+             const areasList = Object.entries(areasData);
+             if (!areasList.length) {
+                 container.innerHTML = '<div class="text-center py-5 text-muted"><i class="bi bi-inbox fs-1"></i><p class="mt-2">Sin áreas activas para esta ventana.</p></div>';
+                 return;
+             }
+
+             const { total, completados, pendientes } = totalesRonda();
+             const ventana = Object.values(areasData)[0]?.ventana;
              const progreso = total > 0 ? Math.round((completados / total) * 100) : 0;
+             const desviosTotales = areasList.reduce((n, [, d]) =>
+                 n + d.completados.filter(r => r.fuera_rango_operativo).length, 0);
 
-             // Píldoras Rápidas de Áreas para Cambio a 1 Tap
-             const areaPills = Object.values(areasData).map(a => {
-                 const esActiva = a.area.id === areaActualId;
-                 const pCount = a.pendientes.length;
-                 const cCount = a.completados.length;
-                 const badgeCls = pCount === 0 && cCount > 0 ? 'bg-success' : (cCount === 0 ? 'bg-secondary' : 'bg-warning text-dark');
-                 return `
-                    <button class="btn btn-sm ${esActiva ? 'btn-primary active fw-bold shadow-sm' : 'btn-outline-secondary'} rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 text-nowrap" onclick="cambiarAreaActual(${a.area.id})">
-                        <i class="bi bi-building"></i> ${a.area.nombre}
-                        <span class="badge ${badgeCls} rounded-pill ms-1" style="font-size:0.68rem;">${cCount}/${cCount+pCount}</span>
-                    </button>
-                 `;
-             }).join('');
-
-             // Cabecera compacta y fija: lo único que el operador necesita ver siempre
-             // es cuánto le falta. Los KPI detallados viven en la pestaña Resumen.
+             // Cabecera fija: cuánto falta y el cierre siempre a mano
              let html = `
                 <div class="progreso-sticky">
                     <div class="d-flex justify-content-between align-items-baseline gap-2">
                         <div class="progreso-titulo text-truncate">
-                            <i class="bi bi-building me-1"></i>${data.area.nombre}
+                            <i class="bi bi-clipboard-check me-1"></i>Ronda de esta ventana
                         </div>
                         <div class="progreso-cifra ${pendientes === 0 ? 'text-success' : ''}">${completados}<span class="text-muted">/${total}</span></div>
                     </div>
@@ -1438,21 +1510,28 @@
                     <div class="d-flex justify-content-between align-items-center mt-1.5 gap-2">
                         <div class="small ${pendientes === 0 ? 'text-success fw-semibold' : 'text-warning fw-semibold'} text-truncate">
                             ${pendientes === 0
-                                ? '<i class="bi bi-check-circle-fill me-1"></i>Sector completo'
+                                ? '<i class="bi bi-check-circle-fill me-1"></i>Todo registrado'
                                 : `<i class="bi bi-hourglass-split me-1"></i>Faltan ${pendientes} equipo${pendientes > 1 ? 's' : ''}`}
-                            ${desvios > 0 ? `<span class="badge bg-danger ms-2">${desvios} desvío${desvios > 1 ? 's' : ''}</span>` : ''}
+                            ${desviosTotales > 0 ? `<span class="badge bg-danger ms-2">${desviosTotales} desvío${desviosTotales > 1 ? 's' : ''}</span>` : ''}
                         </div>
-                        ${pendientes === 0
-                            ? '<button class="btn btn-sm btn-success rounded-pill px-3 fw-semibold text-nowrap" onclick="abrirCierreRonda()"><i class="bi bi-flag-fill me-1"></i>Cerrar ronda</button>'
-                            : ''}
+                        <button class="btn btn-sm ${pendientes === 0 ? 'btn-success' : 'btn-outline-secondary'} rounded-pill px-3 fw-semibold text-nowrap" onclick="abrirCierreRonda()">
+                            <i class="bi bi-flag-fill me-1"></i>Cerrar ronda
+                        </button>
                     </div>
                 </div>
 
-                <div class="small text-muted mb-2 mt-3"><i class="bi bi-clock-history me-1"></i>${formatearTextoVentana(data.ventana)}</div>
+                <div class="small text-muted mb-2 mt-3"><i class="bi bi-clock-history me-1"></i>${formatearTextoVentana(ventana)}</div>
 
-                <!-- Cambio de sector a un toque -->
-                <div class="d-flex gap-2 overflow-x-auto pb-2 mb-2 scrollbar-none" style="scrollbar-width: none;">
-                    ${areaPills}
+                <div class="estado-tabs" role="tablist">
+                    <button class="estado-tab ${estadoTabActivo === 'pendientes' ? 'activo' : ''}" onclick="cambiarEstadoTab('pendientes')" role="tab" aria-selected="${estadoTabActivo === 'pendientes'}">
+                        <i class="bi bi-hourglass-split"></i> Pendientes
+                        <span class="estado-tab-cifra">${pendientes}</span>
+                    </button>
+                    <button class="estado-tab ${estadoTabActivo === 'completados' ? 'activo' : ''}" onclick="cambiarEstadoTab('completados')" role="tab" aria-selected="${estadoTabActivo === 'completados'}">
+                        <i class="bi bi-check-circle"></i> Completados
+                        <span class="estado-tab-cifra">${completados}</span>
+                        ${desviosTotales > 0 ? `<span class="badge bg-danger ms-1">${desviosTotales}</span>` : ''}
+                    </button>
                 </div>
 
                 <div class="mb-3">
@@ -1463,65 +1542,87 @@
                 </div>
              `;
 
-             // Pendientes: lo único que se ve expandido, en tarjetas grandes y táctiles
-             if(data.pendientes.length > 0) {
-                 html += `<div class="termometros-section"><div class="section-title text-warning"><i class="bi bi-hourglass-split"></i> Por registrar (${data.pendientes.length})</div>`;
-                 data.pendientes.forEach(t => {
-                     html += `<div class="termometro-card pendiente" onclick="seleccionarTermometro(${t.id})">
-                        <div class="min-width-0">
-                            <div class="termometro-nombre fw-bold text-truncate">${t.nombre || 'ID: '+t.id}</div>
-                            <div class="small text-muted text-truncate"><i class="bi bi-cpu me-1"></i>${t.tipo_nombre}${t.temp_min_operativa !== undefined ? ` &bull; ${t.temp_min_operativa}°C a ${t.temp_max_operativa}°C` : ''}</div>
-                        </div>
-                        <div class="termometro-accion">
-                            <i class="bi bi-chevron-right"></i>
-                        </div>
-                     </div>`;
-                 });
-                 html += `</div>`;
-             } else if (total > 0) {
-                 html += `
-                    <div class="sector-listo text-center">
-                        <i class="bi bi-check2-circle"></i>
-                        <div class="fw-bold mt-2">Sector completo</div>
-                        <div class="small text-muted">${total} equipo${total > 1 ? 's' : ''} registrado${total > 1 ? 's' : ''} en esta ventana.</div>
-                    </div>`;
+             const verPendientes = estadoTabActivo === 'pendientes';
+             const conContenido = areasList.filter(([, d]) =>
+                 (verPendientes ? d.pendientes.length : d.completados.length) > 0);
+
+             if (conContenido.length === 0) {
+                 html += verPendientes
+                    ? `<div class="sector-listo text-center">
+                            <i class="bi bi-check2-circle"></i>
+                            <div class="fw-bold mt-2">No queda nada por registrar</div>
+                            <div class="small text-muted">Los ${total} equipos de esta ventana ya están medidos.</div>
+                       </div>`
+                    : `<div class="text-center py-5 text-muted"><i class="bi bi-clipboard fs-1"></i><p class="mt-2">Todavía no hay registros en esta ventana.</p></div>`;
+                 container.innerHTML = html;
+                 return;
              }
 
-             // Completados: plegados para no competir con lo que falta
-             if(data.completados.length > 0) {
-                 html += `
-                    <details class="completados-acordeon mt-3" ${desvios > 0 ? 'open' : ''}>
-                        <summary>
-                            <i class="bi bi-check-circle-fill text-success me-1"></i>
-                            Completados (${data.completados.length})
-                            ${desvios > 0 ? `<span class="badge bg-danger ms-2">${desvios} con desvío</span>` : ''}
-                        </summary>
-                        <div class="pt-2">`;
-                 data.completados.forEach(r => {
-                     const prev = JSON.parse(localStorage.getItem('ultimaLectura_' + r.termometro_id) || 'null');
-                     const prevVal = prev ? prev.actual : null;
-                     const badgeTendencia = calcularBadgeTendencia(r.temp_actual, prevVal);
-                     const desvio = r.fuera_rango_operativo;
-                     const estadoBadge = desvio
-                        ? '<span class="badge bg-danger text-white fw-semibold px-2 py-1" style="font-size:0.75rem;">Fuera de rango</span>'
-                        : '<span class="badge bg-success-subtle text-success fw-semibold px-2 py-1" style="font-size:0.75rem;">Completo</span>';
-                     html += `<div class="termometro-card completado ${desvio ? 'desvio' : ''}" onclick="editarRegistro(${r.termometro_id})">
-                        <div class="min-width-0">
-                            <div class="termometro-nombre fw-bold d-flex align-items-center gap-1 text-truncate">${desvio ? '<i class="bi bi-exclamation-triangle-fill text-danger"></i>' : ''}<span class="text-truncate">${r.termometro_nombre}</span> ${badgeTendencia}</div>
-                            <div class="small text-muted text-truncate">Act. <strong class="${desvio ? 'text-danger' : 'text-success'}">${r.temp_actual ?? '-'}°C</strong> &bull; ${r.temp_minima}° / ${r.temp_maxima}° &bull; ${formatearHora(r.fecha_registro)}</div>
-                            ${desvio && r.observaciones ? `<div class="small text-danger fst-italic mt-1 text-truncate"><i class="bi bi-chat-left-text me-1"></i>${r.observaciones}</div>` : ''}
-                        </div>
-                        <div class="termometro-accion">
-                            ${estadoBadge}
-                        </div>
-                     </div>`;
-                 });
-                 html += `</div></details>`;
+             // Sin interacción previa: en Pendientes se abre el área escaneada (o la primera)
+             // para no dejar la pantalla llena de acordeones cerrados. Completados arranca plegado.
+             let abrirPorDefecto = null;
+             if (areasAbiertas.size === 0 && verPendientes) {
+                 abrirPorDefecto = conContenido.some(([id]) => Number(id) === areaActualId)
+                    ? areaActualId
+                    : Number(conContenido[0][0]);
              }
+
+             for (const [id, data] of conContenido) {
+                 const areaId = Number(id);
+                 const c = data.completados.length;
+                 const tot = c + data.pendientes.length;
+                 const dArea = data.completados.filter(r => r.fuera_rango_operativo).length;
+                 const abierta = areasAbiertas.has(areaId) || areaId === abrirPorDefecto;
+                 const items = verPendientes
+                    ? data.pendientes.map(t => tarjetaPendiente(t)).join('')
+                    : data.completados.map(r => tarjetaCompletado(r)).join('');
+
+                 html += `
+                    <details class="area-acordeon" data-area="${areaId}" ${abierta ? 'open' : ''}
+                             ontoggle="marcarAreaExpandida(${areaId}, this.open)">
+                        <summary>
+                            <i class="bi bi-building text-primary"></i>
+                            <span class="area-nombre text-truncate">${data.area.nombre}</span>
+                            ${dArea > 0 && !verPendientes ? `<span class="badge bg-danger ms-1">${dArea}</span>` : ''}
+                            <span class="area-conteo ${c === tot ? 'completo' : ''}">${c}/${tot}</span>
+                        </summary>
+                        <div class="area-items">${items}</div>
+                    </details>`;
+             }
+
              container.innerHTML = html;
 
              // Reaplicar el filtro escrito antes del refresco
              if (filtroAreaActual) filtrarTermometrosEnArea(filtroAreaActual);
+        }
+
+        function tarjetaPendiente(t) {
+            const rango = t.temp_min_operativa !== undefined
+                ? ` &bull; ${t.temp_min_operativa}°C a ${t.temp_max_operativa}°C` : '';
+            return `<div class="termometro-card pendiente" onclick="seleccionarTermometro(${t.id})">
+                <div class="min-width-0">
+                    <div class="termometro-nombre fw-bold text-truncate">${t.nombre || 'ID: ' + t.id}</div>
+                    <div class="small text-muted text-truncate"><i class="bi bi-cpu me-1"></i>${t.tipo_nombre}${rango}</div>
+                </div>
+                <div class="termometro-accion"><i class="bi bi-chevron-right"></i></div>
+            </div>`;
+        }
+
+        function tarjetaCompletado(r) {
+            const prev = JSON.parse(localStorage.getItem('ultimaLectura_' + r.termometro_id) || 'null');
+            const badgeTendencia = calcularBadgeTendencia(r.temp_actual, prev ? prev.actual : null);
+            const desvio = r.fuera_rango_operativo;
+            const estadoBadge = desvio
+                ? '<span class="badge bg-danger text-white fw-semibold px-2 py-1" style="font-size:0.75rem;">Fuera de rango</span>'
+                : '<span class="badge bg-success-subtle text-success fw-semibold px-2 py-1" style="font-size:0.75rem;">Completo</span>';
+            return `<div class="termometro-card completado ${desvio ? 'desvio' : ''}" onclick="editarRegistro(${r.termometro_id})">
+                <div class="min-width-0">
+                    <div class="termometro-nombre fw-bold d-flex align-items-center gap-1 text-truncate">${desvio ? '<i class="bi bi-exclamation-triangle-fill text-danger"></i>' : ''}<span class="text-truncate">${r.termometro_nombre}</span> ${badgeTendencia}</div>
+                    <div class="small text-muted text-truncate">Act. <strong class="${desvio ? 'text-danger' : 'text-success'}">${r.temp_actual ?? '-'}°C</strong> &bull; ${r.temp_minima}° / ${r.temp_maxima}° &bull; ${formatearHora(r.fecha_registro)}</div>
+                    ${desvio && r.observaciones ? `<div class="small text-danger fst-italic mt-1 text-truncate"><i class="bi bi-chat-left-text me-1"></i>${r.observaciones}</div>` : ''}
+                </div>
+                <div class="termometro-accion">${estadoBadge}</div>
+            </div>`;
         }
 
         async function seleccionarTermometro(id) {
@@ -1545,170 +1646,6 @@
             const mes = meses[hoy.getMonth()];
             const anio = hoy.getFullYear();
             return `Estás registrando en la ventana de ${horaVentana} del día ${dia} de ${mes} ${anio}`;
-        }
-
-        function renderizarResumenGlobal() {
-             const container = document.getElementById('resumenGlobalContent');
-             if(!Object.keys(areasData).length) { container.innerHTML = '<div class="text-center py-5 text-muted"><i class="bi bi-inbox fs-1"></i><p>Sin datos de áreas disponibles.</p></div>'; return; }
-             
-             let totalC = 0, totalP = 0, totalEquipos = 0, areasCompletas = 0, totalDesvios = 0;
-             const areasList = Object.entries(areasData);
-
-             areasList.forEach(([id, data]) => {
-                 const c = data.completados.length;
-                 const p = data.pendientes.length;
-                 totalC += c;
-                 totalP += p;
-                 totalEquipos += (c + p);
-                 totalDesvios += data.completados.filter(r => r.fuera_rango_operativo).length;
-                 if (p === 0 && c > 0) areasCompletas++;
-             });
-
-             const pctGlobal = totalEquipos > 0 ? Math.round((totalC / totalEquipos) * 100) : 0;
-             document.getElementById('ventanaGlobal').textContent = formatearTextoVentana(Object.values(areasData)[0]?.ventana);
-             const fechaHoy = formatearFechaHoy();
-
-             // Header de KPIs Ejecutivos de Salud Global
-             const kpiHeader = `
-                <div class="row g-3 mb-4">
-                    <div class="col-6 col-md-3">
-                        <div class="kpi-card-modern">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="kpi-label">Progreso Global</div>
-                                <div class="kpi-icon-wrap blue"><i class="bi bi-pie-chart-fill"></i></div>
-                            </div>
-                            <div class="kpi-value text-primary">${pctGlobal}%</div>
-                            <div class="small text-muted mt-1">${totalC} de ${totalEquipos} registros</div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="kpi-card-modern">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="kpi-label">Áreas 100% Listas</div>
-                                <div class="kpi-icon-wrap green"><i class="bi bi-check-circle-fill"></i></div>
-                            </div>
-                            <div class="kpi-value text-success">${areasCompletas} <span class="fs-6 fw-normal text-muted">/ ${areasList.length}</span></div>
-                            <div class="small text-muted mt-1">Sectores completados</div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="kpi-card-modern ${totalDesvios > 0 ? 'border border-danger' : ''}">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="kpi-label">Desvíos</div>
-                                <div class="kpi-icon-wrap ${totalDesvios > 0 ? 'orange' : 'green'}"><i class="bi bi-thermometer-high"></i></div>
-                            </div>
-                            <div class="kpi-value ${totalDesvios > 0 ? 'text-danger' : 'text-success'}">${totalDesvios}</div>
-                            <div class="small text-muted mt-1">${totalDesvios > 0 ? 'Fuera de rango operativo' : 'Todo dentro de rango'}</div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="kpi-card-modern">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="kpi-label">Pendientes</div>
-                                <div class="kpi-icon-wrap orange"><i class="bi bi-clock-history"></i></div>
-                            </div>
-                            <div class="kpi-value text-warning">${totalP}</div>
-                            <div class="small text-muted mt-1">Por inspeccionar</div>
-                        </div>
-                    </div>
-                </div>
-             `;
-
-             // Generación de tarjetas de área
-             let areaCardsHtml = '<div class="row g-3">';
-             for(const [id, data] of areasList) {
-                 const c = data.completados.length;
-                 const p = data.pendientes.length;
-                 const tot = c + p;
-                 const pct = tot > 0 ? Math.round((c / tot) * 100) : 0;
-                 const esCompleto = p === 0 && c > 0;
-                 const esSinIniciar = c === 0;
-                 const dArea = data.completados.filter(r => r.fuera_rango_operativo).length;
-
-                 let statusBadge = '';
-                 let cardBorder = '';
-                 if (esCompleto) {
-                     statusBadge = '<span class="badge bg-success-subtle text-success fw-bold px-3 py-1 rounded-pill"><i class="bi bi-check-circle-fill me-1"></i>100% Listo</span>';
-                     cardBorder = 'border-start border-4 border-success';
-                 } else if (esSinIniciar) {
-                     statusBadge = '<span class="badge bg-secondary-subtle text-secondary fw-bold px-3 py-1 rounded-pill"><i class="bi bi-dash-circle me-1"></i>Sin Iniciar</span>';
-                     cardBorder = 'border-start border-4 border-secondary';
-                 } else {
-                     statusBadge = `<span class="badge bg-warning-subtle text-warning fw-bold px-3 py-1 rounded-pill"><i class="bi bi-hourglass-split me-1"></i>${p} Pendiente${p>1?'s':''}</span>`;
-                     cardBorder = 'border-start border-4 border-warning';
-                 }
-
-                 areaCardsHtml += `
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card h-100 shadow-sm ${cardBorder}" style="cursor: pointer; transition: transform 0.2s ease;" onclick="cambiarAreaActual(${id}); bootstrap.Tab.getOrCreateInstance(document.getElementById('area-tab')).show();">
-                            <div class="card-body p-3.5 d-flex flex-column justify-content-between">
-                                <div>
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <h5 class="fw-bold mb-0 text-body"><i class="bi bi-building me-2 text-primary"></i>${data.area.nombre}</h5>
-                                        ${statusBadge}
-                                    </div>
-                                    <div class="small text-muted mb-3"><i class="bi bi-cpu me-1"></i>${tot} termómetro${tot!==1?'s':''} en total
-                                        ${dArea > 0 ? `<span class="badge bg-danger ms-2"><i class="bi bi-exclamation-triangle-fill me-1"></i>${dArea} desvío${dArea!==1?'s':''}</span>` : ''}
-                                    </div>
-                                </div>
-                                <div>
-                                    <div class="d-flex justify-content-between small fw-semibold text-secondary mb-1">
-                                        <span>Progreso del sector</span>
-                                        <span>${c} / ${tot} (${pct}%)</span>
-                                    </div>
-                                    <div class="progress" style="height: 8px; border-radius: 999px; background-color: var(--apple-gray);">
-                                        <div class="progress-bar ${esCompleto ? 'bg-success' : 'bg-primary'}" role="progressbar" style="width: ${pct}%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                 `;
-             }
-             areaCardsHtml += '</div>';
-
-             // Informe de la franja horaria (al finalizar todas las mediciones)
-             const completo = totalP === 0 && totalC > 0;
-             const informeCard = `
-                <div class="card mb-4 ${completo ? 'border-success' : 'border-secondary-subtle'} shadow-sm">
-                    <div class="card-body py-3.5">
-                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                            <div>
-                                <h6 class="mb-1 fw-bold">${completo
-                                    ? '<i class="bi bi-check-circle-fill text-success fs-5 me-1"></i> Franja Horaria Sanitaria Completada'
-                                    : '<i class="bi bi-clipboard-check text-primary fs-5 me-1"></i> Informe de la Franja Horaria'}</h6>
-                                <small class="text-muted">${completo
-                                    ? 'Se ha verificado la totalidad de equipos. Informe consolidado de desvíos y operactividad (' + fechaHoy + ').'
-                                    : 'Completa las mediciones pendientes en todas las áreas para consolidar el informe.'}</small>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-outline-success px-3 fw-semibold" onclick="descargarInformeDia('csv')">
-                                    <i class="bi bi-file-earmark-spreadsheet me-1"></i> Exportar CSV
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger px-3 fw-semibold" onclick="descargarInformeDia('pdf')">
-                                    <i class="bi bi-file-earmark-pdf me-1"></i> Exportar PDF
-                                </button>
-                            </div>
-                        </div>
-                        <div id="informeFranjaContent">
-                            ${completo
-                                ? '<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div> Consolidando informe...</div>'
-                                : ''}
-                        </div>
-                    </div>
-                </div>`;
-
-             // Al completarse la franja se ofrece el cierre de ronda (opcional, no bloquea)
-             if (completo && !informeNotificado) {
-                 informeNotificado = true;
-                 verificarCierreRonda();
-             } else if (!completo) {
-                 informeNotificado = false;
-             }
-
-             container.innerHTML = kpiHeader + informeCard + areaCardsHtml;
-
-             if (completo) cargarInformeFranja();
         }
 
         // Hora local corta (HH:MM) a partir de la fecha ISO que entrega el backend
@@ -1986,7 +1923,33 @@
             setTimeout(() => abrirCierreRonda(), 900);
         }
 
-        function abrirCierreRonda() {
+        // El cierre está siempre disponible, pero con pendientes se avisa antes: cerrar
+        // con equipos sin medir deja la franja incompleta en el informe.
+        async function abrirCierreRonda() {
+            const { pendientes } = totalesRonda();
+
+            if (pendientes > 0) {
+                const porArea = Object.values(areasData)
+                    .filter(d => d.pendientes.length > 0)
+                    .map(d => `<li>${d.area.nombre}: <strong>${d.pendientes.length}</strong></li>`)
+                    .join('');
+
+                const seguro = await mostrarConfirmacion(
+                    'Quedan equipos sin registrar',
+                    `Faltan <strong>${pendientes} equipo${pendientes > 1 ? 's' : ''}</strong> por medir en esta ventana:
+                     <ul class="mt-2 mb-2">${porArea}</ul>
+                     Si cierras ahora, el informe de la franja saldrá incompleto.<br><br>
+                     ¿Cerrar la ronda igual?`,
+                    {
+                        si: '<i class="bi bi-flag-fill me-1"></i>Cerrar igual',
+                        siClase: 'btn-outline-danger',
+                        no: '<i class="bi bi-pencil-square me-1"></i>Seguir registrando',
+                        noClase: 'btn-primary fw-semibold'
+                    }
+                );
+                if (!seguro) return;
+            }
+
             renderCierreRonda();
             new bootstrap.Modal(document.getElementById('cierreRondaModal')).show();
         }
@@ -1996,21 +1959,34 @@
             const desvios = recopilarDesviosRonda();
             const ventana = Object.values(areasData)[0]?.ventana || '';
 
-            document.getElementById('cierreTitulo').textContent = desvios.length > 0
-                ? `Ronda completa · ${desvios.length} desvío${desvios.length > 1 ? 's' : ''}`
-                : 'Ronda completa sin desvíos';
+            const pendientes = total - completados;
+
+            document.getElementById('cierreTitulo').textContent = pendientes > 0
+                ? `Ronda incompleta · faltan ${pendientes}`
+                : (desvios.length > 0
+                    ? `Ronda completa · ${desvios.length} desvío${desvios.length > 1 ? 's' : ''}`
+                    : 'Ronda completa sin desvíos');
             document.getElementById('cierreSubtitulo').textContent =
                 `${completados} de ${total} equipos${ventana ? ' · ventana ' + ventana : ''}`;
 
             const body = document.getElementById('cierreBody');
 
+            // Constancia de lo que quedó sin medir: es lo primero que se debe ver
+            const avisoPendientes = pendientes === 0 ? '' : `
+                <div class="alert alert-danger py-2 px-3 small mb-3">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                    Se cierra con <strong>${pendientes} equipo${pendientes > 1 ? 's' : ''} sin registrar</strong>.
+                    El informe de esta franja saldrá incompleto.
+                </div>`;
+
             if (desvios.length === 0) {
-                body.innerHTML = `
+                body.innerHTML = avisoPendientes + `
                     <div class="cierre-ok text-center py-4">
                         <i class="bi bi-shield-check"></i>
-                        <div class="fw-bold mt-2">Todos los equipos operaron dentro de rango</div>
-                        <div class="small text-muted mt-1">No hay nada que notificar. Puedes cerrar sin más pasos.</div>
-                    </div>`;
+                        <div class="fw-bold mt-2">Todos los equipos medidos operaron dentro de rango</div>
+                        <div class="small text-muted mt-1">No hay desvíos que justificar.</div>
+                    </div>` + bloqueInformeCierre();
+                cargarInformeFranja();
                 return;
             }
 
@@ -2027,7 +2003,7 @@
                     </div>
                 </div>`).join('');
 
-            body.innerHTML = `
+            body.innerHTML = avisoPendientes + `
                 <div class="alert alert-warning py-2 px-3 small mb-3">
                     <i class="bi bi-info-circle me-1"></i>
                     Las lecturas ya quedaron guardadas. Justificar y notificar es <strong>opcional</strong>.
@@ -2047,9 +2023,33 @@
                     <button type="button" class="btn btn-warning w-100 fw-bold" id="btnAplicarLote" onclick="aplicarAccionCorrectivaLote()">
                         <i class="bi bi-check2-all"></i> Aplicar a los ${desvios.length} desvíos
                     </button>
-                </div>`;
+                </div>` + bloqueInformeCierre();
 
             renderChipsAccionCorrectiva('chipsLoteCierre', 'accionCorrectivaLote');
+            cargarInformeFranja();
+        }
+
+        // Los informes son el resultado del cierre, así que viven aquí y no en la
+        // vista de áreas, que queda libre para explorar y registrar.
+        function bloqueInformeCierre() {
+            return `
+                <div class="cierre-informe mt-3">
+                    <div class="fw-bold small mb-1">
+                        <i class="bi bi-file-earmark-text text-primary me-1"></i>
+                        Informe de la franja
+                    </div>
+                    <div id="informeFranjaContent">
+                        <div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div> Consolidando informe...</div>
+                    </div>
+                    <div class="d-flex gap-2 mt-2">
+                        <button class="btn btn-sm btn-outline-success flex-fill fw-semibold" onclick="descargarInformeDia('csv')">
+                            <i class="bi bi-file-earmark-spreadsheet me-1"></i> CSV del día
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger flex-fill fw-semibold" onclick="descargarInformeDia('pdf')">
+                            <i class="bi bi-file-earmark-pdf me-1"></i> PDF del día
+                        </button>
+                    </div>
+                </div>`;
         }
 
         async function aplicarAccionCorrectivaLote() {
@@ -2385,7 +2385,7 @@
                     mostrarToast('Termómetro puesto fuera de servicio', 'warning');
                     bootstrap.Modal.getInstance(document.getElementById('fueraServicioModal')).hide();
                     await cargarTodasLasAreas();
-                    renderizarAreaActual();
+                    renderizarAreas();
                 } else {
                     const errText = await res.text();
                     mostrarToast('Error al reportar fuera de servicio: ' + errText, 'danger', 6000);
@@ -2421,7 +2421,7 @@
                     mostrarToast('Termómetro reparado exitosamente', 'success');
                     bootstrap.Modal.getInstance(document.getElementById('repararModal')).hide();
                     await cargarTodasLasAreas();
-                    renderizarAreaActual();
+                    renderizarAreas();
                     cargarReparaciones(); // Recargar pestaña de reparaciones
                     
                     // Volver a abrir el modal de registro para que pueda registrar ahora que está activo
@@ -2607,11 +2607,18 @@
         }
 
         // ... (Funciones auxiliares: mostrarConfirmacion, mostrarEstado, mostrarToast, logout) ...
-        function mostrarConfirmacion(t, m) { return new Promise(r => { 
+        // opciones: { si, no, siClase, noClase } para nombrar la acción en vez de "Sí/No"
+        // y poder destacar la salida segura cuando la confirmación es de riesgo.
+        function mostrarConfirmacion(t, m, opciones) { return new Promise(r => {
+            const o = opciones || {};
             const mo=new bootstrap.Modal(document.getElementById('confirmacionModal'));
             document.getElementById('confirmacionModalTitle').textContent=t;
             document.getElementById('confirmacionModalBody').innerHTML=m;
             const si=document.getElementById('confirmacionBtnSi'), no=document.getElementById('confirmacionBtnNo');
+            si.innerHTML = o.si || 'Sí';
+            no.innerHTML = o.no || 'No';
+            si.className = 'btn ' + (o.siClase || 'btn-primary');
+            no.className = 'btn ' + (o.noClase || 'btn-secondary');
             const fSi=()=>{mo.hide();r(true);limpiar()}; const fNo=()=>{mo.hide();r(false);limpiar()};
             const limpiar=()=>{si.removeEventListener('click',fSi);no.removeEventListener('click',fNo)};
             si.addEventListener('click',fSi); no.addEventListener('click',fNo); mo.show();
