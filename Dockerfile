@@ -4,7 +4,12 @@
 # ==============================================================================
 
 # --- Stage 1: Build ---
-FROM rust:1.77-slim-bookworm AS builder
+# Requisitos reales de la compilación:
+#  - Cargo.lock está en formato v4  -> Cargo >= 1.78 (con 1.77 fallaba con
+#    "lock file version `4` was found").
+#  - idna_adapter (dependencia transitiva) usa edition2024 -> Rust >= 1.85.
+# Se fija una versión concreta para que el build siga siendo reproducible.
+FROM rust:1.90-slim-bookworm AS builder
 
 WORKDIR /usr/src/app
 
