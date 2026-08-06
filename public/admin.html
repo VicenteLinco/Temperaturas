@@ -3017,23 +3017,111 @@
             }
         }
 
-        function actualizarBannerLimites(limites) {
+        function obtenerLimitesOperativosSeleccionados(lecturasFiltradas) {
+            if (termometrosSeleccionadosGraficos.size === 1) {
+                const idSel = Array.from(termometrosSeleccionadosGraficos)[0];
+                const termObj = termometrosListaGraficos.find(t => String(t.id) === String(idSel));
+                if (termObj && termObj.temp_min_operativa != null && termObj.temp_max_operativa != null) {
+                    return {
+                        termometro_id: termObj.id,
+                        termometro_nombre: termObj.nombre || `Termómetro #${termObj.id}`,
+                        area_nombre: termObj.area_nombre,
+                        temp_min_operativa: termObj.temp_min_operativa,
+                        temp_max_operativa: termObj.temp_max_operativa,
+                        hum_min_operativa: termObj.hum_min_operativa ?? null,
+                        hum_max_operativa: termObj.hum_max_operativa ?? null,
+                        homogeneo: true
+                    };
+                }
+                if (lecturasFiltradas && lecturasFiltradas.length > 0) {
+                    const l0 = lecturasFiltradas[0];
+                    return {
+                        termometro_id: l0.termometro_id,
+                        termometro_nombre: l0.termometro_nombre,
+                        area_nombre: l0.area_nombre,
+                        temp_min_operativa: l0.temp_min_operativa,
+                        temp_max_operativa: l0.temp_max_operativa,
+                        hum_min_operativa: null,
+                        hum_max_operativa: null,
+                        homogeneo: true
+                    };
+                }
+            }
+
+            let listaTerm = [];
+            if (termometrosListaGraficos && termometrosListaGraficos.length > 0) {
+                listaTerm = termometrosListaGraficos.filter(t => termometrosSeleccionadosGraficos.has(String(t.id)));
+            }
+
+            if (listaTerm.length > 0) {
+                const minOp0 = listaTerm[0].temp_min_operativa;
+                const maxOp0 = listaTerm[0].temp_max_operativa;
+                const todosIguales = listaTerm.every(t =>
+                    t.temp_min_operativa != null && t.temp_max_operativa != null &&
+                    Math.abs(t.temp_min_operativa - minOp0) < 0.01 &&
+                    Math.abs(t.temp_max_operativa - maxOp0) < 0.01
+                );
+
+                if (todosIguales && minOp0 != null && maxOp0 != null) {
+                    const areaId = document.getElementById('graficos_area').value;
+                    const areaObj = areasListaGraficos.find(a => String(a.id) === String(areaId));
+                    return {
+                        termometro_id: null,
+                        termometro_nombre: null,
+                        area_nombre: areaObj ? areaObj.nombre : null,
+                        temp_min_operativa: minOp0,
+                        temp_max_operativa: maxOp0,
+                        hum_min_operativa: listaTerm[0].hum_min_operativa ?? null,
+                        hum_max_operativa: listaTerm[0].hum_max_operativa ?? null,
+                        homogeneo: true
+                    };
+                } else {
+                    return {
+                        termometro_id: null,
+                        termometro_nombre: null,
+                        area_nombre: null,
+                        temp_min_operativa: null,
+                        temp_max_operativa: null,
+                        hum_min_operativa: null,
+                        hum_max_operativa: null,
+                        homogeneo: false,
+                        total_seleccionados: listaTerm.length
+                    };
+                }
+            }
+
+            if (ultimaDataGraficos && ultimaDataGraficos.limites) {
+                return {
+                    ...ultimaDataGraficos.limites,
+                    homogeneo: true
+                };
+            }
+
+            return null;
+        }
+
+        function actualizarBannerLimites(limitesInfo) {
             const banner = document.getElementById('banner_limites_info');
             const txt = document.getElementById('txt_limites_info');
-            if (!limites) {
+            if (!limitesInfo) {
                 banner.style.display = 'none';
                 return;
             }
             banner.style.display = 'flex';
             let info = '';
-            if (limites.termometro_nombre) {
-                info += `Termómetro: <strong>${limites.termometro_nombre}</strong> (${limites.area_nombre || ''}) &mdash; `;
-            } else if (limites.area_nombre) {
-                info += `Área: <strong>${limites.area_nombre}</strong> &mdash; `;
-            }
-            info += `Límite Operativo Seguro: <strong>${limites.temp_min_operativa}&deg;C</strong> (Mín) a <strong>${limites.temp_max_operativa}&deg;C</strong> (Máx)`;
-            if (limites.hum_min_operativa != null && limites.hum_max_operativa != null) {
-                info += ` | Humedad: ${limites.hum_min_operativa}% a ${limites.hum_max_operativa}%`;
+
+            if (limitesInfo.homogeneo === false) {
+                info = `<i class="bi bi-info-circle-fill me-1 text-primary"></i> <strong>Termómetros seleccionados con distintos límites operativos (${limitesInfo.total_seleccionados || termometrosSeleccionadosGraficos.size}):</strong> cada registro se evalúa según el límite operativo de su termómetro.`;
+            } else {
+                if (limitesInfo.termometro_nombre) {
+                    info += `Termómetro: <strong>${limitesInfo.termometro_nombre}</strong> ${limitesInfo.area_nombre ? `(${limitesInfo.area_nombre})` : ''} &mdash; `;
+                } else if (limitesInfo.area_nombre) {
+                    info += `Área: <strong>${limitesInfo.area_nombre}</strong> &mdash; `;
+                }
+                info += `Límite Operativo Seguro: <strong>${limitesInfo.temp_min_operativa}&deg;C</strong> (Mín) a <strong>${limitesInfo.temp_max_operativa}&deg;C</strong> (Máx)`;
+                if (limitesInfo.hum_min_operativa != null && limitesInfo.hum_max_operativa != null) {
+                    info += ` | Humedad: ${limitesInfo.hum_min_operativa}% a ${limitesInfo.hum_max_operativa}%`;
+                }
             }
             txt.innerHTML = info;
         }
@@ -3048,6 +3136,7 @@
             if (termometrosSeleccionadosGraficos.size === 0) {
                 if (emptyState) emptyState.style.display = 'flex';
                 if (canvasWrapper) canvasWrapper.style.display = 'none';
+                actualizarBannerLimites(null);
                 destruirGraficos();
                 return;
             }
@@ -3067,14 +3156,17 @@
                 termometrosSeleccionadosGraficos.has(String(l.termometro_id))
             );
 
+            const limitesInfo = obtenerLimitesOperativosSeleccionados(lecturasFiltradas);
+            actualizarBannerLimites(limitesInfo);
+
             const modoDetallado = document.getElementById('vistaDetallada').checked;
 
             if (modoDetallado) {
                 titulo.innerHTML = `<i class="bi bi-clock-history text-primary me-2"></i> Lecturas Individuales (${termometrosSeleccionadosGraficos.size} termómetro${termometrosSeleccionadosGraficos.size > 1 ? 's' : ''})`;
-                crearChartLecturasDetalladas(lecturasFiltradas, ultimaDataGraficos.limites);
+                crearChartLecturasDetalladas(lecturasFiltradas, limitesInfo);
             } else {
                 titulo.innerHTML = '<i class="bi bi-graph-up text-primary me-2"></i> Tendencia de Promedios Diarios';
-                crearChartTendencias(ultimaDataGraficos.tendencias, ultimaDataGraficos.limites);
+                crearChartTendencias(ultimaDataGraficos.tendencias, limitesInfo);
             }
         }
 
@@ -3285,8 +3377,8 @@
                 });
             }
 
-            let tempMinOp = limites ? limites.temp_min_operativa : (lecturas[0] ? lecturas[0].temp_min_operativa : null);
-            let tempMaxOp = limites ? limites.temp_max_operativa : (lecturas[0] ? lecturas[0].temp_max_operativa : null);
+            let tempMinOp = (limites && limites.homogeneo !== false && limites.temp_min_operativa != null) ? limites.temp_min_operativa : null;
+            let tempMaxOp = (limites && limites.homogeneo !== false && limites.temp_max_operativa != null) ? limites.temp_max_operativa : null;
 
             if (mostrarLimites && tempMinOp != null && tempMaxOp != null) {
                 datasets.push({
@@ -3375,6 +3467,9 @@
                                     if (!item) return '';
                                     let text = `Área: ${item.area_nombre || '-'}`;
                                     if (item.ventana_horaria) text += ` | Ventana: ${item.ventana_horaria}`;
+                                    if (item.temp_min_operativa != null && item.temp_max_operativa != null) {
+                                        text += `\nRango Operativo: ${item.temp_min_operativa}°C a ${item.temp_max_operativa}°C`;
+                                    }
                                     if (item.fuera_rango_operativo) text += `\n⚠️ ¡FUERA DE RANGO OPERATIVO!`;
                                     if (item.observaciones) text += `\nObs: ${item.observaciones}`;
                                     return text;
@@ -3415,8 +3510,8 @@
             const textColor = isDark ? '#e0e0e0' : '#1d1d1f';
             const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)';
 
-            let tempMinOp = limites ? limites.temp_min_operativa : (tendencias[0] ? tendencias[0].temp_min_operativa : null);
-            let tempMaxOp = limites ? limites.temp_max_operativa : (tendencias[0] ? tendencias[0].temp_max_operativa : null);
+            let tempMinOp = (limites && limites.homogeneo !== false && limites.temp_min_operativa != null) ? limites.temp_min_operativa : null;
+            let tempMaxOp = (limites && limites.homogeneo !== false && limites.temp_max_operativa != null) ? limites.temp_max_operativa : null;
 
             const numTend = tendencias.length;
             const radiusBase = numTend > 40 ? 1 : 3;

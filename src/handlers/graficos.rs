@@ -138,8 +138,10 @@ pub async fn obtener_graficos(
             r#"
             SELECT 
                 a.nombre AS area_nombre,
-                MIN(tt.temp_min_operativa) AS temp_min_operativa,
-                MAX(tt.temp_max_operativa) AS temp_max_operativa,
+                MIN(tt.temp_min_operativa) AS min_temp_min,
+                MAX(tt.temp_min_operativa) AS max_temp_min,
+                MIN(tt.temp_max_operativa) AS min_temp_max,
+                MAX(tt.temp_max_operativa) AS max_temp_max,
                 MIN(tt.hum_min_operativa) AS hum_min_operativa,
                 MAX(tt.hum_max_operativa) AS hum_max_operativa
             FROM termometros t
@@ -155,15 +157,25 @@ pub async fn obtener_graficos(
         .unwrap_or(None);
 
         if let Some(row) = lim_row {
-            limites = Some(LimitesInfo {
-                termometro_id: None,
-                termometro_nombre: None,
-                area_nombre: Some(row.get("area_nombre")),
-                temp_min_operativa: row.get::<Option<f32>, _>("temp_min_operativa").unwrap_or(0.0),
-                temp_max_operativa: row.get::<Option<f32>, _>("temp_max_operativa").unwrap_or(30.0),
-                hum_min_operativa: row.get("hum_min_operativa"),
-                hum_max_operativa: row.get("hum_max_operativa"),
-            });
+            let min_tmin: Option<f32> = row.get("min_temp_min");
+            let max_tmin: Option<f32> = row.get("max_temp_min");
+            let min_tmax: Option<f32> = row.get("min_temp_max");
+            let max_tmax: Option<f32> = row.get("max_temp_max");
+
+            // Solo fijar límites a nivel de área si TODOS los termómetros del área tienen EXACTAMENTE los mismos límites operativos
+            if let (Some(tn1), Some(tn2), Some(tx1), Some(tx2)) = (min_tmin, max_tmin, min_tmax, max_tmax) {
+                if (tn1 - tn2).abs() < 0.01 && (tx1 - tx2).abs() < 0.01 {
+                    limites = Some(LimitesInfo {
+                        termometro_id: None,
+                        termometro_nombre: None,
+                        area_nombre: Some(row.get("area_nombre")),
+                        temp_min_operativa: tn1,
+                        temp_max_operativa: tx1,
+                        hum_min_operativa: row.get("hum_min_operativa"),
+                        hum_max_operativa: row.get("hum_max_operativa"),
+                    });
+                }
+            }
         }
     }
 
