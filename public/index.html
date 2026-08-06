@@ -818,6 +818,140 @@
             }
         }
 
+        let torchActive = false;
+        let currentFacingMode = "environment";
+
+        function playScanSound(type = 'success') {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'success') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(880, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.12);
+                    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.12);
+                } else {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(300, ctx.currentTime);
+                    osc.frequency.setValueAtTime(200, ctx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.25);
+                }
+            } catch (e) {}
+        }
+
+        async function toggleTorch() {
+            if (!html5QrCode) return;
+            try {
+                torchActive = !torchActive;
+                await html5QrCode.applyVideoConstraints({
+                    advanced: [{ torch: torchActive }]
+                });
+                const btn = document.getElementById('btnTorch');
+                if (btn) {
+                    btn.classList.toggle('btn-warning', torchActive);
+                    btn.classList.toggle('btn-outline-warning', !torchActive);
+                    btn.classList.toggle('text-dark', torchActive);
+                }
+            } catch (e) {
+                mostrarEstado('La linterna no está disponible en este dispositivo.', 'info');
+            }
+        }
+
+        async function cambiarCamaraScanner() {
+            if (!html5QrCode) return;
+            currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+            try {
+                await html5QrCode.stop();
+                inicializarScanner();
+            } catch (e) {
+                console.error("Error al cambiar cámara:", e);
+                inicializarScanner();
+            }
+        }
+
+        function reanudarScannerSiPausado() {
+            if (!html5QrCode) return;
+            try {
+                if (typeof html5QrCode.getState === 'function') {
+                    const state = html5QrCode.getState();
+                    if (state === Html5QrcodeScannerState.PAUSED) {
+                        html5QrCode.resume();
+                        return;
+                    }
+                    if (state === Html5QrcodeScannerState.SCANNING) {
+                        return;
+                    }
+                }
+            } catch (e) {}
+            inicializarScanner();
+        }
+
+        function inicializarScanner() {
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("qr-reader");
+            }
+
+            if (typeof html5QrCode.getState === 'function') {
+                const state = html5QrCode.getState();
+                if (state === Html5QrcodeScannerState.SCANNING) {
+                    const overlay = document.getElementById('scannerOverlay');
+                    if (overlay) overlay.style.display = 'none';
+                    return;
+                }
+                if (state === Html5QrcodeScannerState.PAUSED) {
+                    try {
+                        html5QrCode.resume();
+                        const overlay = document.getElementById('scannerOverlay');
+                        if (overlay) overlay.style.display = 'none';
+                        return;
+                    } catch (e) {}
+                }
+            }
+
+            const btn = document.querySelector('#scannerOverlay button');
+            const originalText = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Iniciando...';
+            }
+
+            const config = { fps: 15, qrbox: { width: 230, height: 230 }, aspectRatio: 1.0 };
+
+            html5QrCode.start({ facingMode: currentFacingMode }, config, onScanSuccess, onScanError)
+                .then(() => {
+                    const overlay = document.getElementById('scannerOverlay');
+                    if (overlay) overlay.style.display = 'none';
+                    const controls = document.getElementById('scannerControls');
+                    if (controls) controls.classList.remove('d-none');
+                })
+                .catch(err => {
+                    console.error('Error scanner:', err);
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = originalText;
+                    }
+                    const errStr = String(err);
+                    if (errStr.includes('is already scanning') || errStr.includes('already paused')) {
+                        const overlay = document.getElementById('scannerOverlay');
+                        if (overlay) overlay.style.display = 'none';
+                    } else {
+                        mostrarEstado('Error al acceder a la cámara. Verifique los permisos del navegador.', 'danger');
+                    }
+                });
+        }
+
         function extraerTermometroId(decodedText) {
             if (!decodedText) return NaN;
             const cleanText = decodedText.trim();
