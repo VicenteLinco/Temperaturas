@@ -3872,14 +3872,15 @@
                             }
                         } : {},
                         tooltip: {
-                            backgroundColor: isDark ? 'rgba(15, 23, 42, 0.96)' : 'rgba(15, 23, 42, 0.92)',
+                            backgroundColor: isDark ? 'rgba(15, 23, 42, 0.94)' : 'rgba(15, 23, 42, 0.90)',
                             titleColor: '#ffffff',
-                            bodyColor: '#f1f5f9',
-                            titleFont: { family: '-apple-system, sans-serif', size: 13, weight: 'bold' },
+                            bodyColor: '#f8fafc',
+                            titleFont: { family: '-apple-system, sans-serif', size: 12, weight: 'bold' },
                             bodyFont: { family: '-apple-system, sans-serif', size: 12 },
-                            padding: 14,
-                            cornerRadius: 12,
-                            boxPadding: 6,
+                            padding: 10,
+                            cornerRadius: 10,
+                            boxPadding: 4,
+                            displayColors: false,
                             callbacks: {
                                 title: (items) => {
                                     if (!items.length) return '';
@@ -3895,24 +3896,22 @@
                                     if (val == null) return '';
 
                                     if (label.includes('Límite')) {
-                                        return ` ➖ ${label}: ${val} °C`;
+                                        return `➖ ${label}: ${val} °C`;
                                     }
-                                    const status = (item && esAlertaLectura(item)) ? '🔴 FUERA DE RANGO' : '🔵 EN NORMA';
-                                    const termNombre = item ? item.termometro_nombre : label;
-                                    return ` 🌡️ ${termNombre}: ${val} °C  [${status}]`;
+
+                                    const esAlerta = item ? esAlertaLectura(item) : false;
+                                    const badge = esAlerta ? '🔴 ALERTA' : '✅ OK';
+                                    const term = item ? item.termometro_nombre : label;
+                                    return `🌡️ ${term}: ${val} °C  [${badge}]`;
                                 },
                                 footer: (items) => {
                                     if (!items.length) return '';
                                     const index = items[0].dataIndex;
                                     const item = lecturas[index];
                                     if (!item) return '';
-                                    const esAlerta = esAlertaLectura(item);
-                                    let lines = [];
-                                    lines.push(`🏢 Área: ${item.area_nombre || '-'}`);
-                                    lines.push(`🎯 Rango Operativo: ${item.temp_min_operativa != null ? item.temp_min_operativa : '-'} °C a ${item.temp_max_operativa != null ? item.temp_max_operativa : '-'} °C`);
-                                    lines.push(`📌 Estado: ${esAlerta ? '🔴 FUERA DE RANGO' : '✅ EN NORMA'}`);
-                                    lines.push(`💡 Haz clic en el punto para ver detalle completo`);
-                                    return lines.join('\n');
+                                    const minStr = item.temp_min_operativa != null ? `${item.temp_min_operativa}°C` : '-';
+                                    const maxStr = item.temp_max_operativa != null ? `${item.temp_max_operativa}°C` : '-';
+                                    return `🏢 ${item.area_nombre || 'Área'}  |  🎯 Rango: ${minStr} a ${maxStr}\n💡 Clic para detalle completo`;
                                 }
                             }
                         }
