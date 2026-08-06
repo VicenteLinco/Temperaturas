@@ -486,6 +486,22 @@
         }
         .rango-pill i { font-size: 1rem; opacity: 0.9; }
 
+        .btn-volver-modal {
+            flex-shrink: 0;
+            width: 44px;
+            height: 44px;
+            margin: -4px 4px -4px -6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--apple-blue, #0071e3);
+            background: transparent;
+            border: 0;
+            border-radius: 50%;
+        }
+        .btn-volver-modal:active { background: rgba(0, 113, 227, 0.12); }
+
         .btn-humedad-falla {
             display: block;
             width: 100%;
@@ -699,6 +715,9 @@
                 <button id="btnSwitchCam" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="cambiarCamaraScanner()" title="Cambiar Cámara">
                     <i class="bi bi-camera-reverse me-1"></i> Cambiar Cámara
                 </button>
+                <button id="btnPausarCam" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="pausarScanner()" title="Apagar la cámara">
+                    <i class="bi bi-pause-fill me-1"></i> Pausar
+                </button>
             </div>
             <div id="scannerStatus" class="scanner-status d-none"></div>
 
@@ -766,6 +785,10 @@
         <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
             <div class="modal-content">
                 <div class="modal-header py-2">
+                    <!-- Salida al alcance del pulgar: la X de la esquina queda lejos en pantalla completa -->
+                    <button type="button" class="btn-volver-modal" data-bs-dismiss="modal" aria-label="Volver">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
                     <div class="me-auto min-w-0">
                         <div class="modal-title fw-bold text-truncate" id="termometroNombre">Termómetro</div>
                         <div class="small text-muted d-flex align-items-center gap-2 flex-wrap">
@@ -1106,8 +1129,23 @@
             }
         }
 
-        function reanudarScannerSiPausado() {
+        // Pausa explícita: la cámara seguía encendida mientras el operador revisaba las
+        // listas. El flag evita que el reinicio automático al cerrar un modal la reviva.
+        let scannerPausadoPorUsuario = false;
+
+        async function pausarScanner() {
             if (!html5QrCode) return;
+            scannerPausadoPorUsuario = true;
+            try { await html5QrCode.stop(); } catch (e) {}
+            const overlay = document.getElementById('scannerOverlay');
+            if (overlay) overlay.style.display = 'flex';
+            const controls = document.getElementById('scannerControls');
+            if (controls) controls.classList.add('d-none');
+            mostrarToast('Cámara apagada. Toca "Activar Cámara" para seguir escaneando.', 'info', 4000);
+        }
+
+        function reanudarScannerSiPausado() {
+            if (!html5QrCode || scannerPausadoPorUsuario) return;
             try {
                 if (typeof html5QrCode.getState === 'function') {
                     const state = html5QrCode.getState();
@@ -1124,6 +1162,8 @@
         }
 
         function inicializarScanner() {
+            // Encender es siempre una acción deliberada: cancela la pausa manual
+            scannerPausadoPorUsuario = false;
             if (!html5QrCode) {
                 html5QrCode = new Html5Qrcode("qr-reader");
             }
@@ -1625,13 +1665,36 @@
             </div>`;
         }
 
+        // La vista lista TODAS las áreas, así que el equipo tocado puede pertenecer a
+        // cualquiera. Buscar solo en areaActualId rompía dos casos: sin haber escaneado
+        // nada (areaActualId null) el toque no hacía nada, y al editar un completado de
+        // otra área el formulario se abría vacío y habría guardado un registro nuevo.
+        function buscarRegistroDeTermometro(id) {
+            for (const data of Object.values(areasData)) {
+                const encontrado = (data.completados || []).find(r => r.termometro_id === id);
+                if (encontrado) return encontrado;
+            }
+            return null;
+        }
+
         async function seleccionarTermometro(id) {
-            const data = areasData[areaActualId];
-            const registro = data.completados.find(r => r.termometro_id === id);
-            const response = await fetch(`/api/termometros/${id}`);
-            const termometro = await response.json();
-            
-            await abrirModalRegistro(termometro, registro, false);
+            const registro = buscarRegistroDeTermometro(id);
+
+            let termometro;
+            try {
+                const response = await fetch(`/api/termometros/${id}`);
+                if (!response.ok) throw new Error(await response.text());
+                termometro = await response.json();
+            } catch (e) {
+                mostrarToast('No se pudo abrir el equipo: ' + e.message, 'danger', 6000);
+                return;
+            }
+
+            // El área del equipo pasa a ser la activa para que el refresco posterior al
+            // guardar actualice la lista correcta (sin saltar de pestaña de estado).
+            if (termometro.area_id) areaActualId = termometro.area_id;
+
+            await abrirModalRegistro(termometro, registro, termometro.fuera_de_servicio);
         }
 
         async function editarRegistro(id) {
@@ -2667,13 +2730,30 @@
             }
         });
 
-        document.getElementById('registroModal').addEventListener('hidden.bs.modal', () => {
-            // FIX CRÍTICO: Eliminar manualmente cualquier backdrop fantasma que oscurezca la pantalla
-            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        // Limpieza de backdrops fantasma SIN romper los modales apilados: si al cerrar
+        // uno sigue habiendo otro abierto (confirmación sobre registro, o el cierre de
+        // ronda que se abre justo después de confirmar), se conserva su fondo y el body
+        // bloqueado. Borrarlos a ciegas dejaba el modal visible sin fondo y con scroll.
+        function sanearBackdrops() {
+            const abiertos = document.querySelectorAll('.modal.show');
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+
+            if (abiertos.length > 0) {
+                // Sobra uno por cada modal ya cerrado: se deja solo el último
+                for (let i = 0; i < backdrops.length - 1; i++) backdrops[i].remove();
+                document.body.classList.add('modal-open');
+                return true;
+            }
+
+            backdrops.forEach(el => el.remove());
             document.body.classList.remove('modal-open');
             document.body.style.overflow = '';
             document.body.style.paddingRight = '';
+            return false;
+        }
 
+        document.getElementById('registroModal').addEventListener('hidden.bs.modal', () => {
+            if (sanearBackdrops()) return;
             // Al cerrar el modal, reiniciamos el scanner automáticamente
             setTimeout(() => {
                 reanudarScannerSiPausado();
@@ -2683,15 +2763,57 @@
         const modalConfirm = document.getElementById('confirmacionModal');
         if (modalConfirm) {
             modalConfirm.addEventListener('hidden.bs.modal', () => {
-                document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-                document.body.classList.remove('modal-open');
-                document.body.style.overflow = '';
-                document.body.style.paddingRight = '';
+                // Con otro modal todavía abierto la cámara no debe encenderse detrás de él
+                if (sanearBackdrops()) return;
                 setTimeout(() => {
                     reanudarScannerSiPausado();
                 }, 200);
             });
         }
+
+        // ===== BOTÓN ATRÁS DEL SISTEMA =====
+        // Bootstrap no toca el historial: con un modal abierto, "atrás" sacaba de la
+        // aplicación y se perdía el registro a medio teclear. Cada modal apila una
+        // entrada propia para que "atrás" solo lo cierre a él.
+        const pilaModales = [];
+        let cerrandoPorHistorial = false;
+        let retrocesoPropio = false;
+
+        document.querySelectorAll('.modal').forEach(modalEl => {
+            modalEl.addEventListener('shown.bs.modal', () => {
+                pilaModales.push(modalEl);
+                modalEl.dataset.histApilado = '1';
+                history.pushState({ modal: modalEl.id }, '');
+            });
+
+            modalEl.addEventListener('hidden.bs.modal', () => {
+                const i = pilaModales.indexOf(modalEl);
+                if (i !== -1) pilaModales.splice(i, 1);
+
+                if (modalEl.dataset.histApilado !== '1') return;
+                delete modalEl.dataset.histApilado;
+
+                // Cerrado por "atrás": la entrada del historial ya se consumió
+                if (cerrandoPorHistorial) return;
+
+                // Cerrado con la X o con un botón: se descarta su entrada. El popstate
+                // que esto provoca es propio y no debe cerrar el modal de abajo.
+                retrocesoPropio = true;
+                history.back();
+            });
+        });
+
+        window.addEventListener('popstate', () => {
+            if (retrocesoPropio) {
+                retrocesoPropio = false;
+                return;
+            }
+            const ultimo = pilaModales[pilaModales.length - 1];
+            if (!ultimo) return;
+            cerrandoPorHistorial = true;
+            bootstrap.Modal.getInstance(ultimo)?.hide();
+            setTimeout(() => { cerrandoPorHistorial = false; }, 400);
+        });
 
         // Al abrir el modal, foco en la primera lectura: el teclado aparece solo
         document.getElementById('registroModal').addEventListener('shown.bs.modal', () => {
