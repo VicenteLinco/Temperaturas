@@ -568,16 +568,6 @@
                             </div>
                         </div>
 
-                        <!-- CONFIRMACIÓN VISUAL -->
-                        <div id="confirmacionLecturas" style="display: none;">
-                            <div class="text-center fw-bold mb-1">Revisa las temperaturas ordenadas</div>
-                            <div id="barraTermometro"></div>
-                            <div class="row g-2" id="tarjetasLecturas"></div>
-                            <div id="confirmacionWarnings"></div>
-                            <div class="alert alert-light border small text-muted mb-2 mt-2">
-                                <i class="bi bi-check2-circle text-success"></i> Se guardará: mínima <strong id="confMinText">-</strong>°C · actual <strong id="confActualText">-</strong>°C · máxima <strong id="confMaxText">-</strong>°C
-                            </div>
-                        </div>
                     </form>
                 </div>
                 <div class="modal-footer flex-column gap-2">
@@ -585,11 +575,8 @@
                         <button type="button" class="btn btn-secondary btn-lg flex-grow-1" data-bs-dismiss="modal">
                             <i class="bi bi-x-lg"></i> Cerrar
                         </button>
-                        <button type="button" class="btn btn-outline-primary btn-lg" id="btnCorregir" onclick="volverAFormulario()" style="display: none;">
-                            <i class="bi bi-pencil"></i> Corregir
-                        </button>
-                        <button type="button" class="btn btn-primary btn-lg flex-grow-1" id="btnGuardar" onclick="revisarLecturas()">
-                            <i class="bi bi-eye"></i> Revisar
+                        <button type="button" class="btn btn-primary btn-lg flex-grow-1" id="btnGuardar" onclick="guardarRegistro()">
+                            <i class="bi bi-check-lg"></i> Registrar
                         </button>
                     </div>
                     <button type="button" class="btn btn-outline-danger btn-sm w-100 mt-2" id="btnFueraServicio" onclick="abrirModalFueraServicio()">
@@ -1772,8 +1759,8 @@
             // Resetear y llenar datos
             form.reset();
             
-            // Volver a la vista de formulario (ocultar cualquier confirmación previa)
-            mostrarConfirmacionUI(false);
+            // Dejar el botón principal en su estado inicial
+            resetBotonRegistrar();
 
             if (registro) {
                 document.getElementById('registroId').value = registro.id;
@@ -1828,7 +1815,8 @@
         }
 
         // ===== FLUJO DE LECTURAS ORDENADAS AUTOMÁTICAMENTE =====
-        // (stepTemp, ordenarValores, renderConfirmacionLecturas vienen de lecturas.js)
+        // Un solo paso: se registra lo que marca el termómetro y el aviso llega después.
+        // (ordenarValores viene de lecturas.js)
 
         function leerLecturas() {
             const actual = parseFloat(document.getElementById('tempActual').value);
@@ -1840,42 +1828,12 @@
             };
         }
 
-        function mostrarConfirmacionUI(confirmar) {
+        function resetBotonRegistrar() {
             const btn = document.getElementById('btnGuardar');
-            const corregir = document.getElementById('btnCorregir');
-            document.getElementById('formLecturas').style.display = confirmar ? 'none' : 'block';
-            document.getElementById('confirmacionLecturas').style.display = confirmar ? 'block' : 'none';
-            corregir.style.display = confirmar ? 'inline-block' : 'none';
-            if (confirmar) {
-                btn.innerHTML = '<i class="bi bi-check-lg"></i> Guardar';
-                btn.onclick = guardarRegistro;
-                document.getElementById('btnFueraServicio').style.display = 'none';
-            } else {
-                btn.innerHTML = '<i class="bi bi-eye"></i> Revisar';
-                btn.onclick = revisarLecturas;
-                if (termometroSeleccionado && !termometroSeleccionado.fuera_de_servicio) {
-                    document.getElementById('btnFueraServicio').style.display = 'inline-block';
-                }
-            }
-        }
-
-        function revisarLecturas() {
-            const l = leerLecturas();
-            if (!l.ok) {
-                mostrarToast('Las 3 lecturas de temperatura son obligatorias. Por favor ingresa los 3 valores.', 'warning');
-                return;
-            }
-            const { actual, minima, maxima } = ordenarValores(l.actual, l.l2, l.l3);
-            renderConfirmacionLecturas(
-                'tarjetasLecturas', 'barraTermometro', 'confirmacionWarnings',
-                'confMinText', 'confActualText', 'confMaxText',
-                actual, minima, maxima, termometroSeleccionado || {}
-            );
-            mostrarConfirmacionUI(true);
-        }
-
-        function volverAFormulario() {
-            mostrarConfirmacionUI(false);
+            document.getElementById('formLecturas').style.display = 'block';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-lg"></i> Registrar';
+            btn.onclick = guardarRegistro;
         }
 
         // --- FUNCIONES FUERA DE SERVICIO Y REPARACION ---
@@ -2050,14 +2008,25 @@
         async function guardarRegistro() {
             const l = leerLecturas();
             if (!l.ok) {
-                mostrarToast('Ingresa las 3 temperaturas', 'warning');
+                // Marcar los campos que faltan y llevar el foco al primero
+                let primerVacio = null;
+                ['tempActual', 'lectura2', 'lectura3'].forEach(id => {
+                    const el = document.getElementById(id);
+                    const vacio = isNaN(parseFloat(el.value));
+                    el.classList.toggle('is-invalid-temp', vacio);
+                    if (vacio && !primerVacio) primerVacio = el;
+                });
+                if (primerVacio) primerVacio.focus();
+                mostrarToast('Faltan lecturas: las 3 temperaturas son obligatorias', 'warning');
                 return;
             }
+            ['tempActual', 'lectura2', 'lectura3'].forEach(id =>
+                document.getElementById(id).classList.remove('is-invalid-temp'));
             const { actual, minima, maxima } = ordenarValores(l.actual, l.l2, l.l3);
 
             const btn = document.getElementById('btnGuardar');
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...';
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Registrando...';
 
             // Recolectar datos (máxima = la mayor, mínima = la menor, ya ordenado)
             const payload = {
@@ -2084,8 +2053,9 @@
                     // Guardar referencia para precargar la próxima vez
                     localStorage.setItem('ultimaLectura_' + payload.termometro_id,
                         JSON.stringify({ actual, maxima, minima, ts: Date.now() }));
-                    mostrarToast('Guardado exitosamente', 'success');
                     bootstrap.Modal.getInstance(document.getElementById('registroModal')).hide();
+                    // Primero se registra, después se avisa el resultado
+                    mostrarAvisoRegistro(actual, minima, maxima, termometroSeleccionado || {});
                     await refrescarAreaActual();
                 } else {
                     // AQUI CAPTURAMOS EL ERROR DEL BACKEND MEJORADO
@@ -2096,7 +2066,29 @@
                 alert('Error de red: ' + e.message);
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-check-lg"></i> Guardar';
+                btn.innerHTML = '<i class="bi bi-check-lg"></i> Registrar';
+            }
+        }
+
+        // Aviso posterior al registro: confirma lo guardado y alerta si quedó fuera de rango
+        function mostrarAvisoRegistro(actual, minima, maxima, t) {
+            const resumen = `mín ${minima.toFixed(1)} · act ${actual.toFixed(1)} · máx ${maxima.toFixed(1)} °C`;
+            const min = t.temp_min_operativa, max = t.temp_max_operativa;
+            const fuera = [];
+            if (min !== undefined && min !== null && max !== undefined && max !== null) {
+                [['mínima', minima], ['actual', actual], ['máxima', maxima]].forEach(([nombre, v]) => {
+                    if (v < min || v > max) fuera.push(`${nombre} ${v.toFixed(1)}°C`);
+                });
+            }
+            if (fuera.length > 0) {
+                mostrarToast(
+                    `Registrado FUERA DE RANGO (${min}°C a ${max}°C): ${fuera.join(', ')}. Avisa al encargado y deja la acción correctiva.`,
+                    'danger', 8000
+                );
+            } else if ((maxima - minima) > 15) {
+                mostrarToast(`Registrado · ${resumen}. Hay más de 15°C entre mínima y máxima: verifica que no sea un error de tipeo.`, 'warning', 6000);
+            } else {
+                mostrarToast(`Registrado · ${resumen}`, 'success');
             }
         }
 
@@ -2111,7 +2103,7 @@
             si.addEventListener('click',fSi); no.addEventListener('click',fNo); mo.show();
         })}
         function mostrarEstado(m,t){ const s=document.getElementById('scannerStatus');s.className=`alert alert-${t}`;s.textContent=m;s.classList.remove('d-none');setTimeout(()=>s.classList.add('d-none'),3000)}
-        function mostrarToast(m,t){const d=document.createElement('div');d.className=`alert alert-${t} toast-msg`;d.textContent=m;document.body.appendChild(d);setTimeout(()=>d.remove(),3000)}
+        function mostrarToast(m,t,ms){const d=document.createElement('div');d.className=`alert alert-${t} toast-msg`;d.textContent=m;d.onclick=()=>d.remove();document.body.appendChild(d);setTimeout(()=>d.remove(),ms||3000)}
         async function logout(){ await fetch('/api/logout',{method:'POST'}); window.location.href='/login.html';}
         
         // ===== EVENTOS DEL SCANNER =====
@@ -2162,7 +2154,7 @@
         ['tempActual', 'lectura2', 'lectura3'].forEach(configurarInputDecimal);
         configurarNavegacionLecturas(['tempActual', 'lectura2', 'lectura3'], () => {
             const btn = document.getElementById('btnGuardar');
-            if (btn && btn.style.display !== 'none') revisarLecturas();
+            if (btn && btn.style.display !== 'none' && !btn.disabled) guardarRegistro();
         });
 
         checkAuth();
