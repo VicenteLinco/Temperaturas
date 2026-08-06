@@ -1112,20 +1112,20 @@
 
                             <!-- Modos de visualización y opciones avanzadas -->
                             <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top flex-wrap gap-3">
-                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <div class="d-flex align-items-center gap-3 flex-wrap">
                                     <div class="btn-group btn-group-sm rounded-pill overflow-hidden border shadow-2xs" role="group">
                                         <input type="radio" class="btn-check" name="modoVistaGrafico" id="vistaDetallada" value="detallada" checked onchange="renderizarGraficoSegunModo()">
-                                        <label class="btn btn-outline-primary px-3 fw-semibold" for="vistaDetallada"><i class="bi bi-clock-history me-1"></i> Lecturas Individuales</label>
+                                        <label class="btn btn-outline-primary px-3 fw-semibold text-nowrap" for="vistaDetallada"><i class="bi bi-clock-history me-1"></i> Lecturas Individuales</label>
 
                                         <input type="radio" class="btn-check" name="modoVistaGrafico" id="vistaTendencia" value="tendencia" onchange="renderizarGraficoSegunModo()">
-                                        <label class="btn btn-outline-primary px-3 fw-semibold" for="vistaTendencia"><i class="bi bi-graph-up me-1"></i> Promedios Diarios</label>
+                                        <label class="btn btn-outline-primary px-3 fw-semibold text-nowrap" for="vistaTendencia"><i class="bi bi-graph-up me-1"></i> Promedios Diarios</label>
                                     </div>
 
                                     <!-- Selector Densidad de Datos -->
-                                    <div class="d-flex align-items-center gap-1.5 ms-md-2">
-                                        <label for="densidadDatosGrafico" class="form-label small mb-0 text-secondary fw-semibold"><i class="bi bi-magic me-1"></i> Puntos:</label>
-                                        <select id="densidadDatosGrafico" class="form-select form-select-sm rounded-pill border" style="width: auto; font-size: 0.8rem;" onchange="renderizarGraficoSegunModo()">
-                                            <option value="smart" selected>Línea Limpia (Recomendado)</option>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <label for="densidadDatosGrafico" class="form-label small mb-0 text-secondary fw-semibold text-nowrap"><i class="bi bi-magic me-1"></i> Puntos:</label>
+                                        <select id="densidadDatosGrafico" class="form-select form-select-sm rounded-pill border" style="width: auto; min-width: 160px; font-size: 0.8rem;" onchange="renderizarGraficoSegunModo()">
+                                            <option value="smart" selected>Línea Limpia (Filtro)</option>
                                             <option value="all">Ver Todos los Puntos</option>
                                             <option value="hourly">Agrupar por Hora</option>
                                         </select>
@@ -1135,19 +1135,19 @@
                                 <div class="d-flex align-items-center gap-3 flex-wrap">
                                     <div class="form-check form-switch mb-0">
                                         <input class="form-check-input" type="checkbox" id="chkMostrarLimites" checked onchange="renderizarGraficoSegunModo()">
-                                        <label class="form-check-label text-secondary fw-medium small" for="chkMostrarLimites">
+                                        <label class="form-check-label text-secondary fw-medium small text-nowrap" for="chkMostrarLimites">
                                             <i class="bi bi-dash-lg text-danger"></i> Límites Operativos
                                         </label>
                                     </div>
                                     <div class="form-check form-switch mb-0">
                                         <input class="form-check-input" type="checkbox" id="chkResaltarAlertas" checked onchange="renderizarGraficoSegunModo()">
-                                        <label class="form-check-label text-secondary fw-medium small" for="chkResaltarAlertas">
+                                        <label class="form-check-label text-secondary fw-medium small text-nowrap" for="chkResaltarAlertas">
                                             <i class="bi bi-exclamation-triangle-fill text-danger"></i> Alertas en Rojo
                                         </label>
                                     </div>
                                     <div class="form-check form-switch mb-0">
                                         <input class="form-check-input" type="checkbox" id="chkMostrarMaxMin" onchange="renderizarGraficoSegunModo()">
-                                        <label class="form-check-label text-secondary fw-medium small" for="chkMostrarMaxMin">
+                                        <label class="form-check-label text-secondary fw-medium small text-nowrap" for="chkMostrarMaxMin">
                                             <i class="bi bi-arrows-expand text-muted"></i> Máx/Mín Registradas
                                         </label>
                                     </div>
@@ -3329,6 +3329,7 @@
             if (temp != null && !isNaN(temp)) {
                 if (minOp != null && temp < minOp) return true;
                 if (maxOp != null && temp > maxOp) return true;
+                return false; // Si temp_actual está dentro del rango, NO es alerta para el gráfico
             }
             return !!l.fuera_rango_operativo;
         }
@@ -3348,12 +3349,6 @@
                 if (maxOp != null && temp > maxOp) {
                     const diff = (temp - maxOp).toFixed(1);
                     return `La temperatura actual (${temp.toFixed(1)} °C) excede el máximo permitido (${maxOp.toFixed(1)} °C) por ${diff} °C.`;
-                }
-                if (item.temp_maxima != null && maxOp != null && item.temp_maxima > maxOp) {
-                    return `La temperatura máxima registrada (${item.temp_maxima} °C) excede el máximo operativo (${maxOp} °C).`;
-                }
-                if (item.temp_minima != null && minOp != null && item.temp_minima < minOp) {
-                    return `La temperatura mínima registrada (${item.temp_minima} °C) es inferior al mínimo operativo (${minOp} °C).`;
                 }
                 return `La temperatura actual (${temp.toFixed(1)} °C) se encuentra dentro del rango operativo seguro (${minOp != null ? minOp : '-'} °C a ${maxOp != null ? maxOp : '-'} °C).`;
             }
@@ -3390,16 +3385,53 @@
             const container = document.getElementById('graficos_kpis');
             if (!container) return;
 
-            const tieneLecturas = lecturasFiltradas && Array.isArray(lecturasFiltradas);
-            const totalRegistros = tieneLecturas ? lecturasFiltradas.length : (resumenServer ? resumenServer.total_registros : 0);
-            
-            let totalAlertas = 0;
-            if (tieneLecturas) {
-                totalAlertas = lecturasFiltradas.filter(l => esAlertaLectura(l)).length;
-            } else if (resumenServer) {
-                totalAlertas = resumenServer.total_alertas;
+            const tieneTermometros = termometrosSeleccionadosGraficos && termometrosSeleccionadosGraficos.size > 0;
+            const tieneLecturas = tieneTermometros && lecturasFiltradas && Array.isArray(lecturasFiltradas);
+
+            // Si 0 termómetros están seleccionados, mostrar estado de guía en las tarjetas
+            if (!tieneTermometros || !tieneLecturas || lecturasFiltradas.length === 0) {
+                container.innerHTML = `
+                    <div class="col-md-4 col-12 mb-2">
+                        <div class="card text-center h-100 shadow-sm border-0 bg-white" style="border-radius:14px; border-left: 4px solid #6c757d !important;">
+                            <div class="card-body py-3 px-3">
+                                <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
+                                    <i class="bi bi-dash-circle text-secondary fs-5"></i>
+                                    <h3 class="text-secondary fw-bold mb-0">0</h3>
+                                </div>
+                                <div class="text-dark small fw-bold">Registros Visualizados</div>
+                                <div class="text-muted micro-text mt-0.5" style="font-size:0.75rem;">Sin selección activa</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 col-6 mb-2">
+                        <div class="card text-center h-100 shadow-sm border-0 bg-white" style="border-radius:14px; border-left: 4px solid #ff9500 !important;">
+                            <div class="card-body py-3 px-3">
+                                <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
+                                    <i class="bi bi-hand-index-thumb text-warning fs-5"></i>
+                                    <h3 class="text-warning fw-bold mb-0">--</h3>
+                                </div>
+                                <div class="text-dark small fw-bold">En Norma</div>
+                                <div class="text-warning-emphasis micro-text mt-0.5" style="font-size:0.75rem;">Selecciona un termómetro arriba</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 col-6 mb-2">
+                        <div class="card text-center h-100 shadow-sm border-0 bg-white" style="border-radius:14px; border-left: 4px solid #ff9500 !important;">
+                            <div class="card-body py-3 px-3">
+                                <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
+                                    <i class="bi bi-hand-index-thumb text-warning fs-5"></i>
+                                    <h3 class="text-warning fw-bold mb-0">--</h3>
+                                </div>
+                                <div class="text-dark small fw-bold">Fuera de Rango</div>
+                                <div class="text-warning-emphasis micro-text mt-0.5" style="font-size:0.75rem;">Selecciona un termómetro arriba</div>
+                            </div>
+                        </div>
+                    </div>`;
+                return;
             }
 
+            const totalRegistros = lecturasFiltradas.length;
+            const totalAlertas = lecturasFiltradas.filter(l => esAlertaLectura(l)).length;
             const alertaPct = totalRegistros > 0 ? Math.round((totalAlertas / totalRegistros) * 100) : 0;
             const normaCount = Math.max(0, totalRegistros - totalAlertas);
             const normaPct = totalRegistros > 0 ? (100 - alertaPct) : 100;
@@ -3658,38 +3690,32 @@
 
             const totalPuntos = lecturas.length;
             const esModoSmart = (optDensidad === 'smart' && totalPuntos > 35);
-            const radiusBase = esModoSmart ? 0 : (totalPuntos > 60 ? 1 : (totalPuntos > 25 ? 2.5 : 4));
+            const radiusBase = esModoSmart ? 0 : (totalPuntos > 60 ? 1 : (totalPuntos > 25 ? 3 : 5));
 
             let datasets = [];
             const labels = lecturas.map(l => formatearFechaEjeX(l.fecha_registro));
 
             if (termometrosSeleccionadosGraficos.size === 1) {
-                // Termómetro individual: Concepto simplificado Azul (En norma) / Rojo (Alerta)
-                const pointBg = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? '#ff3b30' : '#0071e3');
-                const pointBorder = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? '#ffffff' : '#0057b3');
-                const pointRadius = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? 6.5 : radiusBase);
-                const pointHoverRadius = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? 10 : 8);
-                const pointStyle = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? 'rectRot' : 'circle');
-
-                // Dynamic vertical linear gradient for fill
-                const fillGradient = ctx.createLinearGradient(0, 0, 0, 350);
-                fillGradient.addColorStop(0, isDark ? 'rgba(0, 113, 227, 0.35)' : 'rgba(0, 113, 227, 0.18)');
-                fillGradient.addColorStop(0.75, isDark ? 'rgba(0, 113, 227, 0.05)' : 'rgba(0, 113, 227, 0.02)');
-                fillGradient.addColorStop(1, 'rgba(0, 113, 227, 0.00)');
+                // Termómetro individual: Puntos verdes cuadrados para En Norma, X roja para Alertas
+                const pointBg = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? '#ff3b30' : '#34c759');
+                const pointBorder = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? '#ff3b30' : '#248a3d');
+                const pointRadius = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? 8 : (radiusBase || 5));
+                const pointHoverRadius = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? 11 : 9);
+                const pointStyle = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? 'crossRot' : 'rect');
 
                 datasets.push({
                     label: 'Temp. Actual (°C)',
                     data: lecturas.map(l => l.temp_actual),
-                    borderColor: '#0071e3', // Azul para lecturas en norma
-                    backgroundColor: fillGradient,
+                    borderColor: '#0071e3', // Azul para la línea de temperatura
+                    backgroundColor: 'transparent',
                     tension: 0.35,
                     pointBackgroundColor: pointBg,
                     pointBorderColor: pointBorder,
                     pointRadius: pointRadius,
                     pointHoverRadius: pointHoverRadius,
                     pointStyle: pointStyle,
-                    borderWidth: 3,
-                    fill: true,
+                    borderWidth: 2.8,
+                    fill: false, // SOLO LA LÍNEA, SIN ÁREA SOMBREADA AZUL
                     order: 1
                 });
 
@@ -3720,7 +3746,7 @@
                     });
                 }
             } else {
-                // Multi-termómetro: Colores limpios por sensor, Alertas en ROJO prominente
+                // Multi-termómetro: Colores por sensor, Alertas con X ROJA prominente, En norma con rect verdoso/color
                 const termMap = new Map();
                 lecturas.forEach(l => {
                     if (!termMap.has(l.termometro_id)) {
@@ -3745,25 +3771,25 @@
 
                     const termLecturas = lecturas.map(l => (l.termometro_id === term.id ? l : null));
                     const termData = termLecturas.map(l => (l ? l.temp_actual : null));
-                    const pointBg = termLecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? '#ff3b30' : colorLine);
-                    const pointBorder = termLecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? '#ffffff' : colorLine);
-                    const pointRadius = termLecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? 6.5 : radiusBase);
-                    const pointStyle = termLecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? 'rectRot' : 'circle');
+                    const pointBg = termLecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? '#ff3b30' : '#34c759');
+                    const pointBorder = termLecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? '#ff3b30' : colorLine);
+                    const pointRadius = termLecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? 8 : (radiusBase || 5));
+                    const pointStyle = termLecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? 'crossRot' : 'rect');
 
                     datasets.push({
                         label: term.nombre,
                         data: termData,
                         borderColor: colorLine,
-                        backgroundColor: colorLine,
+                        backgroundColor: 'transparent',
                         tension: 0.3,
                         pointBackgroundColor: pointBg,
                         pointBorderColor: pointBorder,
                         pointRadius: pointRadius,
-                        pointHoverRadius: 8,
+                        pointHoverRadius: 9,
                         pointStyle: pointStyle,
                         borderWidth: 2.2,
                         spanGaps: true,
-                        fill: false,
+                        fill: false, // SOLO LA LÍNEA, SIN ÁREA SOMBREADA
                         order: 1
                     });
                 });
