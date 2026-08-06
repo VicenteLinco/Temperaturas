@@ -87,6 +87,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/areas/:id/pendientes", get(handlers::obtener_pendientes_area))
         .route("/api/registros", post(handlers::crear_registro))
         .route("/api/registros/:id", put(handlers::actualizar_registro))
+        .route("/api/registros/accion-correctiva-lote", post(handlers::accion_correctiva_lote))
         .route("/api/termometros/reportar-fuera-servicio", post(handlers::reportar_fuera_de_servicio))
         .route("/api/termometros/:id/reparar", post(handlers::reparar_termometro))
         .route("/api/registros/informe-dia", get(handlers::generar_informe_dia))

@@ -222,18 +222,6 @@
             border-radius: 3px;
             transition: width 0.5s ease;
         }
-        .area-header-card {
-            background: white;
-            padding: 16px;
-            border-radius: var(--radius);
-            margin-bottom: 20px;
-            box-shadow: var(--shadow-card);
-            border: 1px solid #e2e8f0;
-        }
-        .area-header-card h4 {
-            font-weight: 700;
-        }
-
         /* Botones */
         .btn {
             border-radius: 10px;
@@ -337,6 +325,135 @@
             to { opacity: 1; transform: translate(-50%, 0); }
         }
 
+        /* Evita que un texto largo empuje o solape a su vecino en un flex */
+        .min-width-0 { min-width: 0; }
+
+        /* CABECERA DE PROGRESO — lo único que el operador necesita ver siempre */
+        .progreso-sticky {
+            position: sticky;
+            top: calc(56px + 48px);
+            z-index: 90;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius);
+            padding: 12px 14px;
+            box-shadow: var(--shadow-card);
+        }
+        .progreso-titulo {
+            font-weight: 700;
+            font-size: 1rem;
+            min-width: 0;
+        }
+        .progreso-cifra {
+            font-weight: 800;
+            font-size: 1.35rem;
+            line-height: 1;
+            white-space: nowrap;
+        }
+        .progress-fill.completo {
+            background: linear-gradient(90deg, #16a34a, #22c55e);
+        }
+
+        /* Tarjetas: la acción vive a la derecha y nunca se comprime */
+        .termometro-card { gap: 10px; }
+        .termometro-accion {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+            color: #94a3b8;
+        }
+
+        /* COMPLETADOS PLEGADOS */
+        .completados-acordeon > summary {
+            cursor: pointer;
+            list-style: none;
+            font-weight: 600;
+            font-size: 0.92rem;
+            color: #475569;
+            padding: 12px 14px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            min-height: 48px;
+        }
+        .completados-acordeon > summary::-webkit-details-marker { display: none; }
+        .completados-acordeon > summary::after {
+            content: '\F282';
+            font-family: 'bootstrap-icons';
+            margin-left: auto;
+            transition: transform 0.2s ease;
+        }
+        .completados-acordeon[open] > summary::after { transform: rotate(180deg); }
+
+        .sector-listo {
+            background: white;
+            border: 1px solid #bbf7d0;
+            border-radius: var(--radius);
+            padding: 24px 16px;
+            box-shadow: var(--shadow-card);
+        }
+        .sector-listo i { font-size: 2.6rem; color: #16a34a; }
+
+        /* Lectura fuera de rango: se marca al teclear, nunca bloquea el guardado */
+        .lectura-fuera-rango {
+            border-color: #dc2626 !important;
+            background-color: rgba(220, 38, 38, 0.06) !important;
+            color: #b91c1c !important;
+        }
+
+        /* CIERRE DE RONDA */
+        .cierre-header {
+            background: var(--slate);
+            color: white;
+            gap: 12px;
+            align-items: flex-start;
+            padding-top: calc(1rem + env(safe-area-inset-top));
+        }
+        .cierre-footer {
+            gap: 8px;
+            flex-wrap: nowrap;
+            padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+        }
+        .cierre-footer .btn {
+            min-height: 48px;
+            font-size: 0.85rem;
+            padding-left: 0.4rem;
+            padding-right: 0.4rem;
+            white-space: nowrap;
+        }
+        .cierre-lista {
+            max-height: 40vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .cierre-desvio {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-left: 4px solid #dc2626;
+            background: rgba(220, 38, 38, 0.05);
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+        .cierre-valores {
+            text-align: right;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+        .cierre-lote {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: var(--radius);
+            padding: 14px;
+        }
+        .cierre-lote .btn { min-height: 48px; }
+        .cierre-ok i { font-size: 3rem; color: #16a34a; }
+
         /* Responsive */
         @media (max-width: 575.98px) {
             .main-container {
@@ -346,6 +463,12 @@
             .tabs-container {
                 top: 52px;
             }
+            .progreso-sticky {
+                top: calc(52px + 46px);
+                padding: 10px 12px;
+                border-radius: 12px;
+            }
+            .progreso-cifra { font-size: 1.2rem; }
             .navbar-brand {
                 font-size: 1.05rem;
             }
@@ -359,6 +482,7 @@
             .termometro-card {
                 padding: 13px;
                 margin-bottom: 10px;
+                min-height: 56px;
             }
             .modal .btn-lg {
                 font-size: 1rem;
@@ -366,6 +490,30 @@
             .modal-dialog {
                 margin: 10px;
             }
+            /* Fullscreen real: el modal no se corta bajo el notch ni bajo la barra de gestos */
+            .modal-fullscreen-sm-down .modal-body {
+                padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+            }
+            .modal-fullscreen-sm-down .modal-footer {
+                padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+            }
+            .modal-fullscreen-sm-down .modal-header {
+                padding-top: calc(0.5rem + env(safe-area-inset-top));
+            }
+            .cierre-footer .btn {
+                font-size: 0.78rem;
+                padding-left: 0.25rem;
+                padding-right: 0.25rem;
+            }
+            .cierre-footer .btn i { display: block; margin: 0 auto 2px; }
+            .cierre-lista { max-height: 32vh; }
+        }
+
+        /* Pantallas estrechas (360px): nada de texto truncado a media palabra */
+        @media (max-width: 380px) {
+            .progreso-titulo { font-size: 0.92rem; }
+            .cierre-footer .btn { font-size: 0.72rem; }
+            .termometro-nombre { font-size: 0.95rem; }
         }
     </style>
 </head>
@@ -685,19 +833,29 @@
         </div>
     </div>
 
-    <!-- ... Modales Restantes ... -->
-    <div class="modal fade" id="celebrationModal" tabindex="-1">
-        <!-- ... -->
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content celebration-modal">
-                <div class="modal-body py-5">
-                    <div class="celebration-icon">🎉</div>
-                    <h3 class="mt-3">¡Turno Completado!</h3>
-                    <p id="celebrationMessage" class="text-muted"></p>
-                    <div id="celebrationStats" class="mt-3"></div>
+    <!-- Cierre de ronda: aparece al completar todos los equipos. Todo aquí es opcional. -->
+    <div class="modal fade" id="cierreRondaModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
+            <div class="modal-content">
+                <div class="modal-header cierre-header">
+                    <div class="flex-grow-1 min-width-0">
+                        <div class="modal-title fw-bold" id="cierreTitulo">Ronda completa</div>
+                        <div class="small opacity-75" id="cierreSubtitulo"></div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
-                <div class="modal-footer justify-content-center">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Continuar</button>
+                <div class="modal-body" id="cierreBody"></div>
+                <div class="modal-footer cierre-footer">
+                    <button type="button" class="btn btn-outline-secondary flex-fill" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-outline-primary flex-fill" onclick="descargarInformeFranja('pdf')">
+                        <i class="bi bi-file-earmark-pdf"></i> PDF
+                    </button>
+                    <button type="button" class="btn btn-outline-success flex-fill" id="btnCompartirRonda" onclick="compartirResumenRonda()">
+                        <i class="bi bi-share"></i> Compartir
+                    </button>
+                    <button type="button" class="btn btn-primary flex-fill" onclick="abrirEnviarInforme()">
+                        <i class="bi bi-envelope"></i> Correo
+                    </button>
                 </div>
             </div>
         </div>
@@ -884,7 +1042,17 @@
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Iniciando...';
             }
 
-            const config = { fps: 15, qrbox: { width: 230, height: 230 }, aspectRatio: 1.0 };
+            // El recuadro se calcula sobre el ancho real del visor: en pantallas de 360px
+            // un cuadro fijo de 230px se salía del encuadre y el QR no entraba entero.
+            const config = {
+                fps: 15,
+                aspectRatio: 1.0,
+                qrbox: (anchoVista, altoVista) => {
+                    const lado = Math.floor(Math.min(anchoVista, altoVista) * 0.72);
+                    const acotado = Math.max(150, Math.min(lado, 300));
+                    return { width: acotado, height: acotado };
+                }
+            };
 
             html5QrCode.start({ facingMode: currentFacingMode }, config, onScanSuccess, onScanError)
                 .then(() => {
@@ -1143,6 +1311,15 @@
             }
         }
 
+        // Tras guardar, la cámara vuelve a quedar a la vista sin que el operador toque nada
+        function volverAlEscaner() {
+            const zona = document.getElementById('qr-reader');
+            if (!zona) return;
+            requestAnimationFrame(() => {
+                zona.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+        }
+
         function buscarManualId() {
             const input = document.getElementById('inputManualId');
             if (!input || !input.value) return;
@@ -1160,6 +1337,9 @@
         function filtrarTermometrosEnArea(query) {
             filtroAreaActual = query;
             const q = query.toLowerCase().trim();
+            // Buscar también dentro de los completados plegados
+            const acordeon = document.querySelector('#areaActualContent .completados-acordeon');
+            if (acordeon && q) acordeon.open = true;
             const cards = document.querySelectorAll('#areaActualContent .termometro-card');
             cards.forEach(card => {
                 const text = card.textContent.toLowerCase();
@@ -1192,90 +1372,79 @@
                  `;
              }).join('');
 
+             // Cabecera compacta y fija: lo único que el operador necesita ver siempre
+             // es cuánto le falta. Los KPI detallados viven en la pestaña Resumen.
              let html = `
-                <!-- Carrusel Táctil de Selección Rápida de Áreas -->
-                <div class="mb-3">
-                    <div class="small fw-semibold text-muted mb-1.5"><i class="bi bi-hand-index-thumb me-1"></i>Cambio Rápido de Sector:</div>
-                    <div class="d-flex gap-2 overflow-x-auto pb-2 scrollbar-none" style="scrollbar-width: none;">
-                        ${areaPills}
+                <div class="progreso-sticky">
+                    <div class="d-flex justify-content-between align-items-baseline gap-2">
+                        <div class="progreso-titulo text-truncate">
+                            <i class="bi bi-building me-1"></i>${data.area.nombre}
+                        </div>
+                        <div class="progreso-cifra ${pendientes === 0 ? 'text-success' : ''}">${completados}<span class="text-muted">/${total}</span></div>
+                    </div>
+                    <div class="progress-bar-custom mt-2"><div class="progress-fill ${pendientes === 0 ? 'completo' : ''}" style="width: ${progreso}%"></div></div>
+                    <div class="d-flex justify-content-between align-items-center mt-1.5 gap-2">
+                        <div class="small ${pendientes === 0 ? 'text-success fw-semibold' : 'text-warning fw-semibold'} text-truncate">
+                            ${pendientes === 0
+                                ? '<i class="bi bi-check-circle-fill me-1"></i>Sector completo'
+                                : `<i class="bi bi-hourglass-split me-1"></i>Faltan ${pendientes} equipo${pendientes > 1 ? 's' : ''}`}
+                            ${desvios > 0 ? `<span class="badge bg-danger ms-2">${desvios} desvío${desvios > 1 ? 's' : ''}</span>` : ''}
+                        </div>
+                        ${pendientes === 0
+                            ? '<button class="btn btn-sm btn-success rounded-pill px-3 fw-semibold text-nowrap" onclick="abrirCierreRonda()"><i class="bi bi-flag-fill me-1"></i>Cerrar ronda</button>'
+                            : ''}
                     </div>
                 </div>
 
-                <!-- Info Header del Área Actual -->
-                <div class="area-header-card mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-                        <div>
-                            <h4 class="mb-0 fw-bold"><i class="bi bi-building text-primary me-2"></i>${data.area.nombre}</h4>
-                            <div class="small text-muted mt-1"><i class="bi bi-clock-history me-1"></i>${formatearTextoVentana(data.ventana)}</div>
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge ${progreso === 100 ? 'bg-success' : 'bg-primary'} fs-6 px-3 py-2 rounded-pill">
-                                ${progreso}% Completado
-                            </span>
-                        </div>
-                    </div>
+                <div class="small text-muted mb-2 mt-3"><i class="bi bi-clock-history me-1"></i>${formatearTextoVentana(data.ventana)}</div>
 
-                    <!-- KPI Cards Grid -->
-                    <div class="row g-2 mt-2">
-                        <div class="${desvios > 0 ? 'col-3' : 'col-4'}">
-                            <div class="kpi-card-modern p-2 text-center">
-                                <div class="kpi-label" style="font-size:0.68rem;">EQUIPOS</div>
-                                <div class="kpi-value fs-4 mb-0 text-body">${total}</div>
-                            </div>
-                        </div>
-                        <div class="${desvios > 0 ? 'col-3' : 'col-4'}">
-                            <div class="kpi-card-modern p-2 text-center">
-                                <div class="kpi-label text-success" style="font-size:0.68rem;">LISTOS</div>
-                                <div class="kpi-value fs-4 mb-0 text-success">${completados}</div>
-                            </div>
-                        </div>
-                        <div class="${desvios > 0 ? 'col-3' : 'col-4'}">
-                            <div class="kpi-card-modern p-2 text-center">
-                                <div class="kpi-label text-warning" style="font-size:0.68rem;">PENDIENTES</div>
-                                <div class="kpi-value fs-4 mb-0 text-warning">${pendientes}</div>
-                            </div>
-                        </div>
-                        ${desvios > 0 ? `
-                        <div class="col-3">
-                            <div class="kpi-card-modern p-2 text-center border border-danger">
-                                <div class="kpi-label text-danger" style="font-size:0.68rem;">DESVÍOS</div>
-                                <div class="kpi-value fs-4 mb-0 text-danger">${desvios}</div>
-                            </div>
-                        </div>` : ''}
-                    </div>
-
-                    <div class="progress-bar-custom mt-3"><div class="progress-fill" style="width: ${progreso}%"></div></div>
+                <!-- Cambio de sector a un toque -->
+                <div class="d-flex gap-2 overflow-x-auto pb-2 mb-2 scrollbar-none" style="scrollbar-width: none;">
+                    ${areaPills}
                 </div>
 
                 <div class="mb-3">
                     <div class="search-filter-box">
                         <i class="bi bi-search"></i>
-                        <input type="text" id="buscadorArea" class="form-control" value="${filtroAreaActual.replace(/"/g, '&quot;')}" placeholder="Buscar equipo o sensor en este sector (Ctrl+K)" oninput="filtrarTermometrosEnArea(this.value)">
+                        <input type="text" id="buscadorArea" class="form-control" value="${filtroAreaActual.replace(/"/g, '&quot;')}" placeholder="Buscar equipo o sensor (Ctrl+K)" oninput="filtrarTermometrosEnArea(this.value)">
                     </div>
                 </div>
              `;
-             
-             // Pendientes
+
+             // Pendientes: lo único que se ve expandido, en tarjetas grandes y táctiles
              if(data.pendientes.length > 0) {
-                 html += `<div class="termometros-section"><div class="section-title text-warning"><i class="bi bi-hourglass-split"></i> Pendientes de Registro (${data.pendientes.length})</div>`;
+                 html += `<div class="termometros-section"><div class="section-title text-warning"><i class="bi bi-hourglass-split"></i> Por registrar (${data.pendientes.length})</div>`;
                  data.pendientes.forEach(t => {
                      html += `<div class="termometro-card pendiente" onclick="seleccionarTermometro(${t.id})">
-                        <div>
-                            <div class="termometro-nombre fw-bold">${t.nombre || 'ID: '+t.id}</div>
-                            <div class="small text-muted"><i class="bi bi-cpu me-1"></i>${t.tipo_nombre} ${t.temp_min_operativa !== undefined ? `&bull; Rango: ${t.temp_min_operativa}°C a ${t.temp_max_operativa}°C` : ''}</div>
+                        <div class="min-width-0">
+                            <div class="termometro-nombre fw-bold text-truncate">${t.nombre || 'ID: '+t.id}</div>
+                            <div class="small text-muted text-truncate"><i class="bi bi-cpu me-1"></i>${t.tipo_nombre}${t.temp_min_operativa !== undefined ? ` &bull; ${t.temp_min_operativa}°C a ${t.temp_max_operativa}°C` : ''}</div>
                         </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge bg-warning-subtle text-warning fw-semibold px-2 py-1" style="font-size:0.75rem;">Pendiente</span>
-                            <i class="bi bi-chevron-right text-muted"></i>
+                        <div class="termometro-accion">
+                            <i class="bi bi-chevron-right"></i>
                         </div>
                      </div>`;
                  });
                  html += `</div>`;
+             } else if (total > 0) {
+                 html += `
+                    <div class="sector-listo text-center">
+                        <i class="bi bi-check2-circle"></i>
+                        <div class="fw-bold mt-2">Sector completo</div>
+                        <div class="small text-muted">${total} equipo${total > 1 ? 's' : ''} registrado${total > 1 ? 's' : ''} en esta ventana.</div>
+                    </div>`;
              }
-             
-             // Completados
+
+             // Completados: plegados para no competir con lo que falta
              if(data.completados.length > 0) {
-                 html += `<div class="termometros-section mt-4"><div class="section-title text-success"><i class="bi bi-check-circle-fill"></i> Completados en este Turno (${data.completados.length})${desvios > 0 ? ` <span class="badge bg-danger ms-2">${desvios} con desvío</span>` : ''}</div>`;
+                 html += `
+                    <details class="completados-acordeon mt-3" ${desvios > 0 ? 'open' : ''}>
+                        <summary>
+                            <i class="bi bi-check-circle-fill text-success me-1"></i>
+                            Completados (${data.completados.length})
+                            ${desvios > 0 ? `<span class="badge bg-danger ms-2">${desvios} con desvío</span>` : ''}
+                        </summary>
+                        <div class="pt-2">`;
                  data.completados.forEach(r => {
                      const prev = JSON.parse(localStorage.getItem('ultimaLectura_' + r.termometro_id) || 'null');
                      const prevVal = prev ? prev.actual : null;
@@ -1285,19 +1454,17 @@
                         ? '<span class="badge bg-danger text-white fw-semibold px-2 py-1" style="font-size:0.75rem;">Fuera de rango</span>'
                         : '<span class="badge bg-success-subtle text-success fw-semibold px-2 py-1" style="font-size:0.75rem;">Completo</span>';
                      html += `<div class="termometro-card completado ${desvio ? 'desvio' : ''}" onclick="editarRegistro(${r.termometro_id})">
-                        <div>
-                            <div class="termometro-nombre fw-bold d-flex align-items-center">${desvio ? '<i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>' : ''}${r.termometro_nombre} ${badgeTendencia}</div>
-                            <div class="small text-muted">Actual: <strong class="${desvio ? 'text-danger' : 'text-success'}">${r.temp_actual ?? '-'}°C</strong> &bull; Mín: ${r.temp_minima}°C &bull; Máx: ${r.temp_maxima}°C &bull; ${formatearHora(r.fecha_registro)}</div>
-                            ${desvio && r.observaciones ? `<div class="small text-danger fst-italic mt-1"><i class="bi bi-chat-left-text me-1"></i>${r.observaciones}</div>` : ''}
-                            ${desvio && !r.observaciones ? '<div class="small text-danger fw-semibold mt-1"><i class="bi bi-pencil-square me-1"></i>Falta la acción correctiva</div>' : ''}
+                        <div class="min-width-0">
+                            <div class="termometro-nombre fw-bold d-flex align-items-center gap-1 text-truncate">${desvio ? '<i class="bi bi-exclamation-triangle-fill text-danger"></i>' : ''}<span class="text-truncate">${r.termometro_nombre}</span> ${badgeTendencia}</div>
+                            <div class="small text-muted text-truncate">Act. <strong class="${desvio ? 'text-danger' : 'text-success'}">${r.temp_actual ?? '-'}°C</strong> &bull; ${r.temp_minima}° / ${r.temp_maxima}° &bull; ${formatearHora(r.fecha_registro)}</div>
+                            ${desvio && r.observaciones ? `<div class="small text-danger fst-italic mt-1 text-truncate"><i class="bi bi-chat-left-text me-1"></i>${r.observaciones}</div>` : ''}
                         </div>
-                        <div class="d-flex align-items-center gap-2">
+                        <div class="termometro-accion">
                             ${estadoBadge}
-                            <i class="bi bi-chevron-right text-muted"></i>
                         </div>
                      </div>`;
                  });
-                 html += `</div>`;
+                 html += `</div></details>`;
              }
              container.innerHTML = html;
 
@@ -1479,11 +1646,10 @@
                     </div>
                 </div>`;
 
-             // Notificar y preguntar por correo una sola vez cuando se completa la franja
+             // Al completarse la franja se ofrece el cierre de ronda (opcional, no bloquea)
              if (completo && !informeNotificado) {
                  informeNotificado = true;
-                 mostrarToast('¡Franja horaria completada! Se generó el informe.', 'success');
-                 setTimeout(() => preguntarEnviarInforme(), 800);
+                 verificarCierreRonda();
              } else if (!completo) {
                  informeNotificado = false;
              }
@@ -1675,15 +1841,6 @@
             }
         }
 
-        async function preguntarEnviarInforme() {
-            // Notificación no invasiva solo al completar franja
-            const quiere = await mostrarConfirmacion(
-                'Informe de Cierre de Franja',
-                'Has completado las mediciones del turno. ¿Deseas enviar el informe consolidado al <strong>Encargado del Laboratorio</strong> por correo?'
-            );
-            if (quiere) abrirEnviarInforme();
-        }
-
         function abrirEnviarInforme() {
             // Cargar correo configurable previo guardado en localStorage o por defecto
             const emailGuardado = localStorage.getItem('email_encargado_configurado') || 'encargado@laboratorio.cl';
@@ -1724,6 +1881,195 @@
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = original;
+            }
+        }
+
+        // ===== CIERRE DE RONDA =====
+        // Todo lo de aquí es opcional: la ronda ya quedó registrada. Este paso solo
+        // sirve para justificar los desvíos de una sola vez y avisar al encargado.
+
+        // Devuelve los desvíos de la ronda actual (todas las áreas cargadas)
+        function recopilarDesviosRonda() {
+            const desvios = [];
+            Object.values(areasData).forEach(data => {
+                (data.completados || []).forEach(r => {
+                    if (!r.fuera_rango_operativo) return;
+                    desvios.push({
+                        registro_id: r.id,
+                        area: data.area?.nombre || r.area_nombre || '',
+                        equipo: r.termometro_nombre || ('ID ' + r.termometro_id),
+                        actual: r.temp_actual,
+                        minima: r.temp_minima,
+                        maxima: r.temp_maxima,
+                        observaciones: r.observaciones,
+                        hora: formatearHora(r.fecha_registro)
+                    });
+                });
+            });
+            return desvios;
+        }
+
+        function totalesRonda() {
+            let completados = 0, pendientes = 0;
+            Object.values(areasData).forEach(d => {
+                completados += (d.completados || []).length;
+                pendientes += (d.pendientes || []).length;
+            });
+            return { completados, pendientes, total: completados + pendientes };
+        }
+
+        // Una sola aparición automática por franja: si el operador lo cierra, no vuelve a saltar
+        function claveCierreRonda() {
+            const ventana = Object.values(areasData)[0]?.ventana || '-';
+            return `cierre_mostrado_${formatearFechaHoy()}_${ventana}`;
+        }
+
+        function verificarCierreRonda() {
+            const { total, pendientes } = totalesRonda();
+            if (total === 0 || pendientes > 0) return;
+            const clave = claveCierreRonda();
+            if (localStorage.getItem(clave)) return;
+            localStorage.setItem(clave, '1');
+            // Se deja respirar el toast del último registro antes de abrir el cierre
+            setTimeout(() => abrirCierreRonda(), 900);
+        }
+
+        function abrirCierreRonda() {
+            renderCierreRonda();
+            new bootstrap.Modal(document.getElementById('cierreRondaModal')).show();
+        }
+
+        function renderCierreRonda() {
+            const { completados, total } = totalesRonda();
+            const desvios = recopilarDesviosRonda();
+            const ventana = Object.values(areasData)[0]?.ventana || '';
+
+            document.getElementById('cierreTitulo').textContent = desvios.length > 0
+                ? `Ronda completa · ${desvios.length} desvío${desvios.length > 1 ? 's' : ''}`
+                : 'Ronda completa sin desvíos';
+            document.getElementById('cierreSubtitulo').textContent =
+                `${completados} de ${total} equipos${ventana ? ' · ventana ' + ventana : ''}`;
+
+            const body = document.getElementById('cierreBody');
+
+            if (desvios.length === 0) {
+                body.innerHTML = `
+                    <div class="cierre-ok text-center py-4">
+                        <i class="bi bi-shield-check"></i>
+                        <div class="fw-bold mt-2">Todos los equipos operaron dentro de rango</div>
+                        <div class="small text-muted mt-1">No hay nada que notificar. Puedes cerrar sin más pasos.</div>
+                    </div>`;
+                return;
+            }
+
+            const items = desvios.map(d => `
+                <div class="cierre-desvio">
+                    <div class="min-width-0">
+                        <div class="fw-semibold text-truncate">${d.equipo}</div>
+                        <div class="small text-muted text-truncate">${d.area} · ${d.hora}</div>
+                        ${d.observaciones ? `<div class="small fst-italic text-muted text-truncate"><i class="bi bi-chat-left-text me-1"></i>${d.observaciones}</div>` : ''}
+                    </div>
+                    <div class="cierre-valores">
+                        <span class="badge bg-danger-subtle text-danger">${d.actual ?? '-'}°C</span>
+                        <div class="small text-muted mt-1">${d.minima}° / ${d.maxima}°</div>
+                    </div>
+                </div>`).join('');
+
+            body.innerHTML = `
+                <div class="alert alert-warning py-2 px-3 small mb-3">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Las lecturas ya quedaron guardadas. Justificar y notificar es <strong>opcional</strong>.
+                </div>
+
+                <div class="cierre-lista mb-3">${items}</div>
+
+                <div class="cierre-lote">
+                    <div class="fw-bold small mb-1">
+                        <i class="bi bi-lightning-charge-fill text-warning me-1"></i>
+                        Acción correctiva para los ${desvios.length} desvíos
+                    </div>
+                    <div class="small text-muted mb-2">Se escribe una vez y se aplica a todos.</div>
+                    <div id="chipsLoteCierre"></div>
+                    <textarea class="form-control mb-2" id="accionCorrectivaLote" rows="2"
+                        placeholder="Ej: se avisó al encargado y se ajustaron los equipos..."></textarea>
+                    <button type="button" class="btn btn-warning w-100 fw-bold" id="btnAplicarLote" onclick="aplicarAccionCorrectivaLote()">
+                        <i class="bi bi-check2-all"></i> Aplicar a los ${desvios.length} desvíos
+                    </button>
+                </div>`;
+
+            renderChipsAccionCorrectiva('chipsLoteCierre', 'accionCorrectivaLote');
+        }
+
+        async function aplicarAccionCorrectivaLote() {
+            const txt = document.getElementById('accionCorrectivaLote');
+            const texto = txt.value.trim();
+            if (!texto) {
+                mostrarToast('Escribe la acción correctiva o elige un chip', 'warning');
+                txt.focus();
+                return;
+            }
+
+            const ids = recopilarDesviosRonda().map(d => d.registro_id).filter(id => id != null);
+            if (ids.length === 0) return;
+
+            const btn = document.getElementById('btnAplicarLote');
+            const original = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Aplicando...';
+
+            try {
+                const res = await fetch('/api/registros/accion-correctiva-lote', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ registro_ids: ids, observaciones: texto })
+                });
+                if (!res.ok) throw new Error(await res.text());
+                const data = await res.json().catch(() => ({}));
+                mostrarToast(`Acción correctiva aplicada a ${data.actualizados ?? ids.length} registro(s)`, 'success');
+                await refrescarAreaActual();
+                renderCierreRonda();
+            } catch (e) {
+                mostrarToast('No se pudo aplicar la acción correctiva: ' + e.message, 'danger', 6000);
+                btn.disabled = false;
+                btn.innerHTML = original;
+            }
+        }
+
+        function textoResumenRonda() {
+            const { completados, total } = totalesRonda();
+            const ventana = Object.values(areasData)[0]?.ventana || '';
+            const desvios = recopilarDesviosRonda();
+            const lineas = [
+                `Control de temperaturas · ${formatearFechaHoy()}${ventana ? ' · ventana ' + ventana : ''}`,
+                `Equipos registrados: ${completados}/${total}`,
+                ''
+            ];
+            if (desvios.length === 0) {
+                lineas.push('Sin desvíos: todos los equipos dentro de rango.');
+            } else {
+                lineas.push(`Desvíos detectados: ${desvios.length}`);
+                desvios.forEach(d => {
+                    lineas.push(`• ${d.area} · ${d.equipo}: actual ${d.actual ?? '-'}°C (mín ${d.minima}° / máx ${d.maxima}°)${d.observaciones ? ' — ' + d.observaciones : ''}`);
+                });
+            }
+            return lineas.join('\n');
+        }
+
+        async function compartirResumenRonda() {
+            const texto = textoResumenRonda();
+            if (navigator.share) {
+                try {
+                    await navigator.share({ title: 'Resumen de ronda de temperaturas', text: texto });
+                    return;
+                } catch (e) {
+                    if (e.name === 'AbortError') return; // el usuario canceló el menú de compartir
+                }
+            }
+            try {
+                await navigator.clipboard.writeText(texto);
+                mostrarToast('Resumen copiado: pégalo en WhatsApp o correo', 'success', 5000);
+            } catch (e) {
+                mostrarToast('No se pudo compartir en este dispositivo', 'warning');
             }
         }
 
@@ -1835,10 +2181,8 @@
             // Renderizar Chips de Acciones Correctivas
             renderChipsAccionCorrectiva('chipsAccionCorrectiva', 'observaciones');
 
-            // Función interna para actualizar alerta en vivo.
-            // Si una lectura sale del rango, se abre sola la caja de acción correctiva:
-            // es justo cuando el operador la necesita y evita un tap extra.
-            let obsAbiertaPorDesvio = false;
+            // Alerta en vivo: marca el desvío mientras se teclea, pero nunca frena el guardado.
+            // La acción correctiva no se pide aquí; se aplica por lote al cerrar la ronda.
             const updateLiveEval = () => {
                 const act = parseFloat(document.getElementById('tempActual').value);
                 const l2 = parseFloat(document.getElementById('lectura2').value);
@@ -1846,12 +2190,14 @@
                 evaluarRangoEnTiempoReal(termometro, isNaN(act)?null:act, isNaN(l3)?null:l3, isNaN(l2)?null:l2, 'liveRangeAlert');
 
                 const min = termometro.temp_min_operativa, max = termometro.temp_max_operativa;
-                if (obsAbiertaPorDesvio || min === undefined || max === undefined) return;
-                const fuera = [act, l2, l3].some(v => !isNaN(v) && (v < min || v > max));
-                if (fuera) {
-                    obsAbiertaPorDesvio = true;
-                    toggleObservaciones(true);
-                }
+                const fuera = (min !== undefined && max !== undefined) &&
+                    [act, l2, l3].some(v => !isNaN(v) && (v < min || v > max));
+                ['tempActual', 'lectura2', 'lectura3'].forEach(id => {
+                    const el = document.getElementById(id);
+                    const v = parseFloat(el.value);
+                    const malo = fuera && !isNaN(v) && (v < min || v > max);
+                    el.classList.toggle('lectura-fuera-rango', malo);
+                });
             };
 
             ['tempActual', 'lectura2', 'lectura3'].forEach(id => {
@@ -2152,7 +2498,10 @@
                     bootstrap.Modal.getInstance(document.getElementById('registroModal')).hide();
                     // Primero se registra, después se avisa el resultado
                     mostrarAvisoRegistro(actual, minima, maxima, termometroSeleccionado || {});
+                    volverAlEscaner();
                     await refrescarAreaActual();
+                    // Al cerrar el último equipo se ofrece (sin bloquear) el cierre de ronda
+                    verificarCierreRonda();
                 } else {
                     // Mensaje específico del backend (el modal queda abierto con los datos)
                     const errText = await res.text();
@@ -2250,10 +2599,9 @@
             document.body.style.paddingRight = '';
 
             // Al cerrar el modal, reiniciamos el scanner automáticamente
-            console.log('Modal cerrado, reiniciando scanner...');
             setTimeout(() => {
                 reanudarScannerSiPausado();
-            }, 200);
+            }, 120);
         });
 
         const modalConfirm = document.getElementById('confirmacionModal');

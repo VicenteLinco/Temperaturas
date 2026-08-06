@@ -433,3 +433,59 @@ pub async fn eliminar_registro(
 
     Ok(StatusCode::OK)
 }
+
+#[derive(Deserialize, serde::Serialize)]
+pub struct AccionCorrectivaLoteRequest {
+    pub registro_ids: Vec<i32>,
+    pub observaciones: String,
+}
+
+/// Aplica una misma acción correctiva a todos los desvíos de la ronda de una vez.
+/// El operador la escribe una sola vez al cerrar la franja, no equipo por equipo.
+pub async fn accion_correctiva_lote(
+    current_user: CurrentUser,
+    State(pool): State<PgPool>,
+    Json(payload): Json<AccionCorrectivaLoteRequest>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let texto = payload.observaciones.trim().to_string();
+    if texto.is_empty() {
+        return Err((StatusCode::BAD_REQUEST, "La acción correctiva no puede ir vacía".to_string()));
+    }
+    if payload.registro_ids.is_empty() {
+        return Err((StatusCode::BAD_REQUEST, "No se indicaron registros".to_string()));
+    }
+
+    let es_admin = current_user.0.rol == "ADMINISTRADOR";
+
+    // Si el registro ya traía una observación, la nueva se anexa en vez de sobrescribirla
+    let resultado = sqlx::query(
+        r#"
+        UPDATE registros SET observaciones = CASE
+            WHEN observaciones IS NULL OR btrim(observaciones) = '' THEN $1
+            ELSE observaciones || ' · ' || $1
+        END
+        WHERE id = ANY($2) AND ($3 OR usuario_id = $4)
+        "#
+    )
+    .bind(&texto)
+    .bind(&payload.registro_ids)
+    .bind(es_admin)
+    .bind(current_user.0.id as i32)
+    .execute(&pool)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error al aplicar la acción correctiva: {}", e)))?;
+
+    log_auditoria(
+        &pool,
+        current_user.0.id.try_into().unwrap_or(0),
+        "UPDATE_LOTE",
+        "registros",
+        None,
+        None,
+        Some(&serde_json::to_string(&payload).unwrap_or_default()),
+    )
+    .await
+    .ok();
+
+    Ok(Json(serde_json::json!({ "actualizados": resultado.rows_affected() })))
+}
