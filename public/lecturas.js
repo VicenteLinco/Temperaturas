@@ -274,7 +274,7 @@ function evaluarRangoEnTiempoReal(t, actual, minima, maxima, alertContainerId) {
                 <span>FUERA DE RANGO OPERATIVO (Límite: <strong>${minOp}°C a ${maxOp}°C</strong>)</span>
             </div>
             <div class="small mt-1 text-danger-emphasis">
-                Medición <strong>${fueraDeRangoCritico.join(', ')}</strong> fuera de norma. Se registrará la observación.
+                Medición <strong>${fueraDeRangoCritico.join(', ')}</strong> fuera de norma. Se incluirá en el resumen de incidencias.
             </div>
         `;
     } else if (actual !== null || minima !== null || maxima !== null) {
@@ -324,6 +324,5 @@ function setupGlobalShortcuts() {
 document.addEventListener('DOMContentLoaded', () => {
     setupGlobalShortcuts();
 });
-
 
 

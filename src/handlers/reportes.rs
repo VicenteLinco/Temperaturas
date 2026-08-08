@@ -191,17 +191,30 @@ pub struct FiltrosReporteIncidencias {
     pub formato: String,
 }
 
+const CONDICION_HUMEDAD_NO_DISPONIBLE: &str = "(r.observaciones LIKE '%[HUMEDAD:LOW]%' OR r.observaciones LIKE '%[HUMEDAD:ERROR]%')";
+
+fn condicion_reporte_incidencias(tipo: Option<&str>) -> String {
+    match tipo {
+        // LOW/ERROR es una incidencia aunque las temperaturas estén dentro de rango.
+        Some("fuera_rango") => format!(
+            "(r.fuera_rango_operativo = true OR {})",
+            CONDICION_HUMEDAD_NO_DISPONIBLE
+        ),
+        Some("fuera_servicio") => "t.fuera_de_servicio = true".to_string(),
+        _ => format!(
+            "(r.fuera_rango_operativo = true OR t.fuera_de_servicio = true OR {})",
+            CONDICION_HUMEDAD_NO_DISPONIBLE
+        ),
+    }
+}
+
 pub async fn generar_reporte_incidencias(
     _current_user: CurrentUser,
     State(pool): State<PgPool>,
     Query(filtros): Query<FiltrosReporteIncidencias>,
 ) -> Result<(StatusCode, Vec<u8>), StatusCode> {
     // El filtro de estado viene del selector de la vista de reportes (admin.html)
-    let condicion = match filtros.tipo.as_deref() {
-        Some("fuera_rango") => "r.fuera_rango_operativo = true",
-        Some("fuera_servicio") => "t.fuera_de_servicio = true",
-        _ => "(r.fuera_rango_operativo = true OR t.fuera_de_servicio = true)",
-    };
+    let condicion = condicion_reporte_incidencias(filtros.tipo.as_deref());
 
     // "Solo Mediciones" exporta las lecturas sin la columna de acciones correctivas
     let columna_observaciones = match filtros.incluir_observaciones.as_deref() {
@@ -238,6 +251,26 @@ pub async fn generar_reporte_incidencias(
         generar_csv_diario(rows, &fecha_tag)
     } else {
         generar_pdf_diario(rows, &format!("Auditoría de Incidencias HACCP ({})", fecha_tag))
+    }
+}
+
+#[cfg(test)]
+mod tests_reporte_incidencias {
+    use super::*;
+
+    #[test]
+    fn reporte_incidencias_incluye_low_y_error_con_temperatura_normal() {
+        let todas = condicion_reporte_incidencias(None);
+        assert!(todas.contains("[HUMEDAD:LOW]"));
+        assert!(todas.contains("[HUMEDAD:ERROR]"));
+
+        let mediciones = condicion_reporte_incidencias(Some("fuera_rango"));
+        assert!(mediciones.contains("r.fuera_rango_operativo = true"));
+        assert!(mediciones.contains("[HUMEDAD:LOW]"));
+        assert!(mediciones.contains("[HUMEDAD:ERROR]"));
+
+        let servicio = condicion_reporte_incidencias(Some("fuera_servicio"));
+        assert_eq!(servicio, "t.fuera_de_servicio = true");
     }
 }
 

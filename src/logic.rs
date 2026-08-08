@@ -1,6 +1,6 @@
-use chrono::{NaiveTime, NaiveDate, Local, Timelike};
-use anyhow::{Result, anyhow};
 use crate::models::TipoTermometro;
+use anyhow::{anyhow, Result};
+use chrono::{Local, NaiveDate, NaiveTime, Timelike};
 
 /// Representa una ventana horaria de registro
 #[derive(Debug, Clone)]
@@ -21,15 +21,15 @@ pub struct VentanaHoraria {
 fn esta_en_rango(hora_central: NaiveTime, tolerancia_minutos: i32, ahora: NaiveTime) -> bool {
     let minutos_central = hora_central.num_seconds_from_midnight() as i64 / 60;
     let minutos_ahora = ahora.num_seconds_from_midnight() as i64 / 60;
-    
+
     // Normalizar a un día de 1440 minutos
     let diff = (minutos_ahora - minutos_central).abs();
-    
+
     // Caso directo: diferencia menor a tolerancia
     if diff <= tolerancia_minutos as i64 {
         return true;
     }
-    
+
     // Caso cruce medianoche: (ej: central 02:00 (120m), ahora 23:00 (1380m))
     let diff_circular = 1440 - diff;
     if diff_circular <= tolerancia_minutos as i64 {
@@ -41,8 +41,8 @@ fn esta_en_rango(hora_central: NaiveTime, tolerancia_minutos: i32, ahora: NaiveT
 
 /// Determina la ventana horaria actual basándose en la hora de Chile
 pub fn determinar_ventana_actual(
-    hora_1: &str,  // "14:00" turno día
-    hora_2: &str,  // "02:00" turno noche
+    hora_1: &str, // "14:00" turno día
+    hora_2: &str, // "02:00" turno noche
     tolerancia_minutos: i32,
     restriccion_activa: bool,
 ) -> Result<Option<VentanaHoraria>> {
@@ -55,10 +55,10 @@ pub fn determinar_ventana_actual(
 
     if restriccion_activa {
         if esta_en_rango(hora_central_1, tolerancia_minutos, ahora) {
-             let hora_inicio_dia = NaiveTime::from_hms_opt(8, 0, 0).unwrap();
-             let hora_fin_dia = NaiveTime::from_hms_opt(20, 0, 0).unwrap();
-             
-             Ok(Some(VentanaHoraria {
+            let hora_inicio_dia = NaiveTime::from_hms_opt(8, 0, 0).unwrap();
+            let hora_fin_dia = NaiveTime::from_hms_opt(20, 0, 0).unwrap();
+
+            Ok(Some(VentanaHoraria {
                 nombre: hora_1.to_string(),
                 hora_central: hora_central_1,
                 hora_inicio: hora_inicio_dia,
@@ -66,10 +66,10 @@ pub fn determinar_ventana_actual(
                 es_turno_noche: false,
             }))
         } else if esta_en_rango(hora_central_2, tolerancia_minutos, ahora) {
-             let hora_inicio_dia = NaiveTime::from_hms_opt(8, 0, 0).unwrap();
-             let hora_fin_dia = NaiveTime::from_hms_opt(20, 0, 0).unwrap();
-             
-             Ok(Some(VentanaHoraria {
+            let hora_inicio_dia = NaiveTime::from_hms_opt(8, 0, 0).unwrap();
+            let hora_fin_dia = NaiveTime::from_hms_opt(20, 0, 0).unwrap();
+
+            Ok(Some(VentanaHoraria {
                 nombre: hora_2.to_string(),
                 hora_central: hora_central_2,
                 hora_inicio: hora_fin_dia,
@@ -136,8 +136,16 @@ pub fn estado_ventana_actual(
     tolerancia_minutos: i32,
     restriccion_activa: bool,
 ) -> Result<EstadoVentana> {
-    let ahora = Local::now().with_timezone(&chrono_tz::America::Santiago).time();
-    estado_ventana_en(hora_1, hora_2, tolerancia_minutos, restriccion_activa, ahora)
+    let ahora = Local::now()
+        .with_timezone(&chrono_tz::America::Santiago)
+        .time();
+    estado_ventana_en(
+        hora_1,
+        hora_2,
+        tolerancia_minutos,
+        restriccion_activa,
+        ahora,
+    )
 }
 
 /// Igual que `estado_ventana_actual` pero con la hora inyectada, para poder probarla.
@@ -169,7 +177,11 @@ pub fn estado_ventana_en(
         } else {
             construir(hora_2, central_2, true)
         };
-        return Ok(EstadoVentana { ventana, activa: true, proxima_apertura: ahora });
+        return Ok(EstadoVentana {
+            ventana,
+            activa: true,
+            proxima_apertura: ahora,
+        });
     }
 
     let candidatas = [(hora_1, central_1, false), (hora_2, central_2, true)];
@@ -204,7 +216,10 @@ pub fn estado_ventana_en(
         }
 
         let desde_cierre = minutos_hacia_adelante(cierre, ahora_min);
-        if ultima.as_ref().map_or(true, |(d, _, _, _)| desde_cierre < *d) {
+        if ultima
+            .as_ref()
+            .map_or(true, |(d, _, _, _)| desde_cierre < *d)
+        {
             ultima = Some((desde_cierre, nombre, *central, *noche));
         }
     }
@@ -215,14 +230,21 @@ pub fn estado_ventana_en(
     Ok(EstadoVentana {
         ventana: construir(nombre, central, noche),
         activa: false,
-        proxima_apertura: NaiveTime::from_hms_opt((apertura / 60) as u32, (apertura % 60) as u32, 0)
-            .ok_or_else(|| anyhow!("hora de apertura inválida"))?,
+        proxima_apertura: NaiveTime::from_hms_opt(
+            (apertura / 60) as u32,
+            (apertura % 60) as u32,
+            0,
+        )
+        .ok_or_else(|| anyhow!("hora de apertura inválida"))?,
     })
 }
 
 /// Calcula el día asignado para un registro basándose en el turno
 #[allow(dead_code)]
-pub fn calcular_dia_asignado(ventana: &VentanaHoraria, fecha_registro: &chrono::NaiveDateTime) -> NaiveDate {
+pub fn calcular_dia_asignado(
+    ventana: &VentanaHoraria,
+    fecha_registro: &chrono::NaiveDateTime,
+) -> NaiveDate {
     let fecha_actual = fecha_registro.date();
 
     if ventana.es_turno_noche {
@@ -271,18 +293,23 @@ pub fn validar_temperatura(
 }
 
 /// Valida una medición de humedad
-pub fn validar_humedad(
-    humedad: f32,
-    tipo: &TipoTermometro,
-) -> Result<ValidacionResultado> {
+pub fn validar_humedad(humedad: f32, tipo: &TipoTermometro) -> Result<ValidacionResultado> {
     if !tipo.tiene_humedad {
         return Err(anyhow!("Este tipo de termómetro no mide humedad"));
     }
 
-    let hum_min_fisica = tipo.hum_min_fisica.ok_or(anyhow!("Rango físico de humedad no configurado"))?;
-    let hum_max_fisica = tipo.hum_max_fisica.ok_or(anyhow!("Rango físico de humedad no configurado"))?;
-    let hum_min_operativa = tipo.hum_min_operativa.ok_or(anyhow!("Rango operativo de humedad no configurado"))?;
-    let hum_max_operativa = tipo.hum_max_operativa.ok_or(anyhow!("Rango operativo de humedad no configurado"))?;
+    let hum_min_fisica = tipo
+        .hum_min_fisica
+        .ok_or(anyhow!("Rango físico de humedad no configurado"))?;
+    let hum_max_fisica = tipo
+        .hum_max_fisica
+        .ok_or(anyhow!("Rango físico de humedad no configurado"))?;
+    let hum_min_operativa = tipo
+        .hum_min_operativa
+        .ok_or(anyhow!("Rango operativo de humedad no configurado"))?;
+    let hum_max_operativa = tipo
+        .hum_max_operativa
+        .ok_or(anyhow!("Rango operativo de humedad no configurado"))?;
 
     if humedad < hum_min_fisica || humedad > hum_max_fisica {
         return Ok(ValidacionResultado::Rechazo(format!(
@@ -301,11 +328,26 @@ pub fn validar_humedad(
     Ok(ValidacionResultado::Ok)
 }
 
+/// LOW/ERROR is persisted in observations so a missing numeric humidity is
+/// explicit, auditable, and can be included in the incident summary.
+pub fn observacion_reporta_humedad_no_disponible(observaciones: Option<&str>) -> bool {
+    observaciones
+        .is_some_and(|texto| texto.contains("[HUMEDAD:LOW]") || texto.contains("[HUMEDAD:ERROR]"))
+}
+
+/// Resolves PATCH/PUT-style nullable fields: omitted keeps the persisted value,
+/// while an explicit JSON null clears it.
+pub fn resolver_campo_nullable<T>(nuevo: Option<Option<T>>, actual: Option<T>) -> Option<T> {
+    nuevo.unwrap_or(actual)
+}
+
 /// Valida un registro completo
 pub fn validar_registro(
+    temp_actual: Option<f32>,
     temp_maxima: f32,
     temp_minima: f32,
     humedad: Option<f32>,
+    humedad_no_disponible_reportada: bool,
     tipo: &TipoTermometro,
 ) -> Result<(bool, Vec<String>)> {
     let mut advertencias = Vec::new();
@@ -314,68 +356,73 @@ pub fn validar_registro(
     if temp_maxima < temp_minima {
         return Err(anyhow!(
             "Temperatura máxima ({:.1}°C) no puede ser menor que temperatura mínima ({:.1}°C)",
-            temp_maxima, temp_minima
+            temp_maxima,
+            temp_minima
         ));
     }
 
+    if let Some(actual) = temp_actual {
+        match validar_temperatura(actual, tipo, "actual") {
+            ValidacionResultado::Ok => {}
+            ValidacionResultado::Advertencia(msg) => {
+                advertencias.push(msg);
+                fuera_rango_operativo = true;
+            }
+            ValidacionResultado::Rechazo(msg) => return Err(anyhow!(msg)),
+        }
+    }
+
     match validar_temperatura(temp_maxima, tipo, "máxima") {
-        ValidacionResultado::Ok => {},
+        ValidacionResultado::Ok => {}
         ValidacionResultado::Advertencia(msg) => {
             advertencias.push(msg);
             fuera_rango_operativo = true;
-        },
+        }
         ValidacionResultado::Rechazo(msg) => {
             return Err(anyhow!(msg));
-        },
+        }
     }
 
     match validar_temperatura(temp_minima, tipo, "mínima") {
-        ValidacionResultado::Ok => {},
+        ValidacionResultado::Ok => {}
         ValidacionResultado::Advertencia(msg) => {
             advertencias.push(msg);
             fuera_rango_operativo = true;
-        },
+        }
         ValidacionResultado::Rechazo(msg) => {
             return Err(anyhow!(msg));
-        },
+        }
     }
 
     if let Some(h) = humedad {
         match validar_humedad(h, tipo)? {
-            ValidacionResultado::Ok => {},
+            ValidacionResultado::Ok => {}
             ValidacionResultado::Advertencia(msg) => {
                 advertencias.push(msg);
                 fuera_rango_operativo = true;
-            },
+            }
             ValidacionResultado::Rechazo(msg) => {
                 return Err(anyhow!(msg));
-            },
+            }
         }
-    } else if tipo.tiene_humedad {
-        return Err(anyhow!("Este tipo de termómetro requiere medición de humedad"));
+    } else if tipo.tiene_humedad && !humedad_no_disponible_reportada {
+        return Err(anyhow!(
+            "Este tipo de termómetro requiere medición de humedad"
+        ));
     }
 
     Ok((fuera_rango_operativo, advertencias))
 }
 
-/// Ordena las lecturas para que la máxima sea la mayor y la mínima la menor.
-/// Los registradores a veces confunden máx/mín cuando hay números negativos
-/// (p. ej. registran -12 en mínima y -18 en máxima). Al reordenar aquí en el
-/// backend, la data siempre queda coherente sin importar el orden de ingreso.
+/// Ordena exclusivamente las lecturas explícitas de máxima y mínima.
+/// La temperatura actual conserva siempre su rol y nunca reemplaza un extremo.
 pub fn normalizar_lecturas(
     temp_actual: Option<f32>,
     lectura_a: f32,
     lectura_b: f32,
 ) -> (Option<f32>, f32, f32) {
-    let mut valores = Vec::with_capacity(3);
-    if let Some(a) = temp_actual {
-        valores.push(a);
-    }
-    valores.push(lectura_a);
-    valores.push(lectura_b);
-
-    let temp_minima = valores.iter().cloned().fold(f32::INFINITY, f32::min);
-    let temp_maxima = valores.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+    let temp_minima = lectura_a.min(lectura_b);
+    let temp_maxima = lectura_a.max(lectura_b);
 
     (temp_actual, temp_maxima, temp_minima)
 }
@@ -443,19 +490,28 @@ mod tests {
     #[test]
     fn validar_temperatura_normal() {
         let tipo = tipo_base();
-        assert!(matches!(validar_temperatura(5.0, &tipo, "máxima"), ValidacionResultado::Ok));
+        assert!(matches!(
+            validar_temperatura(5.0, &tipo, "máxima"),
+            ValidacionResultado::Ok
+        ));
     }
 
     #[test]
     fn validar_temperatura_advertencia() {
         let tipo = tipo_base();
-        assert!(matches!(validar_temperatura(20.0, &tipo, "máxima"), ValidacionResultado::Advertencia(_)));
+        assert!(matches!(
+            validar_temperatura(20.0, &tipo, "máxima"),
+            ValidacionResultado::Advertencia(_)
+        ));
     }
 
     #[test]
     fn validar_temperatura_rechazo_fisico() {
         let tipo = tipo_base();
-        assert!(matches!(validar_temperatura(-50.0, &tipo, "mínima"), ValidacionResultado::Rechazo(_)));
+        assert!(matches!(
+            validar_temperatura(-50.0, &tipo, "mínima"),
+            ValidacionResultado::Rechazo(_)
+        ));
     }
 
     #[test]
@@ -474,14 +530,14 @@ mod tests {
     #[test]
     fn validar_registro_max_menor_que_min_error() {
         let tipo = tipo_base();
-        let res = validar_registro(3.0, 5.0, None, &tipo);
+        let res = validar_registro(None, 3.0, 5.0, None, false, &tipo);
         assert!(res.is_err());
     }
 
     #[test]
     fn validar_registro_ok() {
         let tipo = tipo_base();
-        let (fuera, advertencias) = validar_registro(6.0, 4.0, None, &tipo).unwrap();
+        let (fuera, advertencias) = validar_registro(None, 6.0, 4.0, None, false, &tipo).unwrap();
         assert!(!fuera);
         assert!(advertencias.is_empty());
     }
@@ -489,13 +545,61 @@ mod tests {
     #[test]
     fn validar_registro_humedad_requerida() {
         let tipo = tipo_con_humedad();
-        assert!(validar_registro(6.0, 4.0, None, &tipo).is_err());
+        assert!(validar_registro(None, 6.0, 4.0, None, false, &tipo).is_err());
+    }
+
+    #[test]
+    fn validar_registro_acepta_humedad_low_o_error_reportada() {
+        let tipo = tipo_con_humedad();
+        let (fuera, advertencias) = validar_registro(None, 6.0, 4.0, None, true, &tipo).unwrap();
+        assert!(!fuera);
+        assert!(advertencias.is_empty());
+    }
+
+    #[test]
+    fn reconoce_marcadores_tecnicos_de_humedad() {
+        assert!(observacion_reporta_humedad_no_disponible(Some(
+            "[HUMEDAD:LOW] El lector indica LOW"
+        )));
+        assert!(observacion_reporta_humedad_no_disponible(Some(
+            "[HUMEDAD:ERROR] El lector indica ERROR"
+        )));
+        assert!(!observacion_reporta_humedad_no_disponible(Some(
+            "Humedad no anotada"
+        )));
+    }
+
+    #[test]
+    fn actualizar_registro_distingue_humedad_nula_de_campo_omitido() {
+        let explicita: crate::models::ActualizarRegistroRequest =
+            serde_json::from_str(r#"{"humedad":null,"observaciones":"[HUMEDAD:LOW] Sin lectura"}"#)
+                .unwrap();
+        assert_eq!(explicita.humedad, Some(None));
+
+        let omitida: crate::models::ActualizarRegistroRequest =
+            serde_json::from_str(r#"{}"#).unwrap();
+        assert_eq!(omitida.humedad, None);
+
+        let humedad_actual = Some(45.0_f32);
+        assert_eq!(
+            resolver_campo_nullable(omitida.humedad, humedad_actual),
+            Some(45.0)
+        );
+        assert_eq!(
+            resolver_campo_nullable(explicita.humedad, humedad_actual),
+            None
+        );
+        let observaciones = explicita.observaciones.flatten();
+        assert!(observacion_reporta_humedad_no_disponible(
+            observaciones.as_deref()
+        ));
     }
 
     #[test]
     fn validar_registro_ok_con_humedad() {
         let tipo = tipo_con_humedad();
-        let (fuera, advertencias) = validar_registro(6.0, 4.0, Some(50.0), &tipo).unwrap();
+        let (fuera, advertencias) =
+            validar_registro(None, 6.0, 4.0, Some(50.0), false, &tipo).unwrap();
         assert!(!fuera);
         assert!(advertencias.is_empty());
     }
@@ -503,9 +607,25 @@ mod tests {
     #[test]
     fn validar_registro_marca_fuera_rango() {
         let tipo = tipo_base();
-        let (fuera, advertencias) = validar_registro(20.0, 4.0, None, &tipo).unwrap();
+        let (fuera, advertencias) = validar_registro(None, 20.0, 4.0, None, false, &tipo).unwrap();
         assert!(fuera);
         assert!(!advertencias.is_empty());
+    }
+
+    #[test]
+    fn validar_registro_marca_actual_fuera_de_rango_operativo() {
+        let tipo = tipo_base();
+        let (fuera, advertencias) =
+            validar_registro(Some(20.0), 6.0, 4.0, None, false, &tipo).unwrap();
+        assert!(fuera);
+        assert!(advertencias.iter().any(|msg| msg.contains("actual")));
+    }
+
+    #[test]
+    fn validar_registro_rechaza_actual_fisicamente_imposible() {
+        let tipo = tipo_base();
+        let error = validar_registro(Some(-50.0), 6.0, 4.0, None, false, &tipo).unwrap_err();
+        assert!(error.to_string().contains("actual"));
     }
 
     #[test]
@@ -518,10 +638,11 @@ mod tests {
     }
 
     #[test]
-    fn normalizar_lecturas_actual_puede_ser_extrema() {
-        let (_, maxima, minima) = normalizar_lecturas(Some(-25.0), -12.0, -18.0);
+    fn normalizar_lecturas_preserva_actual_fuera_de_extremos() {
+        let (actual, maxima, minima) = normalizar_lecturas(Some(-25.0), -12.0, -18.0);
+        assert_eq!(actual, Some(-25.0));
         assert_eq!(maxima, -12.0);
-        assert_eq!(minima, -25.0);
+        assert_eq!(minima, -18.0);
     }
 
     #[test]
@@ -594,7 +715,10 @@ mod tests {
         // índice único dejaría pasar un segundo registro del mismo equipo.
         let tol = 119;
         let e_antes = estado(t(23, 59), tol);
-        assert!(!e_antes.activa, "23:59 no debe pertenecer a ninguna ventana");
+        assert!(
+            !e_antes.activa,
+            "23:59 no debe pertenecer a ninguna ventana"
+        );
         let e_despues = estado(t(0, 1), tol);
         assert!(e_despues.activa && e_despues.ventana.nombre == "02:00");
     }
@@ -604,7 +728,10 @@ mod tests {
         // Documenta el límite: con 180 min la ventana de las 02:00 empieza a las 23:00
         // del día anterior, y ahí el día natural ya no agrupa bien la ronda.
         let e = estado(t(23, 30), 180);
-        assert!(e.activa, "con tolerancia 180 las 23:30 caen dentro de la ronda 02:00");
+        assert!(
+            e.activa,
+            "con tolerancia 180 las 23:30 caen dentro de la ronda 02:00"
+        );
         assert_eq!(e.ventana.nombre, "02:00");
     }
 

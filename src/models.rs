@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Deserializer, Serialize};
 use sqlx::FromRow;
 
 // ===== MODELOS DE BASE DE DATOS =====
@@ -227,8 +227,22 @@ pub struct ActualizarRegistroRequest {
     pub temp_actual: Option<f32>,
     pub temp_maxima: Option<f32>,
     pub temp_minima: Option<f32>,
-    pub humedad: Option<f32>,
-    pub observaciones: Option<String>,
+    // Outer Option = field omitted; inner Option = explicit null. This lets the
+    // operator replace a numeric humidity with LOW/ERROR and clear old notes.
+    #[serde(default, deserialize_with = "deserializar_campo_opcional_presente")]
+    pub humedad: Option<Option<f32>>,
+    #[serde(default, deserialize_with = "deserializar_campo_opcional_presente")]
+    pub observaciones: Option<Option<String>>,
+}
+
+fn deserializar_campo_opcional_presente<'de, D, T>(
+    deserializer: D,
+) -> Result<Option<Option<T>>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    Option::<T>::deserialize(deserializer).map(Some)
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -9,7 +9,10 @@ use sqlx::{PgPool, Row};
 use crate::{
     auth::CurrentUser,
     db::{get_config, log_auditoria},
-    logic::{estado_ventana_actual, normalizar_lecturas, validar_registro},
+    logic::{
+        estado_ventana_actual, normalizar_lecturas, observacion_reporta_humedad_no_disponible,
+        resolver_campo_nullable, validar_registro,
+    },
     models::*,
 };
 
@@ -46,13 +49,19 @@ pub async fn listar_registros(
     if let Some(f) = &filtros.fecha_desde {
         if !f.is_empty() {
             i += 1;
-            conditions.push(format!("(CAST(r.fecha_registro AT TIME ZONE 'America/Santiago' AS DATE)) >= ${}::date", i));
+            conditions.push(format!(
+                "(CAST(r.fecha_registro AT TIME ZONE 'America/Santiago' AS DATE)) >= ${}::date",
+                i
+            ));
         }
     }
     if let Some(f) = &filtros.fecha_hasta {
         if !f.is_empty() {
             i += 1;
-            conditions.push(format!("(CAST(r.fecha_registro AT TIME ZONE 'America/Santiago' AS DATE)) <= ${}::date", i));
+            conditions.push(format!(
+                "(CAST(r.fecha_registro AT TIME ZONE 'America/Santiago' AS DATE)) <= ${}::date",
+                i
+            ));
         }
     }
     if filtros.area_id.is_some() {
@@ -82,10 +91,24 @@ pub async fn listar_registros(
     );
 
     let mut count_q = sqlx::query(&count_query);
-    if let Some(f) = &filtros.fecha_desde { if !f.is_empty() { count_q = count_q.bind(f); } }
-    if let Some(f) = &filtros.fecha_hasta { if !f.is_empty() { count_q = count_q.bind(f); } }
-    if let Some(area) = filtros.area_id { count_q = count_q.bind(area as i32); }
-    if let Some(ventana) = &filtros.ventana_horaria { if !ventana.is_empty() { count_q = count_q.bind(ventana); } }
+    if let Some(f) = &filtros.fecha_desde {
+        if !f.is_empty() {
+            count_q = count_q.bind(f);
+        }
+    }
+    if let Some(f) = &filtros.fecha_hasta {
+        if !f.is_empty() {
+            count_q = count_q.bind(f);
+        }
+    }
+    if let Some(area) = filtros.area_id {
+        count_q = count_q.bind(area as i32);
+    }
+    if let Some(ventana) = &filtros.ventana_horaria {
+        if !ventana.is_empty() {
+            count_q = count_q.bind(ventana);
+        }
+    }
 
     let total: i64 = count_q
         .fetch_one(&pool)
@@ -97,7 +120,10 @@ pub async fn listar_registros(
         .get("total");
 
     // Paginación
-    let page_size = filtros.page_size.unwrap_or(50).clamp(1, crate::handlers::MAX_REGISTROS_POR_PAGINA as u32);
+    let page_size = filtros
+        .page_size
+        .unwrap_or(50)
+        .clamp(1, crate::handlers::MAX_REGISTROS_POR_PAGINA as u32);
     let page = filtros.page.unwrap_or(1).max(1);
     let offset = (page - 1) * page_size;
     let total_paginas = ((total as f64) / (page_size as f64)).ceil().max(1.0) as u32;
@@ -111,22 +137,38 @@ pub async fn listar_registros(
     );
 
     let mut q = sqlx::query_as(&select_query);
-    if let Some(f) = &filtros.fecha_desde { if !f.is_empty() { q = q.bind(f); } }
-    if let Some(f) = &filtros.fecha_hasta { if !f.is_empty() { q = q.bind(f); } }
-    if let Some(area) = filtros.area_id { q = q.bind(area as i32); }
-    if let Some(ventana) = &filtros.ventana_horaria { if !ventana.is_empty() { q = q.bind(ventana); } }
+    if let Some(f) = &filtros.fecha_desde {
+        if !f.is_empty() {
+            q = q.bind(f);
+        }
+    }
+    if let Some(f) = &filtros.fecha_hasta {
+        if !f.is_empty() {
+            q = q.bind(f);
+        }
+    }
+    if let Some(area) = filtros.area_id {
+        q = q.bind(area as i32);
+    }
+    if let Some(ventana) = &filtros.ventana_horaria {
+        if !ventana.is_empty() {
+            q = q.bind(ventana);
+        }
+    }
     q = q.bind(page_size as i32).bind(offset as i32);
 
-    let registros: Vec<RegistroConDetalles> = q
-        .fetch_all(&pool)
-        .await
-        .map_err(|e| {
-            tracing::error!("Error SQL listar_registros: {:?}", e);
-            tracing::error!("Query: {}", select_query);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+    let registros: Vec<RegistroConDetalles> = q.fetch_all(&pool).await.map_err(|e| {
+        tracing::error!("Error SQL listar_registros: {:?}", e);
+        tracing::error!("Query: {}", select_query);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
-    tracing::debug!("listar_registros página {} con {} registros (total {})", page, registros.len(), total);
+    tracing::debug!(
+        "listar_registros página {} con {} registros (total {})",
+        page,
+        registros.len(),
+        total
+    );
 
     Ok(Json(RegistrosPaginados {
         registros,
@@ -153,12 +195,22 @@ pub async fn obtener_pendientes_area(
         })?;
 
     // 2. Obtener configuración
-    let hora_1 = get_config(&pool, "registro_hora_1").await.unwrap_or_else(|_| "14:00".to_string());
-    let hora_2 = get_config(&pool, "registro_hora_2").await.unwrap_or_else(|_| "02:00".to_string());
-    let tolerancia: i32 = get_config(&pool, "ventana_tolerancia_minutos").await.unwrap_or_else(|_| "119".to_string()).parse().unwrap_or(119);
-    
-    let restriccion_activa = get_config(&pool, "restriccion_ventana_activa").await
-        .unwrap_or_else(|_| "0".to_string()) == "1";
+    let hora_1 = get_config(&pool, "registro_hora_1")
+        .await
+        .unwrap_or_else(|_| "14:00".to_string());
+    let hora_2 = get_config(&pool, "registro_hora_2")
+        .await
+        .unwrap_or_else(|_| "02:00".to_string());
+    let tolerancia: i32 = get_config(&pool, "ventana_tolerancia_minutos")
+        .await
+        .unwrap_or_else(|_| "119".to_string())
+        .parse()
+        .unwrap_or(119);
+
+    let restriccion_activa = get_config(&pool, "restriccion_ventana_activa")
+        .await
+        .unwrap_or_else(|_| "0".to_string())
+        == "1";
 
     // La restricción se respeta igual que al guardar. Antes se forzaba a `false` aquí:
     // la lista mostraba pendientes con normalidad y luego el POST los rechazaba por
@@ -180,7 +232,7 @@ pub async fn obtener_pendientes_area(
         JOIN tipos_termometro ti ON t.tipo_id = ti.id
         WHERE t.area_id = $1 AND t.activo = TRUE
         ORDER BY t.id
-        "#
+        "#,
     )
     .bind(area_id as i32)
     .fetch_all(&pool)
@@ -210,7 +262,7 @@ pub async fn obtener_pendientes_area(
           -- los equipos volvían a aparecer como pendientes en mitad del turno.
           AND ((r.fecha_registro AT TIME ZONE 'America/Santiago') - INTERVAL '8 hours')::date
             = ((CURRENT_TIMESTAMP AT TIME ZONE 'America/Santiago') - INTERVAL '8 hours')::date
-        "#
+        "#,
     )
     .bind(area_id as i32)
     .bind(&ventana.nombre)
@@ -247,17 +299,30 @@ pub async fn crear_registro(
     Json(payload): Json<CrearRegistroRequest>,
 ) -> Result<Json<Registro>, (StatusCode, String)> {
     // Obtener configuración
-    let hora_1 = get_config(&pool, "registro_hora_1").await.unwrap_or_else(|_| "14:00".to_string());
-    let hora_2 = get_config(&pool, "registro_hora_2").await.unwrap_or_else(|_| "02:00".to_string());
-    let tolerancia: i32 = get_config(&pool, "ventana_tolerancia_minutos").await
+    let hora_1 = get_config(&pool, "registro_hora_1")
+        .await
+        .unwrap_or_else(|_| "14:00".to_string());
+    let hora_2 = get_config(&pool, "registro_hora_2")
+        .await
+        .unwrap_or_else(|_| "02:00".to_string());
+    let tolerancia: i32 = get_config(&pool, "ventana_tolerancia_minutos")
+        .await
         .unwrap_or_else(|_| "119".to_string())
         .parse()
         .unwrap_or(119);
-    let restriccion_activa = get_config(&pool, "restriccion_ventana_activa").await.unwrap_or_else(|_| "0".to_string()) == "1";
+    let restriccion_activa = get_config(&pool, "restriccion_ventana_activa")
+        .await
+        .unwrap_or_else(|_| "0".to_string())
+        == "1";
 
     // Verificar ventana
-    let estado = estado_ventana_actual(&hora_1, &hora_2, tolerancia, restriccion_activa)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error ventana: {}", e)))?;
+    let estado =
+        estado_ventana_actual(&hora_1, &hora_2, tolerancia, restriccion_activa).map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Error ventana: {}", e),
+            )
+        })?;
     if !estado.activa {
         return Err((
             StatusCode::BAD_REQUEST,
@@ -274,16 +339,25 @@ pub async fn crear_registro(
         .bind(payload.termometro_id as i32)
         .fetch_one(&pool)
         .await
-        .map_err(|_| (StatusCode::NOT_FOUND, "Termómetro no encontrado".to_string()))?;
+        .map_err(|_| {
+            (
+                StatusCode::NOT_FOUND,
+                "Termómetro no encontrado".to_string(),
+            )
+        })?;
 
     let tipo: TipoTermometro = sqlx::query_as("SELECT * FROM tipos_termometro WHERE id = $1")
         .bind(termometro.tipo_id as i32)
         .fetch_one(&pool)
         .await
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Error obteniendo tipo termómetro".to_string()))?;
+        .map_err(|_| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Error obteniendo tipo termómetro".to_string(),
+            )
+        })?;
 
-    // Ordenar lecturas automáticamente (mín = menor, máx = mayor) para que
-    // el registrador no tenga que distinguir campos con números negativos
+    // Corregir solo máxima/mínima si vienen invertidas; actual conserva su rol.
     let (temp_actual, temp_max, temp_min) = normalizar_lecturas(
         payload.temp_actual,
         payload.temp_maxima,
@@ -292,12 +366,19 @@ pub async fn crear_registro(
 
     // Validar
     let (fuera_rango_operativo, _advertencias) = validar_registro(
+        temp_actual,
         temp_max,
         temp_min,
         payload.humedad,
+        observacion_reporta_humedad_no_disponible(payload.observaciones.as_deref()),
         &tipo,
     )
-    .map_err(|e| (StatusCode::BAD_REQUEST, format!("Error de validación: {}", e)))?;
+    .map_err(|e| {
+        (
+            StatusCode::BAD_REQUEST,
+            format!("Error de validación: {}", e),
+        )
+    })?;
 
     // Insertar y obtener registro completo
     let registro: Registro = sqlx::query_as(
@@ -308,7 +389,7 @@ pub async fn crear_registro(
             fuera_rango_operativo, observaciones
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING *
-        "#
+        "#,
     )
     .bind(payload.termometro_id as i32)
     .bind(current_user.0.id as i32)
@@ -324,9 +405,15 @@ pub async fn crear_registro(
     .map_err(|e| {
         let msg = e.to_string();
         if msg.contains("unique_per_day") {
-            (StatusCode::CONFLICT, "Ya existe un registro para este termómetro en el día de hoy.".to_string())
+            (
+                StatusCode::CONFLICT,
+                "Ya existe un registro para este termómetro en el día de hoy.".to_string(),
+            )
         } else {
-            (StatusCode::INTERNAL_SERVER_ERROR, format!("Error al guardar: {}", e))
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Error al guardar: {}", e),
+            )
         }
     })?;
 
@@ -363,7 +450,10 @@ pub async fn actualizar_registro(
 
     // Si no es admin, solo puede editar sus propios registros
     if current_user.0.rol != "ADMINISTRADOR" && registro.usuario_id != current_user.0.id as i32 {
-        return Err((StatusCode::FORBIDDEN, "No tienes permiso para editar este registro".to_string()));
+        return Err((
+            StatusCode::FORBIDDEN,
+            "No tienes permiso para editar este registro".to_string(),
+        ));
     }
 
     // Obtener tipo para validación
@@ -371,26 +461,54 @@ pub async fn actualizar_registro(
         .bind(registro.termometro_id as i32)
         .fetch_one(&pool)
         .await
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Error obteniendo termómetro".to_string()))?;
+        .map_err(|_| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Error obteniendo termómetro".to_string(),
+            )
+        })?;
 
     let tipo: TipoTermometro = sqlx::query_as("SELECT * FROM tipos_termometro WHERE id = $1")
         .bind(termometro.tipo_id as i32)
         .fetch_one(&pool)
         .await
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Error obteniendo tipo".to_string()))?;
+        .map_err(|_| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Error obteniendo tipo".to_string(),
+            )
+        })?;
 
     // Usar valores actuales si no se proporcionan nuevos
     let temp_actual = payload.temp_actual.or(registro.temp_actual);
     let lectura_a = payload.temp_maxima.unwrap_or(registro.temp_maxima);
     let lectura_b = payload.temp_minima.unwrap_or(registro.temp_minima);
-    let humedad = payload.humedad.or(registro.humedad);
+    let humedad = resolver_campo_nullable(payload.humedad, registro.humedad);
+    let observaciones = resolver_campo_nullable(
+        payload.observaciones.clone(),
+        registro.observaciones.clone(),
+    );
 
-    // Ordenar lecturas automáticamente (mín = menor, máx = mayor)
+    // Corregir solo máxima/mínima si vienen invertidas; actual conserva su rol.
     let (temp_actual, temp_max, temp_min) = normalizar_lecturas(temp_actual, lectura_a, lectura_b);
 
     // Validar
-    let (fuera_rango_operativo, _) = validar_registro(temp_max, temp_min, humedad, &tipo)
-        .map_err(|e| (StatusCode::BAD_REQUEST, format!("Error de validación: {}", e)))?;
+    let humedad_no_disponible_reportada =
+        observacion_reporta_humedad_no_disponible(observaciones.as_deref());
+    let (fuera_rango_operativo, _) = validar_registro(
+        temp_actual,
+        temp_max,
+        temp_min,
+        humedad,
+        humedad_no_disponible_reportada,
+        &tipo,
+    )
+    .map_err(|e| {
+        (
+            StatusCode::BAD_REQUEST,
+            format!("Error de validación: {}", e),
+        )
+    })?;
 
     // Actualizar
     sqlx::query(
@@ -399,18 +517,23 @@ pub async fn actualizar_registro(
             temp_actual = $1, temp_maxima = $2, temp_minima = $3, humedad = $4,
             fuera_rango_operativo = $5, observaciones = $6
         WHERE id = $7
-        "#
+        "#,
     )
     .bind(temp_actual)
     .bind(temp_max)
     .bind(temp_min)
     .bind(humedad)
     .bind(fuera_rango_operativo)
-    .bind(&payload.observaciones)
+    .bind(&observaciones)
     .bind(id as i32)
     .execute(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error al actualizar: {}", e)))?;
+    .map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Error al actualizar: {}", e),
+        )
+    })?;
 
     // Log de auditoría
     log_auditoria(
@@ -474,10 +597,16 @@ pub async fn accion_correctiva_lote(
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
     let texto = payload.observaciones.trim().to_string();
     if texto.is_empty() {
-        return Err((StatusCode::BAD_REQUEST, "La acción correctiva no puede ir vacía".to_string()));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "La acción correctiva no puede ir vacía".to_string(),
+        ));
     }
     if payload.registro_ids.is_empty() {
-        return Err((StatusCode::BAD_REQUEST, "No se indicaron registros".to_string()));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "No se indicaron registros".to_string(),
+        ));
     }
 
     let es_admin = current_user.0.rol == "ADMINISTRADOR";
@@ -490,7 +619,7 @@ pub async fn accion_correctiva_lote(
             ELSE observaciones || ' · ' || $1
         END
         WHERE id = ANY($2) AND ($3 OR usuario_id = $4)
-        "#
+        "#,
     )
     .bind(&texto)
     .bind(&payload.registro_ids)
@@ -498,7 +627,12 @@ pub async fn accion_correctiva_lote(
     .bind(current_user.0.id as i32)
     .execute(&pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error al aplicar la acción correctiva: {}", e)))?;
+    .map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Error al aplicar la acción correctiva: {}", e),
+        )
+    })?;
 
     log_auditoria(
         &pool,
@@ -512,5 +646,7 @@ pub async fn accion_correctiva_lote(
     .await
     .ok();
 
-    Ok(Json(serde_json::json!({ "actualizados": resultado.rows_affected() })))
+    Ok(Json(
+        serde_json::json!({ "actualizados": resultado.rows_affected() }),
+    ))
 }

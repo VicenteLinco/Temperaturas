@@ -565,6 +565,35 @@
         }
         .cierre-ok i { font-size: 3rem; color: #16a34a; }
 
+        .humedad-falla {
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #f8fafc;
+        }
+        .humedad-estado {
+            min-height: 46px;
+            font-weight: 800;
+        }
+
+        #registroModal .modal-content,
+        #cierreRondaModal .modal-content {
+            min-width: 0;
+        }
+        #registroModal .modal-body,
+        #cierreRondaModal .modal-body {
+            min-height: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        #registroModal .modal-header,
+        #registroModal .modal-footer,
+        #cierreRondaModal .modal-header,
+        #cierreRondaModal .modal-footer {
+            flex-shrink: 0;
+        }
+
         /* Responsive */
         @media (max-width: 575.98px) {
             .main-container {
@@ -625,18 +654,18 @@
                 padding-top: calc(0.5rem + env(safe-area-inset-top));
             }
             .cierre-footer .btn {
-                font-size: 0.78rem;
-                padding-left: 0.25rem;
-                padding-right: 0.25rem;
+                font-size: 0.88rem;
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
             }
-            .cierre-footer .btn i { display: block; margin: 0 auto 2px; }
+            .cierre-footer .btn i { margin-right: 4px; }
             .cierre-lista { max-height: 32vh; }
         }
 
         /* Pantallas estrechas (360px): nada de texto truncado a media palabra */
         @media (max-width: 380px) {
             .progreso-titulo { font-size: 0.92rem; }
-            .cierre-footer .btn { font-size: 0.72rem; }
+            .cierre-footer .btn { font-size: 0.82rem; }
             .termometro-nombre { font-size: 0.95rem; }
         }
     </style>
@@ -797,28 +826,27 @@
                         <!-- FORMULARIO DE LECTURAS (3 Lecturas Obligatorias) -->
                         <div id="formLecturas">
                             <div class="lecturas-encabezado">
-                                <span class="lecturas-titulo">Temperaturas (°C)</span>
-                                <span class="lecturas-intro">Las 3 · orden libre</span>
+                                <span class="lecturas-titulo">Ingresa las 3 temperaturas (°C)</span>
                             </div>
 
                             <div class="lecturas-grid mb-2">
                                 <div class="lectura-campo">
-                                    <label for="tempActual" class="lectura-label">Actual</label>
+                                    <label for="tempActual" class="lectura-label">Temperatura actual</label>
                                     <input type="text" class="lectura-input" id="tempActual"
                                            autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
                                            enterkeyhint="next" aria-label="Temperatura actual en grados Celsius">
                                 </div>
                                 <div class="lectura-campo">
-                                    <label for="lectura2" class="lectura-label">2ª</label>
+                                    <label for="lectura2" class="lectura-label">Temperatura máxima</label>
                                     <input type="text" class="lectura-input" id="lectura2"
                                            autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
-                                           enterkeyhint="next" aria-label="Segunda lectura en grados Celsius">
+                                           enterkeyhint="next" aria-label="Temperatura máxima en grados Celsius">
                                 </div>
                                 <div class="lectura-campo">
-                                    <label for="lectura3" class="lectura-label">3ª</label>
+                                    <label for="lectura3" class="lectura-label">Temperatura mínima</label>
                                     <input type="text" class="lectura-input" id="lectura3"
                                            autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
-                                           enterkeyhint="done" aria-label="Tercera lectura en grados Celsius">
+                                           enterkeyhint="done" aria-label="Temperatura mínima en grados Celsius">
                                 </div>
                             </div>
 
@@ -830,21 +858,18 @@
                                 <input type="text" class="lectura-input" id="humedad"
                                        autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
                                        enterkeyhint="done" aria-label="Humedad en porcentaje">
-                                <!-- El sensor de humedad falla a menudo: sin esta salida el operador
-                                     no puede cerrar el registro del equipo. -->
-                                <button type="button" class="btn btn-sm btn-outline-secondary w-100 mt-2" id="btnHumedadFalla" onclick="registrarSinHumedad()">
-                                    <i class="bi bi-slash-circle me-1"></i> El lector no marca
-                                </button>
+                                <div class="humedad-falla mt-2" aria-label="Estado del lector de humedad">
+                                    <span class="small text-muted">Si el lector no entrega un número:</span>
+                                    <div class="d-flex gap-2 mt-1">
+                                        <button type="button" class="btn btn-outline-secondary flex-fill humedad-estado" id="btnHumedadLow" onclick="seleccionarIncidenciaHumedad('LOW')" aria-pressed="false">LOW</button>
+                                        <button type="button" class="btn btn-outline-secondary flex-fill humedad-estado" id="btnHumedadError" onclick="seleccionarIncidenciaHumedad('ERROR')" aria-pressed="false">ERROR</button>
+                                    </div>
+                                    <div class="small text-muted mt-1" id="humedadAyuda">Toca de nuevo para desmarcar o escribe el valor para corregir.</div>
+                                </div>
                             </div>
 
-                            <!-- Observaciones: ocultas salvo que se necesiten -->
-                            <button type="button" class="btn-obs-toggle" id="btnToggleObs" onclick="toggleObservaciones()">
-                                <i class="bi bi-plus-circle"></i> <span id="btnToggleObsTexto">Añadir observación / acción correctiva</span>
-                            </button>
-                            <div id="obsWrap" style="display: none;">
-                                <div id="chipsAccionCorrectiva" class="mb-2"></div>
-                                <textarea class="form-control mb-2" id="observaciones" rows="2" placeholder="Anomalía detectada o acción tomada..."></textarea>
-                            </div>
+                            <!-- Se conserva oculto para persistir la incidencia técnica de humedad. -->
+                            <textarea id="observaciones" hidden></textarea>
                         </div>
 
                     </form>
@@ -925,33 +950,6 @@
         </div>
     </div>
 
-    <!-- Modal Enviar Informe por Correo -->
-    <div class="modal fade" id="enviarInformeModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title"><i class="bi bi-envelope"></i> Enviar informe por correo</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="text-muted small mb-3">
-                        Se adjuntará el PDF con el informe de la franja horaria (equipos <strong>fuera de rango</strong> y <strong>sin funcionamiento</strong>).
-                    </p>
-                    <div class="mb-2">
-                        <label for="informeEmail" class="form-label">Correo destinatario</label>
-                        <input type="email" class="form-control form-control-lg" id="informeEmail" placeholder="ejemplo@empresa.cl">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" id="btnEnviarInforme" onclick="enviarInformeCorreo()">
-                        <i class="bi bi-send"></i> Enviar
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Cierre de ronda: aparece al completar todos los equipos. Todo aquí es opcional. -->
     <div class="modal fade" id="cierreRondaModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
@@ -966,15 +964,9 @@
                 <div class="modal-body" id="cierreBody"></div>
                 <div class="modal-footer cierre-footer">
                     <button type="button" class="btn btn-outline-secondary flex-fill" data-bs-dismiss="modal">Cerrar</button>
-                    <button type="button" class="btn btn-outline-primary flex-fill" onclick="descargarInformeFranja('pdf')">
-                        <i class="bi bi-file-earmark-pdf"></i> PDF
-                    </button>
-                    <button type="button" class="btn btn-outline-success flex-fill" id="btnCompartirRonda" onclick="compartirResumenRonda()">
-                        <i class="bi bi-share"></i> Compartir
-                    </button>
-                    <button type="button" class="btn btn-primary flex-fill" onclick="abrirEnviarInforme()">
-                        <i class="bi bi-envelope"></i> Correo
-                    </button>
+                    <a class="btn btn-success flex-fill" id="btnWhatsAppRonda" href="https://wa.me/" target="_blank" rel="noopener noreferrer">
+                        <i class="bi bi-whatsapp"></i> WhatsApp
+                    </a>
                 </div>
             </div>
         </div>
@@ -1002,6 +994,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="lecturas.js"></script>
+    <script src="operator-flow.js"></script>
     <script>
         let currentUser = null;
         let html5QrCode = null;
@@ -1009,8 +1002,10 @@
         let escaneoEnProceso = false;
         let areaActualId = null;
         let termometroSeleccionado = null;
-        // El operador confirmó que el lector de humedad no marca: se guarda humedad nula
-        let humedadSinLectura = false;
+        // LOW/ERROR se elige con un toque y nunca abre confirmaciones.
+        let humedadIncidencia = null;
+        let equiposFueraServicio = [];
+        let cargaGlobalCompleta = false;
         // Ventana de registro: si está cerrada, el servidor rechazará el guardado, así que
         // conviene decirlo antes de que el operador teclee tres temperaturas para nada.
         let estadoVentana = { activa: true, proximaApertura: null };
@@ -1376,6 +1371,7 @@
             const progressBar = document.getElementById('loadingProgressBar');
             const statusText = document.getElementById('loadingStatus');
             
+            cargaGlobalCompleta = false;
             try {
                 // Mostrar overlay solo si NO es silencioso
                 if (!silencioso) {
@@ -1386,9 +1382,11 @@
                 }
 
                 const response = await fetch('/api/areas');
+                if (!response.ok) throw new Error('No se pudo cargar la lista de áreas');
                 const areas = await response.json();
                 const areasActivas = areas.filter(a => a.activa);
-                
+                const nuevaAreasData = {};
+
                 const total = areasActivas.length;
                 let procesadas = 0;
 
@@ -1396,34 +1394,37 @@
                     if (!silencioso) progressBar.style.width = '100%';
                     statusText.textContent = 'No hay áreas activas.';
                 } else {
-                    // Cargar datos de todas las áreas en paralelo
+                    // Cargar TODAS las áreas. Si una falla, no se permite concluir que la ronda
+                    // terminó: un resumen parcial podría abrir el cierre prematuramente.
                     await Promise.all(areasActivas.map(async (area) => {
-                        try {
-                            const pendResp = await fetch(`/api/areas/${area.id}/pendientes`);
-                            const pendData = await pendResp.json();
-                            areasData[area.id] = {
-                                area: area,
-                                ventana: pendData.ventana_horaria,
-                                pendientes: pendData.pendientes || [],
-                                completados: pendData.completados || []
-                            };
-                            estadoVentana = {
-                                activa: pendData.ventana_activa !== false,
-                                proximaApertura: pendData.proxima_apertura || null
-                            };
-                        } catch (e) {
-                            console.error(`Error cargando área ${area.id}:`, e);
-                        } finally {
-                            procesadas++;
-                            if (!silencioso) {
-                                const porcentaje = 5 + Math.round((procesadas / total) * 95);
-                                progressBar.style.width = `${porcentaje}%`;
-                                statusText.textContent = `Cargando: ${area.nombre} (${procesadas}/${total})`;
-                            }
+                        const pendResp = await fetch(`/api/areas/${area.id}/pendientes`);
+                        if (!pendResp.ok) throw new Error(`No se pudo cargar el área ${area.nombre}`);
+                        const pendData = await pendResp.json();
+                        nuevaAreasData[area.id] = {
+                            area: area,
+                            ventana: pendData.ventana_horaria,
+                            pendientes: pendData.pendientes || [],
+                            completados: pendData.completados || []
+                        };
+                        estadoVentana = {
+                            activa: pendData.ventana_activa !== false,
+                            proximaApertura: pendData.proxima_apertura || null
+                        };
+                        procesadas++;
+                        if (!silencioso) {
+                            const porcentaje = 5 + Math.round((procesadas / total) * 90);
+                            progressBar.style.width = `${porcentaje}%`;
+                            statusText.textContent = `Cargando: ${area.nombre} (${procesadas}/${total})`;
                         }
                     }));
                 }
 
+                const termometrosResp = await fetch('/api/termometros');
+                if (!termometrosResp.ok) throw new Error('No se pudo comprobar el estado de los equipos');
+                const termometros = await termometrosResp.json();
+                areasData = nuevaAreasData;
+                equiposFueraServicio = termometros.filter(t => t.activo && t.fuera_de_servicio);
+                cargaGlobalCompleta = Object.keys(areasData).length === areasActivas.length;
                 renderizarAreas();
                 
                 if (!silencioso) {
@@ -1434,6 +1435,7 @@
                         setTimeout(() => { overlay.style.display = 'none'; }, 300);
                     }, 500);
                 }
+                return true;
 
             } catch (e) {
                 console.error('Error global en carga:', e);
@@ -1441,6 +1443,7 @@
                     statusText.textContent = 'Error al conectar con el servidor.';
                     statusText.className = 'text-danger small mt-2';
                 }
+                return false;
             }
         }
 
@@ -1751,465 +1754,97 @@
             return `${anio}-${mes}-${dia}`;
         }
 
-        async function descargarInformeDia(formato) {
-            const fecha = formatearFechaHoy();
-            try {
-                const response = await fetch(`/api/registros/informe-dia?fecha=${fecha}&formato=${formato}`);
-                if (!response.ok) {
-                    const errText = await response.text();
-                    throw new Error(errText || 'Error al generar el informe');
-                }
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `informe_dia_${fecha}.${formato}`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-            } catch (e) {
-                mostrarToast('Error al generar informe: ' + e.message, 'danger', 6000);
-            }
-        }
-
-        // ===== INFORME DE FRANJA HORARIA =====
-
-        async function cargarInformeFranja() {
-            const cont = document.getElementById('informeFranjaContent');
-            if (!cont) return;
-            try {
-                const ventana = Object.values(areasData)[0]?.ventana || '';
-                const res = await fetch(`/api/registros/informe-franja?ventana_horaria=${encodeURIComponent(ventana)}`);
-                if (!res.ok) throw new Error('Error al obtener el informe');
-                const data = await res.json();
-                renderInformeFranja(cont, data);
-            } catch (e) {
-                cont.innerHTML = '<div class="alert alert-warning small mb-0 mt-2">No se pudo cargar el informe de la franja: ' + e.message + '</div>';
-            }
-        }
-
-        function renderInformeFranja(cont, data) {
-            const fr = data.fuera_de_rango || [];
-            const fs = data.fuera_de_servicio || [];
-            const tieneIncidencias = (fr.length > 0 || fs.length > 0);
-
-            const listaFr = fr.length === 0
-                ? '<li class="list-group-item text-success py-2"><i class="bi bi-check-circle me-1"></i>Todos los equipos operaron dentro de su rango mínimo y máximo.</li>'
-                : fr.map(i => `
-                    <li class="list-group-item py-2">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong class="text-body">${i.area_nombre}</strong> &bull; <span class="text-secondary">${i.termometro_nombre || 'ID ' + i.termometro_id}</span>
-                                ${i.observaciones ? `<div class="small text-muted italic mt-0.5"><i class="bi bi-chat-left-text me-1"></i>Acción/Obs: "${i.observaciones}"</div>` : ''}
-                            </div>
-                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle fw-bold fs-6">
-                                Mín: ${i.temp_minima}°C | Máx: ${i.temp_maxima}°C
-                            </span>
-                        </div>
-                    </li>`).join('');
-
-            const listaFs = fs.length === 0
-                ? '<li class="list-group-item text-success py-2"><i class="bi bi-check-circle me-1"></i>Sin fallas de equipos en esta franja.</li>'
-                : fs.map(i => `
-                    <li class="list-group-item py-2">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong class="text-danger"><i class="bi bi-tools me-1"></i>${i.area_nombre}</strong> &bull; ${i.termometro_nombre || 'ID ' + i.termometro_id}
-                                <div class="small text-muted"><i class="bi bi-info-circle me-1"></i>Motivo: ${i.motivo || 'Fuera de servicio'}</div>
-                            </div>
-                            <span class="badge bg-secondary text-white">Fuera de Servicio</span>
-                        </div>
-                    </li>`).join('');
-
-            const avisoEncargado = tieneIncidencias ? `
-                <div class="alert alert-danger p-3 mb-3 rounded-3 shadow-sm border-danger">
-                    <div class="d-flex align-items-center gap-2 fw-bold text-danger fs-6 mb-1">
-                        <i class="bi bi-bell-fill fs-5"></i>
-                        <span>¡ATENCIÓN: SE REQUIERE NOTIFICAR AL ENCARGADO!</span>
-                    </div>
-                    <div class="small text-danger-emphasis">
-                        Se detectaron <strong>${fr.length} equipo(s) fuera del rango mínimo/máximo</strong> y <strong>${fs.length} equipo(s) con fallas</strong>. Es obligatorio informar al Encargado del Laboratorio para verificar estabilidad e insumos.
-                    </div>
-                    <div class="mt-2 text-end">
-                        <button class="btn btn-danger btn-sm fw-bold px-3 shadow-sm" onclick="abrirEnviarInforme()">
-                            <i class="bi bi-envelope-paper-fill me-1"></i> Notificar al Encargado por Correo
-                        </button>
-                    </div>
-                </div>
-            ` : `
-                <div class="alert alert-success p-3 mb-3 rounded-3 shadow-sm border-success">
-                    <div class="d-flex align-items-center gap-2 fw-bold text-success small">
-                        <i class="bi bi-shield-check fs-5"></i>
-                        <span>FRANJA COMPLETA SIN ANOMALÍAS: Todos los termómetros operaron en condiciones normales.</span>
-                    </div>
-                </div>
-            `;
-
-            cont.innerHTML = `
-                <hr class="my-3">
-                ${avisoEncargado}
-                <div class="row text-center g-2 mb-3">
-                    <div class="col-4">
-                        <div class="border rounded-3 p-2 bg-light shadow-sm">
-                            <div class="fw-bold fs-4 text-primary">${data.total_mediciones}</div>
-                            <small class="text-muted fw-semibold">Mediciones Registradas</small>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="border rounded-3 p-2 ${fr.length > 0 ? 'bg-danger-subtle border-danger' : 'bg-light'} shadow-sm">
-                            <div class="fw-bold fs-4 ${fr.length > 0 ? 'text-danger' : 'text-success'}">${fr.length}</div>
-                            <small class="text-muted fw-semibold">Fuera de Rango</small>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="border rounded-3 p-2 ${fs.length > 0 ? 'bg-secondary-subtle' : 'bg-light'} shadow-sm">
-                            <div class="fw-bold fs-4 ${fs.length > 0 ? 'text-secondary' : 'text-muted'}">${fs.length}</div>
-                            <small class="text-muted fw-semibold">Fallas de Servicio</small>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-3 border">
-                    <div class="card-header bg-light py-2 fw-bold small text-body d-flex justify-content-between align-items-center">
-                        <span><i class="bi bi-exclamation-triangle-fill text-danger me-1"></i> Equipos Fuera del Rango Operativo (Mín / Máx)</span>
-                        <span class="badge ${fr.length>0?'bg-danger':'bg-success'} rounded-pill">${fr.length}</span>
-                    </div>
-                    <ul class="list-group list-group-flush small">${listaFr}</ul>
-                </div>
-
-                <div class="card mb-3 border">
-                    <div class="card-header bg-light py-2 fw-bold small text-body d-flex justify-content-between align-items-center">
-                        <span><i class="bi bi-tools text-secondary me-1"></i> Equipos Fuera de Servicio / En Reparación</span>
-                        <span class="badge ${fs.length>0?'bg-secondary':'bg-light text-dark'} rounded-pill">${fs.length}</span>
-                    </div>
-                    <ul class="list-group list-group-flush small">${listaFs}</ul>
-                </div>
-
-                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 pt-2">
-                    <button class="btn btn-sm btn-primary px-3 fw-semibold" onclick="abrirEnviarInforme()">
-                        <i class="bi bi-envelope-check me-1"></i> Enviar Informe por Correo
-                    </button>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-outline-danger px-3 fw-semibold" onclick="descargarInformeFranja('pdf')">
-                            <i class="bi bi-file-earmark-pdf me-1"></i> Descargar PDF
-                        </button>
-                    </div>
-                </div>`;
-        }
-
-        async function descargarInformeFranja(formato) {
-            try {
-                const ventana = Object.values(areasData)[0]?.ventana || '';
-                const response = await fetch(`/api/registros/informe-franja?formato=${formato}&ventana_horaria=${encodeURIComponent(ventana)}`);
-                if (!response.ok) throw new Error('Error al generar el informe');
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `informe_franja_${formatearFechaHoy()}.${formato}`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-            } catch (e) {
-                mostrarToast('Error al descargar informe: ' + e.message, 'danger', 6000);
-            }
-        }
-
-        function abrirEnviarInforme() {
-            // Cargar correo configurable previo guardado en localStorage o por defecto
-            const emailGuardado = localStorage.getItem('email_encargado_configurado') || 'encargado@laboratorio.cl';
-            const input = document.getElementById('informeEmail');
-            if (input) input.value = emailGuardado;
-            new bootstrap.Modal(document.getElementById('enviarInformeModal')).show();
-        }
-
-        async function enviarInformeCorreo() {
-            const input = document.getElementById('informeEmail');
-            const email = input.value.trim();
-            if (!email) { mostrarToast('Ingrese el correo del encargado.', 'danger', 6000); input.focus(); return; }
-
-            // Guardar correo configurable en localStorage para futuros envíos
-            localStorage.setItem('email_encargado_configurado', email);
-
-            const ventana = Object.values(areasData)[0]?.ventana || '';
-            const btn = document.getElementById('btnEnviarInforme');
-            const original = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enviando...';
-
-            try {
-                const res = await fetch('/api/registros/enviar-informe-franja', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, ventana_horaria: ventana })
-                });
-                const data = await res.json().catch(() => ({}));
-                if (res.ok) {
-                    mostrarToast('Informe enviado exitosamente a ' + email, 'success');
-                    bootstrap.Modal.getInstance(document.getElementById('enviarInformeModal')).hide();
-                } else {
-                    mostrarToast('Error al enviar el correo: ' + (data.message || data.error || 'Verifique el servidor SMTP.'), 'danger', 6000);
-                }
-            } catch (e) {
-                mostrarToast('Error de red: ' + e.message, 'danger', 6000);
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = original;
-            }
-        }
-
-        // ===== CIERRE DE RONDA =====
-        // Todo lo de aquí es opcional: la ronda ya quedó registrada. Este paso solo
-        // sirve para justificar los desvíos de una sola vez y avisar al encargado.
-
-        // Devuelve los desvíos de la ronda actual (todas las áreas cargadas)
-        function recopilarDesviosRonda() {
-            const desvios = [];
-            Object.values(areasData).forEach(data => {
-                (data.completados || []).forEach(r => {
-                    if (!r.fuera_rango_operativo) return;
-                    desvios.push({
-                        registro_id: r.id,
-                        area: data.area?.nombre || r.area_nombre || '',
-                        equipo: r.termometro_nombre || ('ID ' + r.termometro_id),
-                        actual: r.temp_actual,
-                        minima: r.temp_minima,
-                        maxima: r.temp_maxima,
-                        observaciones: r.observaciones,
-                        hora: formatearHora(r.fecha_registro)
-                    });
-                });
-            });
-            return desvios;
-        }
-
+        // ===== FINALIZACIÓN GLOBAL DE LA RONDA =====
+        // Solo se abre automáticamente con el estado completo de TODAS las áreas.
+        // Fuera de servicio se informa como incidencia, pero no bloquea la ronda.
         function totalesRonda() {
-            let completados = 0, pendientes = 0;
-            Object.values(areasData).forEach(d => {
-                completados += (d.completados || []).length;
-                pendientes += (d.pendientes || []).length;
-            });
-            return { completados, pendientes, total: completados + pendientes };
+            return OperatorFlow.totalesRonda(areasData);
         }
 
-        // Una sola aparición automática por franja: si el operador lo cierra, no vuelve a saltar
+        function recopilarIncidenciasRonda() {
+            return OperatorFlow.recopilarIncidencias(areasData, equiposFueraServicio);
+        }
+
+        function fechaOperativaActual() {
+            const desplazada = new Date(Date.now() - (8 * 60 * 60 * 1000));
+            return desplazada.toLocaleDateString('en-CA', { timeZone: 'America/Santiago' });
+        }
+
         function claveCierreRonda() {
             const ventana = Object.values(areasData)[0]?.ventana || '-';
-            return `cierre_mostrado_${formatearFechaHoy()}_${ventana}`;
+            return `cierre_mostrado_${fechaOperativaActual()}_${ventana}`;
         }
 
-        function verificarCierreRonda() {
-            const { total, pendientes } = totalesRonda();
-            if (total === 0 || pendientes > 0) return;
+        async function verificarCierreRonda() {
+            if (!OperatorFlow.rondaCompleta(areasData, cargaGlobalCompleta)) return;
             const clave = claveCierreRonda();
             if (localStorage.getItem(clave)) return;
             localStorage.setItem(clave, '1');
-            // Se deja respirar el toast del último registro antes de abrir el cierre
-            setTimeout(() => abrirCierreRonda(), 900);
+            setTimeout(() => abrirCierreRonda(), 700);
         }
 
-        // El cierre está siempre disponible, pero con pendientes se avisa antes: cerrar
-        // con equipos sin medir deja la franja incompleta en el informe.
         async function abrirCierreRonda() {
-            const { pendientes } = totalesRonda();
-
-            if (pendientes > 0) {
-                const porArea = Object.values(areasData)
-                    .filter(d => d.pendientes.length > 0)
-                    .map(d => `<li>${d.area.nombre}: <strong>${d.pendientes.length}</strong></li>`)
-                    .join('');
-
-                const seguro = await mostrarConfirmacion(
-                    'Quedan equipos sin registrar',
-                    `Faltan <strong>${pendientes} equipo${pendientes > 1 ? 's' : ''}</strong> por medir en esta ventana:
-                     <ul class="mt-2 mb-2">${porArea}</ul>
-                     Si cierras ahora, el informe de la franja saldrá incompleto.<br><br>
-                     ¿Cerrar la ronda igual?`,
-                    {
-                        si: '<i class="bi bi-flag-fill me-1"></i>Cerrar igual',
-                        siClase: 'btn-outline-danger',
-                        no: '<i class="bi bi-pencil-square me-1"></i>Seguir registrando',
-                        noClase: 'btn-primary fw-semibold'
-                    }
-                );
-                if (!seguro) return;
+            const { total, pendientes } = totalesRonda();
+            if (!cargaGlobalCompleta) {
+                mostrarToast('Aún no se pudo comprobar el estado de todas las áreas', 'warning', 5000);
+                return;
             }
-
+            if (!OperatorFlow.rondaCompleta(areasData, cargaGlobalCompleta)) {
+                mostrarToast(`Aún faltan ${pendientes} equipo${pendientes === 1 ? '' : 's'} por registrar`, 'info', 4500);
+                return;
+            }
             renderCierreRonda();
             new bootstrap.Modal(document.getElementById('cierreRondaModal')).show();
         }
 
         function renderCierreRonda() {
             const { completados, total } = totalesRonda();
-            const desvios = recopilarDesviosRonda();
+            const incidencias = recopilarIncidenciasRonda();
             const ventana = Object.values(areasData)[0]?.ventana || '';
 
-            const pendientes = total - completados;
-
-            document.getElementById('cierreTitulo').textContent = pendientes > 0
-                ? `Ronda incompleta · faltan ${pendientes}`
-                : (desvios.length > 0
-                    ? `Ronda completa · ${desvios.length} desvío${desvios.length > 1 ? 's' : ''}`
-                    : 'Ronda completa sin desvíos');
+            document.getElementById('cierreTitulo').textContent = 'Lecturas del día completadas correctamente';
             document.getElementById('cierreSubtitulo').textContent =
                 `${completados} de ${total} equipos${ventana ? ' · ventana ' + ventana : ''}`;
 
-            const body = document.getElementById('cierreBody');
-
-            // Constancia de lo que quedó sin medir: es lo primero que se debe ver
-            const avisoPendientes = pendientes === 0 ? '' : `
-                <div class="alert alert-danger py-2 px-3 small mb-3">
-                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                    Se cierra con <strong>${pendientes} equipo${pendientes > 1 ? 's' : ''} sin registrar</strong>.
-                    El informe de esta franja saldrá incompleto.
-                </div>`;
-
-            if (desvios.length === 0) {
-                body.innerHTML = avisoPendientes + `
-                    <div class="cierre-ok text-center py-4">
-                        <i class="bi bi-shield-check"></i>
-                        <div class="fw-bold mt-2">Todos los equipos medidos operaron dentro de rango</div>
-                        <div class="small text-muted mt-1">No hay desvíos que justificar.</div>
-                    </div>` + bloqueInformeCierre();
-                cargarInformeFranja();
-                return;
-            }
-
-            const items = desvios.map(d => `
+            const recomendacion = incidencias.length
+                ? `<div class="alert alert-warning mb-3"><strong>Hay ${incidencias.length} incidencia${incidencias.length === 1 ? '' : 's'}.</strong><br>Se recomienda enviarlas por WhatsApp al encargado.</div>`
+                : '<div class="alert alert-success mb-3"><strong>Sin incidencias.</strong><br>El resumen por WhatsApp es opcional.</div>';
+            const items = incidencias.map(i => `
                 <div class="cierre-desvio">
                     <div class="min-width-0">
-                        <div class="fw-semibold text-truncate">${d.equipo}</div>
-                        <div class="small text-muted text-truncate">${d.area} · ${d.hora}</div>
-                        ${d.observaciones ? `<div class="small fst-italic text-muted text-truncate"><i class="bi bi-chat-left-text me-1"></i>${d.observaciones}</div>` : ''}
-                    </div>
-                    <div class="cierre-valores">
-                        <span class="badge bg-danger-subtle text-danger">${d.actual ?? '-'}°C</span>
-                        <div class="small text-muted mt-1">${d.minima}° / ${d.maxima}°</div>
+                        <div class="fw-semibold">${i.equipo}</div>
+                        <div class="small text-muted">${i.area} · ${i.tipo}</div>
+                        <div class="small mt-1">${i.detalle}</div>
                     </div>
                 </div>`).join('');
 
-            body.innerHTML = avisoPendientes + `
-                <div class="alert alert-warning py-2 px-3 small mb-3">
-                    <i class="bi bi-info-circle me-1"></i>
-                    Las lecturas ya quedaron guardadas. Justificar y notificar es <strong>opcional</strong>.
+            document.getElementById('cierreBody').innerHTML = `
+                <div class="cierre-ok text-center py-3">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <div class="fw-bold mt-2">Terminaste todas las lecturas del laboratorio</div>
+                    <div class="small text-muted mt-1">La ronda quedó guardada. Puedes cerrar esta ventana sin enviar nada.</div>
                 </div>
+                ${recomendacion}
+                ${items ? `<div class="cierre-lista">${items}</div>` : ''}`;
 
-                <div class="cierre-lista mb-3">${items}</div>
-
-                <div class="cierre-lote">
-                    <div class="fw-bold small mb-1">
-                        <i class="bi bi-lightning-charge-fill text-warning me-1"></i>
-                        Acción correctiva para los ${desvios.length} desvíos
-                    </div>
-                    <div class="small text-muted mb-2">Se escribe una vez y se aplica a todos.</div>
-                    <div id="chipsLoteCierre"></div>
-                    <textarea class="form-control mb-2" id="accionCorrectivaLote" rows="2"
-                        placeholder="Ej: se avisó al encargado y se ajustaron los equipos..."></textarea>
-                    <button type="button" class="btn btn-warning w-100 fw-bold" id="btnAplicarLote" onclick="aplicarAccionCorrectivaLote()">
-                        <i class="bi bi-check2-all"></i> Aplicar a los ${desvios.length} desvíos
-                    </button>
-                </div>` + bloqueInformeCierre();
-
-            renderChipsAccionCorrectiva('chipsLoteCierre', 'accionCorrectivaLote');
-            cargarInformeFranja();
-        }
-
-        // Los informes son el resultado del cierre, así que viven aquí y no en la
-        // vista de áreas, que queda libre para explorar y registrar.
-        function bloqueInformeCierre() {
-            return `
-                <div class="cierre-informe mt-3">
-                    <div class="fw-bold small mb-1">
-                        <i class="bi bi-file-earmark-text text-primary me-1"></i>
-                        Informe de la franja
-                    </div>
-                    <div id="informeFranjaContent">
-                        <div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div> Consolidando informe...</div>
-                    </div>
-                    <div class="d-flex gap-2 mt-2">
-                        <button class="btn btn-sm btn-outline-success flex-fill fw-semibold" onclick="descargarInformeDia('csv')">
-                            <i class="bi bi-file-earmark-spreadsheet me-1"></i> CSV del día
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger flex-fill fw-semibold" onclick="descargarInformeDia('pdf')">
-                            <i class="bi bi-file-earmark-pdf me-1"></i> PDF del día
-                        </button>
-                    </div>
-                </div>`;
-        }
-
-        async function aplicarAccionCorrectivaLote() {
-            const txt = document.getElementById('accionCorrectivaLote');
-            const texto = txt.value.trim();
-            if (!texto) {
-                mostrarToast('Escribe la acción correctiva o elige un chip', 'warning');
-                txt.focus();
-                return;
-            }
-
-            const ids = recopilarDesviosRonda().map(d => d.registro_id).filter(id => id != null);
-            if (ids.length === 0) return;
-
-            const btn = document.getElementById('btnAplicarLote');
-            const original = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Aplicando...';
-
-            try {
-                const res = await fetch('/api/registros/accion-correctiva-lote', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ registro_ids: ids, observaciones: texto })
-                });
-                if (!res.ok) throw new Error(await res.text());
-                const data = await res.json().catch(() => ({}));
-                mostrarToast(`Acción correctiva aplicada a ${data.actualizados ?? ids.length} registro(s)`, 'success');
-                await refrescarAreaActual();
-                renderCierreRonda();
-            } catch (e) {
-                mostrarToast('No se pudo aplicar la acción correctiva: ' + e.message, 'danger', 6000);
-                btn.disabled = false;
-                btn.innerHTML = original;
-            }
+            const btn = document.getElementById('btnWhatsAppRonda');
+            btn.href = `https://wa.me/?text=${encodeURIComponent(textoResumenRonda())}`;
+            btn.target = '_blank';
+            btn.rel = 'noopener noreferrer';
+            btn.innerHTML = incidencias.length
+                ? '<i class="bi bi-whatsapp"></i> Enviar incidencias'
+                : '<i class="bi bi-whatsapp"></i> Enviar resumen';
         }
 
         function textoResumenRonda() {
             const { completados, total } = totalesRonda();
-            const ventana = Object.values(areasData)[0]?.ventana || '';
-            const desvios = recopilarDesviosRonda();
-            const lineas = [
-                `Control de temperaturas · ${formatearFechaHoy()}${ventana ? ' · ventana ' + ventana : ''}`,
-                `Equipos registrados: ${completados}/${total}`,
-                ''
-            ];
-            if (desvios.length === 0) {
-                lineas.push('Sin desvíos: todos los equipos dentro de rango.');
-            } else {
-                lineas.push(`Desvíos detectados: ${desvios.length}`);
-                desvios.forEach(d => {
-                    lineas.push(`• ${d.area} · ${d.equipo}: actual ${d.actual ?? '-'}°C (mín ${d.minima}° / máx ${d.maxima}°)${d.observaciones ? ' — ' + d.observaciones : ''}`);
-                });
-            }
-            return lineas.join('\n');
-        }
-
-        async function compartirResumenRonda() {
-            const texto = textoResumenRonda();
-            if (navigator.share) {
-                try {
-                    await navigator.share({ title: 'Resumen de ronda de temperaturas', text: texto });
-                    return;
-                } catch (e) {
-                    if (e.name === 'AbortError') return; // el usuario canceló el menú de compartir
-                }
-            }
-            try {
-                await navigator.clipboard.writeText(texto);
-                mostrarToast('Resumen copiado: pégalo en WhatsApp o correo', 'success', 5000);
-            } catch (e) {
-                mostrarToast('No se pudo compartir en este dispositivo', 'warning');
-            }
+            return OperatorFlow.textoWhatsApp({
+                fecha: formatearFechaHoy(),
+                ventana: Object.values(areasData)[0]?.ventana || '',
+                completados,
+                total,
+                incidencias: recopilarIncidenciasRonda()
+            });
         }
 
         // ===== MODAL UNIFICADO =====
@@ -2300,7 +1935,7 @@
                 if (registro.temp_actual != null) document.getElementById('tempActual').value = registro.temp_actual;
                 document.getElementById('lectura2').value = registro.temp_maxima;
                 document.getElementById('lectura3').value = registro.temp_minima;
-                if(registro.humedad) document.getElementById('humedad').value = registro.humedad;
+                if (registro.humedad != null) document.getElementById('humedad').value = registro.humedad;
                 if(registro.observaciones) document.getElementById('observaciones').value = registro.observaciones;
             } else {
                 document.getElementById('registroId').value = '';
@@ -2309,17 +1944,15 @@
                 // por descuido la lectura anterior.
             }
 
-            // Observaciones: colapsadas salvo que ya haya texto escrito
-            toggleObservaciones(!!(registro && registro.observaciones));
-
-            // Humedad
+            // Humedad solo existe para equipos compatibles. LOW/ERROR se restaura al
+            // corregir un registro y puede desmarcarse sin confirmaciones.
             const divHum = document.getElementById('humedadGroup');
             divHum.style.display = termometro.tiene_humedad ? 'block' : 'none';
-            document.getElementById('humedad').required = termometro.tiene_humedad;
-            humedadSinLectura = false;
-
-            // Renderizar Chips de Acciones Correctivas
-            renderChipsAccionCorrectiva('chipsAccionCorrectiva', 'observaciones');
+            document.getElementById('humedad').required = false;
+            humedadIncidencia = termometro.tiene_humedad
+                ? OperatorFlow.estadoHumedad(document.getElementById('observaciones').value)
+                : null;
+            actualizarUIHumedad();
 
             // Alerta en vivo: marca el desvío mientras se teclea, pero nunca frena el guardado.
             // La acción correctiva no se pide aquí; se aplica por lote al cerrar la ronda.
@@ -2352,8 +1985,8 @@
             const editable = !(soloLectura || termometro.fuera_de_servicio);
             btnGuardar.style.display = editable ? 'block' : 'none';
             inputs.forEach(input => input.disabled = !editable);
-            document.getElementById('btnToggleObs').style.display = editable ? 'block' : 'none';
-            document.getElementById('btnHumedadFalla').style.display = editable ? 'block' : 'none';
+            document.getElementById('btnHumedadLow').disabled = !editable;
+            document.getElementById('btnHumedadError').disabled = !editable;
 
             // El teclado se abre solo en el primer campo: escanear y teclear sin taps intermedios
             enfocarPrimeraLectura = editable;
@@ -2361,9 +1994,8 @@
             new bootstrap.Modal(document.getElementById('registroModal')).show();
         }
 
-        // ===== FLUJO DE LECTURAS ORDENADAS AUTOMÁTICAMENTE =====
-        // Un solo paso: se registra lo que marca el termómetro y el aviso llega después.
-        // (ordenarValores viene de lecturas.js)
+        // ===== FLUJO DE LECTURAS CON ROLES EXPLÍCITOS =====
+        // Actual conserva su rol; solo máxima y mínima se corrigen si están invertidas.
 
         function leerLecturas() {
             const actual = parseFloat(document.getElementById('tempActual').value);
@@ -2373,21 +2005,6 @@
                 actual, l2, l3,
                 ok: !isNaN(actual) && !isNaN(l2) && !isNaN(l3)
             };
-        }
-
-        // Observaciones plegadas: el 90% de los registros no necesitan texto.
-        // Sin argumento alterna; con booleano fuerza el estado.
-        function toggleObservaciones(abrir) {
-            const wrap = document.getElementById('obsWrap');
-            const btn = document.getElementById('btnToggleObs');
-            const visible = wrap.style.display !== 'none';
-            const mostrar = (abrir === undefined) ? !visible : abrir;
-            wrap.style.display = mostrar ? 'block' : 'none';
-            btn.classList.toggle('abierto', mostrar);
-            btn.querySelector('i').className = mostrar ? 'bi bi-dash-circle' : 'bi bi-plus-circle';
-            document.getElementById('btnToggleObsTexto').textContent = mostrar
-                ? 'Ocultar observación'
-                : 'Añadir observación / acción correctiva';
         }
 
         function resetBotonRegistrar(esCorreccion) {
@@ -2404,29 +2021,31 @@
 
         // --- FUNCIONES FUERA DE SERVICIO Y REPARACION ---
 
-        // El sensor de humedad falla con frecuencia: se registra el equipo igual, con
-        // humedad nula y constancia escrita del motivo para el informe.
-        const OBS_HUMEDAD_FALLA = 'Lector de humedad sin lectura: falla del sensor al momento del control.';
+        // LOW/ERROR se marca con un toque. La misma opción desmarca y permite corregir.
+        function actualizarUIHumedad() {
+            ['LOW', 'ERROR'].forEach(estado => {
+                const btn = document.getElementById(`btnHumedad${estado === 'LOW' ? 'Low' : 'Error'}`);
+                const activo = humedadIncidencia === estado;
+                btn.classList.toggle('btn-warning', activo);
+                btn.classList.toggle('btn-outline-secondary', !activo);
+                btn.setAttribute('aria-pressed', activo ? 'true' : 'false');
+            });
+            const ayuda = document.getElementById('humedadAyuda');
+            ayuda.textContent = humedadIncidencia
+                ? `${humedadIncidencia} seleccionado · se guardará sin humedad. Toca otra vez para desmarcar.`
+                : 'Toca LOW o ERROR, o escribe el valor de humedad.';
+        }
 
-        async function registrarSinHumedad() {
-            const seguro = await mostrarConfirmacion(
-                'Registrar sin humedad',
-                'El registro se guardará <strong>sin valor de humedad</strong> y se dejará constancia de la falla del lector en las observaciones.<br><br>¿Confirmas que el lector no marca?'
-            );
-            if (!seguro) return;
-
-            humedadSinLectura = true;
+        function seleccionarIncidenciaHumedad(estado) {
+            humedadIncidencia = humedadIncidencia === estado ? null : estado;
             const humEl = document.getElementById('humedad');
-            humEl.value = '';
-            humEl.classList.remove('is-invalid-temp');
-
-            const obs = document.getElementById('observaciones');
-            if (!obs.value.includes(OBS_HUMEDAD_FALLA)) {
-                obs.value = obs.value.trim() ? obs.value.trim() + ' ' + OBS_HUMEDAD_FALLA : OBS_HUMEDAD_FALLA;
+            if (humedadIncidencia) {
+                humEl.value = '';
+                humEl.classList.remove('is-invalid-temp');
             }
-            toggleObservaciones(true);
-
-            guardarRegistro();
+            const obs = document.getElementById('observaciones');
+            obs.value = OperatorFlow.observacionHumedad(obs.value, humedadIncidencia);
+            actualizarUIHumedad();
         }
 
         async function abrirModalFueraServicio() {
@@ -2617,7 +2236,7 @@
             // Humedad obligatoria solo en equipos que la miden
             const humEl = document.getElementById('humedad');
             const pideHumedad = document.getElementById('humedadGroup').style.display !== 'none';
-            if (pideHumedad && !humedadSinLectura && isNaN(parseFloat(humEl.value))) {
+            if (pideHumedad && !humedadIncidencia && isNaN(parseFloat(humEl.value))) {
                 humEl.classList.add('is-invalid-temp');
                 humEl.focus();
                 mostrarToast('Falta la humedad (%) de este equipo', 'warning');
@@ -2625,7 +2244,9 @@
             }
             humEl.classList.remove('is-invalid-temp');
 
-            const { actual, minima, maxima } = ordenarValores(l.actual, l.l2, l.l3);
+            const actual = l.actual;
+            const maxima = Math.max(l.l2, l.l3);
+            const minima = Math.min(l.l2, l.l3);
 
             if (navigator.onLine === false) {
                 mostrarToast('Sin conexión: no se guardó. Recupera señal y vuelve a tocar Registrar (los valores siguen escritos).', 'danger', 7000);
@@ -2637,14 +2258,15 @@
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Registrando...';
 
             // Recolectar datos (máxima = la mayor, mínima = la menor, ya ordenado)
-            const payload = {
-                termometro_id: parseInt(document.getElementById('termometroId').value),
-                temp_actual: actual,
-                temp_maxima: maxima,
-                temp_minima: minima,
-                humedad: document.getElementById('humedad').value ? parseFloat(document.getElementById('humedad').value) : null,
-                observaciones: document.getElementById('observaciones').value || null
-            };
+            const payload = OperatorFlow.construirPayloadLectura({
+                termometroId: document.getElementById('termometroId').value,
+                actual,
+                maxima,
+                minima,
+                humedad: humEl.value,
+                humedadEstado: humedadIncidencia,
+                observaciones: document.getElementById('observaciones').value
+            });
 
             const esEdicion = document.getElementById('esEdicion').value === 'true';
             const registroId = document.getElementById('registroId').value;
@@ -2665,9 +2287,9 @@
                     // Primero se registra, después se avisa el resultado
                     mostrarAvisoRegistro(actual, minima, maxima);
                     volverAlEscaner();
-                    await refrescarAreaActual();
-                    // Al cerrar el último equipo se ofrece (sin bloquear) el cierre de ronda
-                    verificarCierreRonda();
+                    const refrescoGlobalOk = await cargarTodasLasAreas();
+                    // Solo el snapshot global atómico puede decidir si terminó la ronda.
+                    if (refrescoGlobalOk) verificarCierreRonda();
                 } else if (res.status === 409) {
                     // Otro operador registró el equipo mientras este tenía el modal abierto.
                     // Se recargan los datos y se reabre sobre el registro real para corregir,
@@ -2866,12 +2488,19 @@
         configurarNavegacionLecturas(['tempActual', 'lectura2', 'lectura3'], () => {
             // Si el equipo mide humedad, ese es el siguiente salto antes de registrar
             const hum = document.getElementById('humedad');
-            if (document.getElementById('humedadGroup').style.display !== 'none' && !hum.value) {
+            if (document.getElementById('humedadGroup').style.display !== 'none' && !hum.value && !humedadIncidencia) {
                 hum.focus();
                 return;
             }
             const btn = document.getElementById('btnGuardar');
             if (btn && btn.style.display !== 'none' && !btn.disabled) guardarRegistro();
+        });
+        document.getElementById('humedad').addEventListener('input', (e) => {
+            if (!e.target.value.trim() || !humedadIncidencia) return;
+            humedadIncidencia = null;
+            const obs = document.getElementById('observaciones');
+            obs.value = OperatorFlow.observacionHumedad(obs.value, null);
+            actualizarUIHumedad();
         });
         document.getElementById('humedad').addEventListener('keydown', (e) => {
             if (e.key !== 'Enter') return;
