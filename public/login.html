@@ -11,6 +11,13 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="lecturas.css">
     <style>
+        /* overflow-x en html además de body: sin él, el fondo ambiental de 800px
+           ensancha el viewport de layout en móvil (390px reales → 595px de layout)
+           y todo lo posicionado a pantalla completa deja de verse centrado. */
+        html {
+            overflow-x: clip;
+        }
+
         body {
             min-height: 100vh;
             display: flex;
@@ -19,7 +26,7 @@
             margin: 0;
             padding: 20px;
             position: relative;
-            overflow-x: hidden;
+            overflow-x: clip;
         }
 
         .ambient-bg {
@@ -27,7 +34,7 @@
             top: -20%;
             left: 50%;
             transform: translateX(-50%);
-            width: 800px;
+            width: min(800px, 100%);
             height: 500px;
             background: radial-gradient(circle, rgba(0, 113, 227, 0.15) 0%, rgba(52, 199, 89, 0.05) 50%, transparent 70%);
             pointer-events: none;
@@ -143,10 +150,10 @@
         /* Loading Overlay */
         #loadingOverlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
+            inset: 0;
             height: 100%;
+            /* dvh sigue a la barra de direcciones y al teclado del móvil */
+            height: 100dvh;
             background-color: rgba(11, 15, 25, 0.92);
             backdrop-filter: blur(10px);
             display: none;
