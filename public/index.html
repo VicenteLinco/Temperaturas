@@ -959,11 +959,16 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body" id="cierreBody"></div>
-                <div class="modal-footer cierre-footer">
-                    <button type="button" class="btn btn-outline-secondary flex-fill" data-bs-dismiss="modal">Cerrar</button>
-                    <a class="btn btn-success flex-fill" id="btnWhatsAppRonda" href="https://wa.me/" target="_blank" rel="noopener noreferrer">
-                        <i class="bi bi-whatsapp"></i> WhatsApp
+                <div class="modal-footer cierre-footer flex-column flex-sm-row gap-2">
+                    <button type="button" class="btn btn-outline-secondary w-100 flex-sm-fill" data-bs-dismiss="modal">
+                        <i class="bi bi-arrow-left me-1"></i> Seguir en la app
+                    </button>
+                    <a class="btn btn-success w-100 flex-sm-fill" id="btnWhatsAppRonda" href="https://wa.me/" target="_blank" rel="noopener noreferrer">
+                        <i class="bi bi-whatsapp me-1"></i> WhatsApp
                     </a>
+                    <button type="button" class="btn btn-danger w-100 flex-sm-fill" onclick="logout()" id="btnFinalizarLogout">
+                        <i class="bi bi-box-arrow-right me-1"></i> Finalizar y Salir
+                    </button>
                 </div>
             </div>
         </div>
@@ -1264,21 +1269,10 @@
             return NaN;
         }
 
-        // Segunda red: aunque el texto tenga forma de ID, se valida con los equipos cargados
-        // o con la base de datos (incluso si está fuera de servicio).
-        function idConocido(id) {
-            const enAreas = Object.values(areasData).some(d =>
-                (d.pendientes || []).some(t => t.id === id) ||
-                (d.completados || []).some(r => r.termometro_id === id));
-            const enFueraServicio = (equiposFueraServicio || []).some(t => t.id === id);
-            return enAreas || enFueraServicio;
-        }
-
         // ===== LOGICA PRINCIPAL =====
 
         async function onScanSuccess(decodedText, decodedResult) {
             // Bandera de bloqueo: ignora escaneos re-entrantes mientras el actual sigue en curso
-            // (cubre la ventana entre la detección y que pause() surta efecto)
             if (escaneoEnProceso) return;
             escaneoEnProceso = true;
 
@@ -1299,40 +1293,19 @@
                 if (isNaN(termometroId)) {
                     playScanSound('error');
                     if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-                    mostrarEstado(`Código QR no válido: ${decodedText.substring(0, 20)}...`, 'warning');
+                    mostrarEstado(`Código QR no válido: ${decodedText.substring(0, 25)}`, 'warning');
                     setTimeout(reanudarScannerSiPausado, 2000);
                     return;
                 }
 
-                // El equipo debe estar entre los cargados. Si no está en el snapshot local,
-                // intentamos verificar con el backend antes de dar error.
-                if (Object.keys(areasData).length > 0 && !idConocido(termometroId)) {
-                    try {
-                        const checkResp = await fetch(`/api/termometros/${termometroId}`);
-                        if (!checkResp.ok) {
-                            playScanSound('error');
-                            if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-                            mostrarEstado(`Ese código no corresponde a un termómetro registrado (leído: ${termometroId})`, 'warning');
-                            setTimeout(reanudarScannerSiPausado, 2500);
-                            return;
-                        }
-                    } catch (e) {
-                        playScanSound('error');
-                        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-                        mostrarEstado(`Ese código no corresponde a un termómetro de esta ronda (leído: ${termometroId})`, 'warning');
-                        setTimeout(reanudarScannerSiPausado, 2500);
-                        return;
-                    }
-                }
-
-                // Éxito: audio feedback + vibración
+                // Éxito al leer código: feedback sensorial y abrir directamente
                 playScanSound('success');
                 if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
-                mostrarEstado('Procesando escaneo...', 'info');
+                mostrarEstado('Abriendo termómetro...', 'info');
 
                 await procesarTermometro(termometroId);
             } catch (error) {
-                console.error(error);
+                console.error('Error al escanear termómetro:', error);
                 mostrarEstado('Error procesando termómetro', 'danger');
                 setTimeout(reanudarScannerSiPausado, 2000);
             } finally {
@@ -1351,8 +1324,9 @@
                     return;
                 }
                 if (!response.ok) {
-                    mostrarEstado(`Termómetro ID ${termometroId} no encontrado en base de datos`, 'danger');
-                    setTimeout(reanudarScannerSiPausado, 1500);
+                    playScanSound('error');
+                    mostrarEstado(`Termómetro #${termometroId} no registrado en el sistema`, 'warning');
+                    setTimeout(reanudarScannerSiPausado, 2000);
                     return;
                 }
                 const termometro = await response.json();
@@ -1369,7 +1343,7 @@
 
                 // Identificar si ya posee registro completado hoy en esta ventana
                 const areaData = areasData[termometro.area_id];
-                const registro = areaData?.completados.find(r => r.termometro_id === termometro.id);
+                const registro = areaData?.completados?.find(r => r.termometro_id === termometro.id);
                 
                 // Cambiar a la pestaña del área correspondiente si es diferente
                 if (areaActualId !== termometro.area_id) {
@@ -1838,8 +1812,8 @@
             document.getElementById('cierreBody').innerHTML = `
                 <div class="cierre-ok text-center py-3">
                     <i class="bi bi-check-circle-fill"></i>
-                    <div class="fw-bold mt-2">Terminaste todas las lecturas del laboratorio</div>
-                    <div class="small text-muted mt-1">La ronda quedó guardada. Puedes cerrar esta ventana sin enviar nada.</div>
+                    <div class="fw-bold mt-2">¡Ronda de temperaturas completada!</div>
+                    <div class="small text-muted mt-1">Todos los equipos quedaron guardados exitosamente. Puedes enviar el reporte por WhatsApp o finalizar la sesión para el siguiente turno.</div>
                 </div>
                 ${recomendacion}
                 ${items ? `<div class="cierre-lista">${items}</div>` : ''}`;
