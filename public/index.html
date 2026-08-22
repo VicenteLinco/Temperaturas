@@ -12,11 +12,14 @@
     <link rel="stylesheet" href="lecturas.css">
     <style>
         :root {
-            --brand: #1d1d1f;
-            --brand-dark: #000000;
-            --ink: #1d1d1f;
-            --slate: #1d1d1f;
+            --brand: #0f8a8f;
+            --brand-dark: #0b6b6f;
+            --brand-soft: #e2f3f2;
+            --ink: #10151c;
+            --slate: #10151c;
             --bg: #f5f5f7;
+            --scanner-bg: #10151c;
+            --scanner-accent: #4fd1c5;
             --radius: 14px;
             --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.04);
             --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.08);
@@ -63,34 +66,34 @@
             padding: 24px 16px;
             background-color: #ffffff;
             text-align: center;
-            border-bottom: 1px solid #e2e2e5;
         }
         #qr-reader {
             width: 100%;
             max-width: 340px;
             aspect-ratio: 1 / 1;
             margin: 0 auto;
-            border: 2px solid var(--brand);
             border-radius: 18px;
             overflow: hidden;
             position: relative;
-            background-color: #000;
+            background-color: var(--scanner-bg);
             box-shadow: var(--shadow-card);
         }
         /* Esquinas guía: refuerzan que el objetivo es cuadrado, no solo la línea
-           punteada que dibuja html5-qrcode dentro del qrbox. */
+           punteada que dibuja html5-qrcode dentro del qrbox. En teal para que
+           destaquen sobre el fondo oscuro del visor (antes eran del mismo tono
+           que el fondo y quedaban invisibles). */
         .scanner-guide-corner {
             position: absolute;
             width: 26px;
             height: 26px;
-            border-color: var(--brand);
+            border-color: var(--scanner-accent);
             z-index: 6;
             pointer-events: none;
         }
-        .scanner-guide-corner.tl { top: 14px; left: 14px; border-top: 3px solid var(--brand); border-left: 3px solid var(--brand); border-radius: 6px 0 0 0; }
-        .scanner-guide-corner.tr { top: 14px; right: 14px; border-top: 3px solid var(--brand); border-right: 3px solid var(--brand); border-radius: 0 6px 0 0; }
-        .scanner-guide-corner.bl { bottom: 14px; left: 14px; border-bottom: 3px solid var(--brand); border-left: 3px solid var(--brand); border-radius: 0 0 0 6px; }
-        .scanner-guide-corner.br { bottom: 14px; right: 14px; border-bottom: 3px solid var(--brand); border-right: 3px solid var(--brand); border-radius: 0 0 6px 0; }
+        .scanner-guide-corner.tl { top: 14px; left: 14px; border-top: 3px solid var(--scanner-accent); border-left: 3px solid var(--scanner-accent); border-radius: 6px 0 0 0; }
+        .scanner-guide-corner.tr { top: 14px; right: 14px; border-top: 3px solid var(--scanner-accent); border-right: 3px solid var(--scanner-accent); border-radius: 0 6px 0 0; }
+        .scanner-guide-corner.bl { bottom: 14px; left: 14px; border-bottom: 3px solid var(--scanner-accent); border-left: 3px solid var(--scanner-accent); border-radius: 0 0 0 6px; }
+        .scanner-guide-corner.br { bottom: 14px; right: 14px; border-bottom: 3px solid var(--scanner-accent); border-right: 3px solid var(--scanner-accent); border-radius: 0 0 6px 0; }
         #btnTorch.torch-on { background: #fff; color: var(--brand); box-shadow: 0 0 0 2px var(--brand), var(--shadow-card); }
         .scanner-overlay {
             position: absolute;
@@ -196,10 +199,12 @@
         .termometro-card:active {
             transform: scale(0.99);
         }
-        /* !important: lecturas.css fija border-color con !important y borraba el color de la franja */
-        .termometro-card.pendiente { border-left: 5px solid #8a6a2f !important; }
-        .termometro-card.completado { border-left: 5px solid #2f6b4f !important; }
-        /* Registro guardado pero fuera del rango operativo: debe saltar a la vista */
+        /* La franja lateral por estado se retira: el estado ya se lee en el badge
+           de la derecha, y repetirlo como borde de color recargaba la tarjeta. */
+        .termometro-card.pendiente,
+        .termometro-card.completado { border-left: 1px solid transparent !important; }
+        /* Registro guardado pero fuera del rango operativo sí necesita destacar,
+           es una alerta de seguridad y no un estado de rutina. */
         .termometro-card.completado.desvio {
             border-left: 5px solid #9c3b3b !important;
             background-color: rgba(156, 59, 59, 0.06) !important;
@@ -227,7 +232,7 @@
 
         .progress-bar-custom {
             height: 6px;
-            background-color: #e2e2e5;
+            background-color: rgba(15, 138, 143, 0.15);
             border-radius: 3px;
             overflow: hidden;
         }
@@ -244,12 +249,12 @@
             transition: background-color 0.15s ease;
         }
         .btn-primary {
-            background-color: #1d1d1f;
+            background-color: var(--brand);
             border: 1px solid transparent;
             color: #ffffff;
         }
         .btn-primary:hover {
-            background-color: #000000;
+            background-color: var(--brand-dark);
             color: #ffffff;
         }
         .btn:active {
@@ -305,8 +310,8 @@
             position: sticky;
             top: calc(56px + 48px);
             z-index: 90;
-            background: white;
-            border: 1px solid #e2e2e5;
+            background: var(--brand-soft);
+            border: 1px solid rgba(15, 138, 143, 0.18);
             border-radius: var(--radius);
             padding: 12px 14px;
             box-shadow: var(--shadow-card);
@@ -363,8 +368,8 @@
             transition: background 0.15s ease, color 0.15s ease;
         }
         .estado-tab.activo {
-            color: var(--slate, #1d1d1f);
-            background: white;
+            color: white;
+            background: var(--brand);
             box-shadow: var(--shadow-card, 0 1px 3px rgba(0,0,0,0.12));
         }
         .estado-tab-cifra {
@@ -375,8 +380,8 @@
             background: rgba(110, 110, 115, 0.15);
         }
         .estado-tab.activo .estado-tab-cifra {
-            color: white;
-            background: var(--slate, #1d1d1f);
+            color: var(--brand);
+            background: white;
         }
 
         /* ACORDEÓN POR ÁREA: explorar dónde falta sin salir de la pantalla */
@@ -655,9 +660,6 @@
                 <i class="bi bi-qr-code-scan"></i> Control Térmico
             </span>
             <div class="d-flex align-items-center">
-                <button class="btn btn-outline-light btn-sm rounded-circle p-2 me-2" onclick="toggleTheme()" title="Cambiar Tema (Oscuro/Claro)">
-                    <i class="bi bi-moon-stars-fill" id="themeToggleIcon"></i>
-                </button>
                 <span class="text-white me-3 d-none d-sm-inline">
                     <i class="bi bi-person-circle"></i> <span id="username"></span>
                 </span>
@@ -702,9 +704,8 @@
             <!-- Entrada Manual por ID o Búsqueda Rápida -->
             <div class="mt-2 container px-1" style="max-width: 340px;">
                 <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden border">
-                    <span class="input-group-text bg-light border-0"><i class="bi bi-hash"></i></span>
-                    <input type="number" inputmode="numeric" id="inputManualId" class="form-control border-0 bg-light" placeholder="ID manual (ej: 5)..." onkeypress="if(event.key==='Enter') buscarManualId()">
-                    <button class="btn btn-primary fw-semibold px-3" onclick="buscarManualId()"><i class="bi bi-search me-1"></i> Buscar</button>
+                    <input type="number" inputmode="numeric" id="inputManualId" class="form-control border-0 bg-light" placeholder="Buscar o ingresar ID..." onkeypress="if(event.key==='Enter') buscarManualId()">
+                    <button class="btn btn-primary px-3" onclick="buscarManualId()" title="Buscar" aria-label="Buscar"><i class="bi bi-search"></i></button>
                 </div>
             </div>
         </div>
@@ -720,6 +721,7 @@
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="reparaciones-tab" data-bs-toggle="tab" data-bs-target="#reparaciones-content" type="button" role="tab" onclick="cargarReparaciones()">
                         <i class="bi bi-tools"></i> Reparaciones
+                        <span id="reparacionesTabBadge" class="badge bg-danger ms-1 d-none">0</span>
                     </button>
                 </li>
             </ul>
@@ -1003,6 +1005,14 @@
     <script src="lecturas.js"></script>
     <script src="operator-flow.js"></script>
     <script>
+        // Esta pantalla no ofrece modo oscuro/claro: se fija en claro siempre,
+        // sin importar la preferencia del sistema o un tema oscuro guardado
+        // previamente desde otra pantalla (lecturas.js comparte localStorage).
+        document.addEventListener('DOMContentLoaded', () => {
+            document.documentElement.setAttribute('data-bs-theme', 'light');
+            document.body.classList.remove('dark-mode');
+        });
+
         let currentUser = null;
         let html5QrCode = null;
         let areasData = {};
@@ -1399,6 +1409,7 @@
                 const termometros = await termometrosResp.json();
                 areasData = nuevaAreasData;
                 equiposFueraServicio = termometros.filter(t => t.activo && t.fuera_de_servicio);
+                actualizarBadgeReparaciones();
                 cargaGlobalCompleta = Object.keys(areasData).length === areasActivas.length;
                 renderizarAreas();
                 return true;
@@ -1407,6 +1418,17 @@
                 console.error('Error global en carga:', e);
                 return false;
             }
+        }
+
+        // Los equipos fuera de servicio ya no se listan dentro de cada área (tienen su
+        // propia categoría en la pestaña Reparaciones); este contador es lo único que
+        // los recuerda mientras el operador navega por Áreas.
+        function actualizarBadgeReparaciones() {
+            const badge = document.getElementById('reparacionesTabBadge');
+            if (!badge) return;
+            const n = (equiposFueraServicio || []).length;
+            badge.textContent = n;
+            badge.classList.toggle('d-none', n === 0);
         }
 
         // Al escanear un equipo su área pasa a ser la activa: se abre su acordeón y se
@@ -1519,27 +1541,18 @@
              const desviosTotales = areasList.reduce((n, [, d]) =>
                  n + d.completados.filter(r => r.fuera_rango_operativo).length, 0);
 
-             // Cabecera fija: cuánto falta y el cierre siempre a mano
+             // Cabecera fija: título + cifra y la barra de avance. El cierre ya se
+             // abre solo al completar la ronda (verificarCierreRonda), así que no
+             // necesita un botón propio compitiendo por espacio aquí.
              let html = `
                 <div class="progreso-sticky">
                     <div class="d-flex justify-content-between align-items-baseline gap-2">
                         <div class="progreso-titulo text-truncate">
-                            <i class="bi bi-clipboard-check me-1"></i>Ronda de esta ventana
+                            Ronda${ventana && ventana !== '-' ? ' ' + ventana : ''}
                         </div>
                         <div class="progreso-cifra ${pendientes === 0 ? 'text-success' : ''}">${completados}<span class="text-muted">/${total}</span></div>
                     </div>
                     <div class="progress-bar-custom mt-2"><div class="progress-fill ${pendientes === 0 ? 'completo' : ''}" style="width: ${progreso}%"></div></div>
-                    <div class="d-flex justify-content-between align-items-center mt-1.5 gap-2">
-                        <div class="small ${pendientes === 0 ? 'text-success fw-semibold' : 'text-warning fw-semibold'} text-truncate">
-                            ${pendientes === 0
-                                ? '<i class="bi bi-check-circle-fill me-1"></i>Todo registrado'
-                                : `<i class="bi bi-hourglass-split me-1"></i>Faltan ${pendientes} equipo${pendientes > 1 ? 's' : ''}`}
-                            ${desviosTotales > 0 ? `<span class="badge bg-danger ms-2">${desviosTotales} desvío${desviosTotales > 1 ? 's' : ''}</span>` : ''}
-                        </div>
-                        <button class="btn btn-sm ${pendientes === 0 ? 'btn-success' : 'btn-outline-secondary'} rounded-pill px-3 fw-semibold text-nowrap" onclick="abrirCierreRonda()">
-                            <i class="bi bi-flag-fill me-1"></i>Cerrar ronda
-                        </button>
-                    </div>
                 </div>
 
                 ${estadoVentana.activa ? '' : `
@@ -1549,9 +1562,7 @@
                         Puedes consultar lo registrado, pero no guardar mediciones${estadoVentana.proximaApertura ? ` hasta las <strong>${estadoVentana.proximaApertura}</strong>` : ''}.
                     </div>`}
 
-                <div class="small text-muted mb-2 mt-3"><i class="bi bi-clock-history me-1"></i>${formatearTextoVentana(ventana)}</div>
-
-                <div class="estado-tabs" role="tablist">
+                <div class="estado-tabs mt-3" role="tablist">
                     <button class="estado-tab ${estadoTabActivo === 'pendientes' ? 'activo' : ''}" onclick="cambiarEstadoTab('pendientes')" role="tab" aria-selected="${estadoTabActivo === 'pendientes'}">
                         <i class="bi bi-hourglass-split"></i> Pendientes
                         <span class="estado-tab-cifra">${pendientes}</span>
@@ -1572,10 +1583,8 @@
              `;
 
              const verPendientes = estadoTabActivo === 'pendientes';
-             const conContenido = areasList.filter(([id, d]) => {
-                 const fsCount = (equiposFueraServicio || []).filter(t => t.area_id === Number(id)).length;
-                 return verPendientes ? (d.pendientes.length + fsCount > 0) : (d.completados.length > 0);
-             });
+             const conContenido = areasList.filter(([, d]) =>
+                 verPendientes ? d.pendientes.length > 0 : d.completados.length > 0);
 
              if (conContenido.length === 0) {
                  html += verPendientes
@@ -1603,10 +1612,9 @@
                  const c = data.completados.length;
                  const tot = c + data.pendientes.length;
                  const dArea = data.completados.filter(r => r.fuera_rango_operativo).length;
-                 const fsArea = (equiposFueraServicio || []).filter(t => t.area_id === areaId);
                  const abierta = areasAbiertas.has(areaId) || areaId === abrirPorDefecto;
                  const items = verPendientes
-                    ? (data.pendientes.map(t => tarjetaPendiente(t)).join('') + fsArea.map(t => tarjetaFueraServicio(t)).join(''))
+                    ? data.pendientes.map(t => tarjetaPendiente(t)).join('')
                     : data.completados.map(r => tarjetaCompletado(r)).join('');
 
                  html += `
@@ -1616,7 +1624,6 @@
                             <i class="bi bi-building text-primary"></i>
                             <span class="area-nombre text-truncate">${data.area.nombre}</span>
                             ${dArea > 0 && !verPendientes ? `<span class="badge bg-danger ms-1">${dArea}</span>` : ''}
-                            ${fsArea.length > 0 && verPendientes ? `<span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1" title="${fsArea.length} fuera de servicio"><i class="bi bi-tools me-1"></i>${fsArea.length} FS</span>` : ''}
                             <span class="area-conteo ${c === tot ? 'completo' : ''}">${c}/${tot}</span>
                         </summary>
                         <div class="area-items">${items}</div>
@@ -1644,24 +1651,6 @@
                     <div class="small text-muted text-truncate"><i class="bi bi-cpu me-1"></i>${t.tipo_nombre}${rango}</div>
                 </div>
                 <div class="termometro-accion"><i class="bi bi-chevron-right"></i></div>
-            </div>`;
-        }
-
-        function tarjetaFueraServicio(t) {
-            return `<div class="termometro-card fuera-servicio" onclick="seleccionarTermometro(${t.id})">
-                <div class="min-width-0">
-                    <div class="termometro-nombre fw-bold text-truncate text-secondary">
-                        <i class="bi bi-exclamation-octagon text-danger me-1"></i>${t.nombre || 'ID: ' + t.id}
-                    </div>
-                    <div class="small text-danger text-truncate">
-                        <i class="bi bi-tools me-1"></i>Fuera de servicio &bull; Toca para reparar
-                    </div>
-                </div>
-                <div class="termometro-accion">
-                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle fw-semibold px-2 py-1" style="font-size:0.75rem;">
-                        En reparación
-                    </span>
-                </div>
             </div>`;
         }
 
@@ -1721,16 +1710,6 @@
 
         async function editarRegistro(id) {
             await seleccionarTermometro(id);
-        }
-
-        function formatearTextoVentana(horaVentana) {
-            if (!horaVentana || horaVentana === '-') return '-';
-            const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-            const hoy = new Date();
-            const dia = hoy.getDate();
-            const mes = meses[hoy.getMonth()];
-            const anio = hoy.getFullYear();
-            return `Estás registrando en la ventana de ${horaVentana} del día ${dia} de ${mes} ${anio}`;
         }
 
         // Hora local corta (HH:MM) a partir de la fecha ISO que entrega el backend

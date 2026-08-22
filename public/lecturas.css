@@ -763,20 +763,6 @@ body {
     }
 }
 
-/* Tarjetas de Termómetros Fuera de Servicio / En Reparación */
-.termometro-card.fuera-servicio {
-    border-left: 4px solid var(--apple-red, #9c3b3b) !important;
-    background: rgba(156, 59, 59, 0.04) !important;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-.termometro-card.fuera-servicio:hover {
-    background: rgba(156, 59, 59, 0.08) !important;
-}
-[data-bs-theme="dark"] .termometro-card.fuera-servicio {
-    background: rgba(156, 59, 59, 0.1) !important;
-}
-
 /* Scanner Overlay Compacto y Ergonómico (Flat) */
 .scanner-overlay {
     position: absolute;
