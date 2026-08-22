@@ -19,7 +19,6 @@
             --slate: #10151c;
             --bg: #f5f5f7;
             --scanner-bg: #10151c;
-            --scanner-accent: #4fd1c5;
             --radius: 14px;
             --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.04);
             --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.08);
@@ -78,22 +77,6 @@
             background-color: var(--scanner-bg);
             box-shadow: var(--shadow-card);
         }
-        /* Esquinas guía: refuerzan que el objetivo es cuadrado, no solo la línea
-           punteada que dibuja html5-qrcode dentro del qrbox. En teal para que
-           destaquen sobre el fondo oscuro del visor (antes eran del mismo tono
-           que el fondo y quedaban invisibles). */
-        .scanner-guide-corner {
-            position: absolute;
-            width: 26px;
-            height: 26px;
-            border-color: var(--scanner-accent);
-            z-index: 6;
-            pointer-events: none;
-        }
-        .scanner-guide-corner.tl { top: 14px; left: 14px; border-top: 3px solid var(--scanner-accent); border-left: 3px solid var(--scanner-accent); border-radius: 6px 0 0 0; }
-        .scanner-guide-corner.tr { top: 14px; right: 14px; border-top: 3px solid var(--scanner-accent); border-right: 3px solid var(--scanner-accent); border-radius: 0 6px 0 0; }
-        .scanner-guide-corner.bl { bottom: 14px; left: 14px; border-bottom: 3px solid var(--scanner-accent); border-left: 3px solid var(--scanner-accent); border-radius: 0 0 0 6px; }
-        .scanner-guide-corner.br { bottom: 14px; right: 14px; border-bottom: 3px solid var(--scanner-accent); border-right: 3px solid var(--scanner-accent); border-radius: 0 0 6px 0; }
         .scanner-overlay {
             position: absolute;
             top: 0;
@@ -674,10 +657,6 @@
         <div class="scanner-section">
             <div style="position: relative; max-width: 340px; margin: 0 auto;">
                 <div id="qr-reader"></div>
-                <div class="scanner-guide-corner tl"></div>
-                <div class="scanner-guide-corner tr"></div>
-                <div class="scanner-guide-corner bl"></div>
-                <div class="scanner-guide-corner br"></div>
                 <div id="scannerOverlay" class="scanner-overlay">
                     <i class="bi bi-camera-video mb-2" style="font-size: 2.2rem; color: var(--apple-blue);"></i>
                     <h6 class="mb-1 fw-bold">Escáner de Código QR</h6>
@@ -1000,14 +979,6 @@
     <script src="lecturas.js"></script>
     <script src="operator-flow.js"></script>
     <script>
-        // Esta pantalla no ofrece modo oscuro/claro: se fija en claro siempre,
-        // sin importar la preferencia del sistema o un tema oscuro guardado
-        // previamente desde otra pantalla (lecturas.js comparte localStorage).
-        document.addEventListener('DOMContentLoaded', () => {
-            document.documentElement.setAttribute('data-bs-theme', 'light');
-            document.body.classList.remove('dark-mode');
-        });
-
         let currentUser = null;
         let html5QrCode = null;
         let areasData = {};

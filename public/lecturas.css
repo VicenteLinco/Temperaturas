@@ -42,42 +42,6 @@
     --gradient-card-light: #ffffff;
 }
 
-/* Modo Oscuro (Dark Theme - Solid Flat) */
-[data-bs-theme="dark"], body.dark-mode {
-    --apple-bg: #0c0c0e;
-    --apple-card-bg: #17171a;
-    --apple-card-border: #2a2a2d;
-    --apple-text: #f2f2f2;
-    --apple-text-secondary: #9a9aa0;
-    /* En oscuro el acento se invierte: blanco, no azul */
-    --apple-blue: #f2f2f2;
-    --apple-blue-hover: #ffffff;
-    --apple-blue-soft: #26262a;
-    --apple-secondary: #9a9aa0;
-    --apple-green: #5fae82;
-    --apple-orange: #c99a4c;
-    --apple-red: #c96b6b;
-    --apple-purple: #9a9aa0;
-    --apple-teal: #a3a3a8;
-    --apple-gray: #2a2a2d;
-    --apple-gray-light: #0f0f11;
-    --apple-border: #2a2a2d;
-    --apple-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-    --apple-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
-    --apple-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-    --nav-bg: #0c0c0e;
-    --nav-text: #f2f2f2;
-    --glass-bg: #17171a;
-    --glass-border: #2a2a2d;
-    --gradient-primary: #f2f2f2;
-    --gradient-primary-hover: #ffffff;
-    --gradient-success: #5fae82;
-    --gradient-warning: #c99a4c;
-    --gradient-danger: #c96b6b;
-    --gradient-info: #a3a3a8;
-    --gradient-card-light: #17171a;
-}
-
 /* ===== Overrides de Bootstrap: sus utilidades (btn-*, text-*, bg-*, alert-*)
    usan variables --bs-* propias, algunas hardcodeadas por color en el CSS
    compilado. Se redefinen aquí para que TODA la app — no solo lo que ya usa
@@ -113,38 +77,6 @@
     --bs-link-color-rgb: 29, 29, 31;
     --bs-link-hover-color: #000000;
     --bs-link-hover-color-rgb: 0, 0, 0;
-}
-[data-bs-theme="dark"], body.dark-mode {
-    --bs-primary-rgb: 242, 242, 242;
-    --bs-secondary-rgb: 154, 154, 160;
-    --bs-success-rgb: 95, 174, 130;
-    --bs-danger-rgb: 201, 107, 107;
-    --bs-warning-rgb: 201, 154, 76;
-    --bs-info-rgb: 154, 154, 160;
-
-    --bs-primary-bg-subtle: #26262a;
-    --bs-primary-border-subtle: #3d3d40;
-    --bs-primary-text-emphasis: #f5f5f5;
-    --bs-secondary-bg-subtle: #232326;
-    --bs-secondary-border-subtle: #3a3a3d;
-    --bs-secondary-text-emphasis: #c6c6ca;
-    --bs-success-bg-subtle: #16241d;
-    --bs-success-border-subtle: #2c4a3a;
-    --bs-success-text-emphasis: #a8d9bd;
-    --bs-danger-bg-subtle: #2c1a1a;
-    --bs-danger-border-subtle: #5a3232;
-    --bs-danger-text-emphasis: #e3a8a8;
-    --bs-warning-bg-subtle: #2c2313;
-    --bs-warning-border-subtle: #5b481f;
-    --bs-warning-text-emphasis: #e6c98a;
-    --bs-info-bg-subtle: #202023;
-    --bs-info-border-subtle: #38383c;
-    --bs-info-text-emphasis: #c6c6ca;
-
-    --bs-link-color: #f2f2f2;
-    --bs-link-color-rgb: 242, 242, 242;
-    --bs-link-hover-color: #ffffff;
-    --bs-link-hover-color-rgb: 255, 255, 255;
 }
 
 /* .btn-* fija sus colores en variables --bs-btn-* propias con valores
@@ -203,12 +135,6 @@ body {
     color: var(--apple-text);
 }
 
-[data-bs-theme="dark"] .table {
-    --bs-table-striped-bg: rgba(255, 255, 255, 0.02);
-    --bs-table-hover-bg: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.08);
-}
-
 .form-control, .form-select {
     background-color: var(--apple-card-bg);
     color: var(--apple-text);
@@ -222,12 +148,6 @@ body {
     color: var(--apple-text);
     border-color: var(--apple-blue);
     box-shadow: 0 0 0 3px var(--apple-blue-soft);
-}
-
-[data-bs-theme="dark"] .modal-content {
-    background-color: var(--apple-card-bg);
-    color: var(--apple-text);
-    border-color: var(--apple-border);
 }
 
 /* Modern KPI Cards */
@@ -759,8 +679,3 @@ body {
     z-index: 5;
     border: 1px solid var(--apple-border);
 }
-[data-bs-theme="dark"] .scanner-overlay {
-    background: #17171a;
-    border-color: #2a2a2d;
-}
-

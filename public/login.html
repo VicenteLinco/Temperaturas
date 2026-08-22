@@ -29,13 +29,6 @@
             background-color: var(--apple-bg);
         }
 
-        .top-bar-controls {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            z-index: 10;
-        }
-
         .login-card {
             position: relative;
             z-index: 1;
@@ -183,12 +176,6 @@
     </style>
 </head>
 <body>
-    <div class="top-bar-controls">
-        <button type="button" class="btn btn-outline-secondary btn-sm rounded-circle p-2" id="btnThemeToggle" onclick="toggleTheme()" title="Cambiar Tema (Oscuro/Claro)">
-            <i class="bi bi-moon-stars-fill" id="themeToggleIcon"></i>
-        </button>
-    </div>
-
     <!-- Loading Overlay -->
     <div id="loadingOverlay">
         <div class="loader-container">

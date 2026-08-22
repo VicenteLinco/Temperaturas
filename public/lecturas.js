@@ -1,33 +1,7 @@
 // ===== Flujo de lecturas ordenadas automáticamente (compartido index/admin) =====
-// Manipulación de UI, temas, gauges interactivos y filtros en tiempo real.
+// Manipulación de UI, gauges interactivos y filtros en tiempo real.
 
-// 1. Inicialización y Gestión de Tema (Dark / Light Mode)
-function initTheme() {
-    const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    setTheme(savedTheme);
-}
-
-function setTheme(theme) {
-    document.documentElement.setAttribute('data-bs-theme', theme);
-    document.body.classList.toggle('dark-mode', theme === 'dark');
-    localStorage.setItem('theme', theme);
-    
-    const icon = document.getElementById('themeToggleIcon');
-    if (icon) {
-        icon.className = theme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-stars-fill';
-    }
-}
-
-function toggleTheme() {
-    const current = localStorage.getItem('theme') === 'dark' ? 'light' : 'dark';
-    setTheme(current);
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    initTheme();
-});
-
-// 2. Stepper de Temperatura (+ / -)
+// 1. Stepper de Temperatura (+ / -)
 function stepTemp(id, delta) {
     const input = document.getElementById(id);
     if (!input) return;
