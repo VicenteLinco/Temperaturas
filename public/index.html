@@ -94,7 +94,6 @@
         .scanner-guide-corner.tr { top: 14px; right: 14px; border-top: 3px solid var(--scanner-accent); border-right: 3px solid var(--scanner-accent); border-radius: 0 6px 0 0; }
         .scanner-guide-corner.bl { bottom: 14px; left: 14px; border-bottom: 3px solid var(--scanner-accent); border-left: 3px solid var(--scanner-accent); border-radius: 0 0 0 6px; }
         .scanner-guide-corner.br { bottom: 14px; right: 14px; border-bottom: 3px solid var(--scanner-accent); border-right: 3px solid var(--scanner-accent); border-radius: 0 0 6px 0; }
-        #btnTorch.torch-on { background: #fff; color: var(--brand); box-shadow: 0 0 0 2px var(--brand), var(--shadow-card); }
         .scanner-overlay {
             position: absolute;
             top: 0;
@@ -673,16 +672,12 @@
     <div class="main-container">
         <!-- Scanner Section -->
         <div class="scanner-section">
-            <div style="position: relative; max-width: 340px; margin: 0 auto;" class="scanner-laser-container">
-                <div class="scan-laser-line"></div>
+            <div style="position: relative; max-width: 340px; margin: 0 auto;">
                 <div id="qr-reader"></div>
                 <div class="scanner-guide-corner tl"></div>
                 <div class="scanner-guide-corner tr"></div>
                 <div class="scanner-guide-corner bl"></div>
                 <div class="scanner-guide-corner br"></div>
-                <button id="btnTorch" class="btn btn-sm rounded-circle d-none" onclick="toggleTorch()" title="Encender Linterna" style="position: absolute; bottom: 12px; right: 12px; width: 40px; height: 40px; z-index: 7; background: var(--brand); color: #fff; border: none; box-shadow: var(--shadow-card);">
-                    <i class="bi bi-lightbulb-fill"></i>
-                </button>
                 <div id="scannerOverlay" class="scanner-overlay">
                     <i class="bi bi-camera-video mb-2" style="font-size: 2.2rem; color: var(--apple-blue);"></i>
                     <h6 class="mb-1 fw-bold">Escáner de Código QR</h6>
@@ -1069,7 +1064,6 @@
             }
         }
 
-        let torchActive = false;
         let currentFacingMode = "environment";
 
         function playScanSound(type = 'success') {
@@ -1100,20 +1094,6 @@
                     osc.stop(ctx.currentTime + 0.25);
                 }
             } catch (e) {}
-        }
-
-        async function toggleTorch() {
-            if (!html5QrCode) return;
-            try {
-                torchActive = !torchActive;
-                await html5QrCode.applyVideoConstraints({
-                    advanced: [{ torch: torchActive }]
-                });
-                const btn = document.getElementById('btnTorch');
-                if (btn) btn.classList.toggle('torch-on', torchActive);
-            } catch (e) {
-                mostrarEstado('La linterna no está disponible en este dispositivo.', 'info');
-            }
         }
 
         // El escáner siempre está listo (sin botón "Pausar"): solo se muestra "Cambiar
@@ -1209,8 +1189,6 @@
                     if (overlay) overlay.style.display = 'none';
                     const controls = document.getElementById('scannerControls');
                     if (controls) controls.classList.remove('d-none');
-                    const btnTorch = document.getElementById('btnTorch');
-                    if (btnTorch) btnTorch.classList.remove('d-none');
                     detectarCamaras();
                 })
                 .catch(err => {

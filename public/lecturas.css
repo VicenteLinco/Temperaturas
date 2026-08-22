@@ -573,28 +573,6 @@ body {
     color: var(--apple-green);
 }
 
-/* Scanner QR Laser animation */
-.scanner-laser-container {
-    position: relative;
-    overflow: hidden;
-}
-.scan-laser-line {
-    position: absolute;
-    left: 4%;
-    right: 4%;
-    height: 2px;
-    background: var(--apple-red, #9c3b3b);
-    animation: laserScan 2.4s infinite ease-in-out;
-    z-index: 8;
-    pointer-events: none;
-    border-radius: 1px;
-}
-@keyframes laserScan {
-    0% { top: 12%; opacity: 0.6; }
-    50% { top: 86%; opacity: 1; }
-    100% { top: 12%; opacity: 0.6; }
-}
-
 /* Search Live Filter Bar */
 .search-filter-box {
     position: relative;
