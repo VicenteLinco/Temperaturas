@@ -12,8 +12,8 @@
     <link rel="stylesheet" href="lecturas.css">
     <style>
         :root {
-            --brand: #0071e3;
-            --brand-dark: #0057b3;
+            --brand: #1d1d1f;
+            --brand-dark: #000000;
             --ink: #1d1d1f;
             --slate: #1d1d1f;
             --bg: #f5f5f7;
@@ -63,20 +63,35 @@
             padding: 24px 16px;
             background-color: #ffffff;
             text-align: center;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e2e5;
         }
         #qr-reader {
             width: 100%;
-            max-width: 400px;
+            max-width: 340px;
+            aspect-ratio: 1 / 1;
             margin: 0 auto;
-            border: 3px solid var(--brand);
+            border: 2px solid var(--brand);
             border-radius: 18px;
             overflow: hidden;
-            min-height: 300px;
             position: relative;
             background-color: #000;
             box-shadow: var(--shadow-card);
         }
+        /* Esquinas guía: refuerzan que el objetivo es cuadrado, no solo la línea
+           punteada que dibuja html5-qrcode dentro del qrbox. */
+        .scanner-guide-corner {
+            position: absolute;
+            width: 26px;
+            height: 26px;
+            border-color: var(--brand);
+            z-index: 6;
+            pointer-events: none;
+        }
+        .scanner-guide-corner.tl { top: 14px; left: 14px; border-top: 3px solid var(--brand); border-left: 3px solid var(--brand); border-radius: 6px 0 0 0; }
+        .scanner-guide-corner.tr { top: 14px; right: 14px; border-top: 3px solid var(--brand); border-right: 3px solid var(--brand); border-radius: 0 6px 0 0; }
+        .scanner-guide-corner.bl { bottom: 14px; left: 14px; border-bottom: 3px solid var(--brand); border-left: 3px solid var(--brand); border-radius: 0 0 0 6px; }
+        .scanner-guide-corner.br { bottom: 14px; right: 14px; border-bottom: 3px solid var(--brand); border-right: 3px solid var(--brand); border-radius: 0 0 6px 0; }
+        #btnTorch.torch-on { background: #fff; color: var(--brand); box-shadow: 0 0 0 2px var(--brand), var(--shadow-card); }
         .scanner-overlay {
             position: absolute;
             top: 0;
@@ -100,7 +115,7 @@
             border-radius: 12px;
             padding-left: 1.5rem;
             padding-right: 1.5rem;
-            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+            box-shadow: 0 6px 16px rgba(29, 29, 31, 0.25);
         }
         .scanner-status {
             margin-top: 15px;
@@ -112,12 +127,12 @@
         /* PESTAÑAS */
         .tabs-container {
             background: white;
-            border-bottom: 2px solid #e2e8f0;
+            border-bottom: 2px solid #e2e2e5;
             position: sticky;
             top: 56px;
             z-index: 100;
             padding-top: 8px;
-            box-shadow: 0 1px 3px rgba(15,23,42,0.05);
+            box-shadow: 0 1px 3px rgba(20,20,22,0.05);
         }
         .nav-tabs {
             border-bottom: none;
@@ -133,7 +148,7 @@
             flex: 0 0 auto;
         }
         .nav-tabs .nav-link {
-            color: #64748b;
+            color: #6e6e73;
             border: none;
             border-bottom: 3px solid transparent;
             padding: 10px 18px;
@@ -176,18 +191,18 @@
             transform: translateY(-2px);
             box-shadow: var(--shadow-hover);
             border-color: var(--brand);
-            background-color: #f8fafc;
+            background-color: #f5f5f7;
         }
         .termometro-card:active {
             transform: scale(0.99);
         }
         /* !important: lecturas.css fija border-color con !important y borraba el color de la franja */
-        .termometro-card.pendiente { border-left: 5px solid #f59e0b !important; }
-        .termometro-card.completado { border-left: 5px solid #16a34a !important; }
+        .termometro-card.pendiente { border-left: 5px solid #8a6a2f !important; }
+        .termometro-card.completado { border-left: 5px solid #2f6b4f !important; }
         /* Registro guardado pero fuera del rango operativo: debe saltar a la vista */
         .termometro-card.completado.desvio {
-            border-left: 5px solid #dc2626 !important;
-            background-color: rgba(220, 38, 38, 0.06) !important;
+            border-left: 5px solid #9c3b3b !important;
+            background-color: rgba(156, 59, 59, 0.06) !important;
         }
         .termometro-card .btn {
             flex-shrink: 0;
@@ -199,26 +214,26 @@
             margin-bottom: 10px;
             cursor: pointer;
             transition: all 0.2s;
-            border: 1px solid #e2e8f0;
+            border: 1px solid #e2e2e5;
             font-weight: 500;
         }
         .area-summary-card:hover {
             transform: translateY(-2px);
             box-shadow: var(--shadow-hover);
         }
-        .area-summary-card.completo { background-color: #dcfce7; border-color: #bbf7d0; }
-        .area-summary-card.incompleto { background-color: #fef3c7; border-color: #fde68a; }
-        .area-summary-card.sin-iniciar { background-color: #fee2e2; border-color: #fecaca; }
+        .area-summary-card.completo { background-color: #e3ede8; border-color: #b9d2c4; }
+        .area-summary-card.incompleto { background-color: #f2e9d9; border-color: #ddc494; }
+        .area-summary-card.sin-iniciar { background-color: #f3e3e3; border-color: #dcaeae; }
 
         .progress-bar-custom {
             height: 6px;
-            background-color: #e2e8f0;
+            background-color: #e2e2e5;
             border-radius: 3px;
             overflow: hidden;
         }
         .progress-fill {
             height: 100%;
-            background-color: var(--brand, #2563eb);
+            background-color: var(--brand, #1d1d1f);
             border-radius: 3px;
             transition: width 0.3s ease;
         }
@@ -229,12 +244,12 @@
             transition: background-color 0.15s ease;
         }
         .btn-primary {
-            background-color: #2563eb;
+            background-color: #1d1d1f;
             border: 1px solid transparent;
             color: #ffffff;
         }
         .btn-primary:hover {
-            background-color: #1d4ed8;
+            background-color: #000000;
             color: #ffffff;
         }
         .btn:active {
@@ -243,17 +258,17 @@
 
         /* Modales Flat */
         .modal-content {
-            border: 1px solid #e2e8f0;
+            border: 1px solid #e2e2e5;
             border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
         }
         .modal-header {
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e2e5;
             padding: 1rem 1.25rem;
         }
         .modal-footer {
-            border-top: 1px solid #e2e8f0;
+            border-top: 1px solid #e2e2e5;
         }
         .modal .btn-lg {
             min-height: 52px;
@@ -273,7 +288,7 @@
             text-align: center;
             border: none;
             border-radius: 12px;
-            box-shadow: 0 12px 30px rgba(2, 6, 23, 0.3);
+            box-shadow: 0 12px 30px rgba(10, 10, 12, 0.3);
             animation: toastIn 0.3s ease;
             margin: 0;
         }
@@ -291,7 +306,7 @@
             top: calc(56px + 48px);
             z-index: 90;
             background: white;
-            border: 1px solid #e2e8f0;
+            border: 1px solid #e2e2e5;
             border-radius: var(--radius);
             padding: 12px 14px;
             box-shadow: var(--shadow-card);
@@ -308,7 +323,7 @@
             white-space: nowrap;
         }
         .progress-fill.completo {
-            background-color: #16a34a;
+            background-color: #2f6b4f;
         }
 
         /* Tarjetas: la acción vive a la derecha y nunca se comprime */
@@ -318,7 +333,7 @@
             align-items: center;
             gap: 8px;
             flex-shrink: 0;
-            color: #94a3b8;
+            color: #8a8a8f;
         }
 
         /* PESTAÑAS DE ESTADO: pendientes vs completados, el corte principal de la ronda */
@@ -327,7 +342,7 @@
             gap: 6px;
             padding: 4px;
             margin-bottom: 14px;
-            background: #eef2f7;
+            background: #ececee;
             border-radius: 14px;
         }
         .estado-tab {
@@ -340,7 +355,7 @@
             padding: 8px 10px;
             font-size: 0.86rem;
             font-weight: 700;
-            color: #64748b;
+            color: #6e6e73;
             background: transparent;
             border: 0;
             border-radius: 11px;
@@ -348,7 +363,7 @@
             transition: background 0.15s ease, color 0.15s ease;
         }
         .estado-tab.activo {
-            color: var(--slate, #1e293b);
+            color: var(--slate, #1d1d1f);
             background: white;
             box-shadow: var(--shadow-card, 0 1px 3px rgba(0,0,0,0.12));
         }
@@ -357,11 +372,11 @@
             font-size: 0.78rem;
             font-weight: 800;
             border-radius: 999px;
-            background: rgba(100, 116, 139, 0.15);
+            background: rgba(110, 110, 115, 0.15);
         }
         .estado-tab.activo .estado-tab-cifra {
             color: white;
-            background: var(--slate, #1e293b);
+            background: var(--slate, #1d1d1f);
         }
 
         /* ACORDEÓN POR ÁREA: explorar dónde falta sin salir de la pantalla */
@@ -371,10 +386,10 @@
             list-style: none;
             font-weight: 600;
             font-size: 0.95rem;
-            color: #334155;
+            color: #3a3a3c;
             padding: 12px 14px;
             background: white;
-            border: 1px solid #e2e8f0;
+            border: 1px solid #e2e2e5;
             border-radius: var(--radius);
             display: flex;
             align-items: center;
@@ -385,7 +400,7 @@
         .area-acordeon > summary::after {
             content: '\F282';
             font-family: 'bootstrap-icons';
-            color: #94a3b8;
+            color: #8a8a8f;
             transition: transform 0.2s ease;
         }
         .area-acordeon[open] > summary::after { transform: rotate(180deg); }
@@ -397,18 +412,18 @@
             padding: 2px 10px;
             font-size: 0.8rem;
             font-weight: 800;
-            color: #b45309;
-            background: rgba(245, 158, 11, 0.15);
+            color: #8a6a2f;
+            background: rgba(138, 106, 47, 0.15);
             border-radius: 999px;
         }
         .area-conteo.completo {
-            color: #15803d;
-            background: rgba(22, 163, 74, 0.15);
+            color: #1c4230;
+            background: rgba(47, 107, 79, 0.15);
         }
         .area-items {
             padding: 10px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
+            background: #f5f5f7;
+            border: 1px solid #e2e2e5;
             border-top: 0;
             border-bottom-left-radius: var(--radius);
             border-bottom-right-radius: var(--radius);
@@ -417,12 +432,12 @@
 
         .sector-listo {
             background: white;
-            border: 1px solid #bbf7d0;
+            border: 1px solid #b9d2c4;
             border-radius: var(--radius);
             padding: 24px 16px;
             box-shadow: var(--shadow-card);
         }
-        .sector-listo i { font-size: 2.6rem; color: #16a34a; }
+        .sector-listo i { font-size: 2.6rem; color: #2f6b4f; }
 
         /* Rango operativo del equipo: es el dato que el operador debe tener a la vista
            antes de teclear, así que va como píldora grande y no como badge gris. */
@@ -436,9 +451,9 @@
             font-weight: 700;
             line-height: 1.1;
             letter-spacing: -0.01em;
-            color: #0b5ed7;
-            background: rgba(13, 110, 253, 0.12);
-            border: 1px solid rgba(13, 110, 253, 0.35);
+            color: #1d1d1f;
+            background: rgba(29, 29, 31, 0.08);
+            border: 1px solid rgba(29, 29, 31, 0.25);
             white-space: nowrap;
         }
         .rango-pill i { font-size: 1rem; opacity: 0.9; }
@@ -452,18 +467,18 @@
             align-items: center;
             justify-content: center;
             font-size: 1.5rem;
-            color: var(--apple-blue, #0071e3);
+            color: var(--apple-blue, #1d1d1f);
             background: transparent;
             border: 0;
             border-radius: 50%;
         }
-        .btn-volver-modal:active { background: rgba(0, 113, 227, 0.12); }
+        .btn-volver-modal:active { background: rgba(29, 29, 31, 0.1); }
 
         /* Lectura fuera de rango: se marca al teclear, nunca bloquea el guardado */
         .lectura-fuera-rango {
-            border-color: #dc2626 !important;
-            background-color: rgba(220, 38, 38, 0.06) !important;
-            color: #b91c1c !important;
+            border-color: #9c3b3b !important;
+            background-color: rgba(156, 59, 59, 0.06) !important;
+            color: #5f2323 !important;
         }
 
         /* CIERRE DE RONDA */
@@ -497,8 +512,8 @@
             align-items: center;
             gap: 12px;
             padding: 10px 12px;
-            border-left: 4px solid #dc2626;
-            background: rgba(220, 38, 38, 0.05);
+            border-left: 4px solid #9c3b3b;
+            background: rgba(156, 59, 59, 0.05);
             border-radius: 10px;
             margin-bottom: 8px;
         }
@@ -508,25 +523,25 @@
             white-space: nowrap;
         }
         .cierre-lote {
-            background: #fffbeb;
-            border: 1px solid #fde68a;
+            background: #f2e9d9;
+            border: 1px solid #ddc494;
             border-radius: var(--radius);
             padding: 14px;
         }
         .cierre-lote .btn { min-height: 48px; }
         .cierre-informe {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
+            background: #f5f5f7;
+            border: 1px solid #e2e2e5;
             border-radius: var(--radius);
             padding: 14px;
         }
-        .cierre-ok i { font-size: 3rem; color: #16a34a; }
+        .cierre-ok i { font-size: 3rem; color: #2f6b4f; }
 
         .humedad-falla {
             padding: 10px;
-            border: 1px solid #e2e8f0;
+            border: 1px solid #e2e2e5;
             border-radius: 12px;
-            background: #f8fafc;
+            background: #f5f5f7;
         }
         .humedad-estado {
             min-height: 46px;
@@ -573,8 +588,7 @@
                 padding: 10px 8px;
             }
             #qr-reader {
-                min-height: 180px;
-                max-height: 220px;
+                max-width: 240px;
                 border-radius: 14px;
             }
             .termometro-card {
@@ -657,9 +671,16 @@
     <div class="main-container">
         <!-- Scanner Section -->
         <div class="scanner-section">
-            <div style="position: relative; max-width: 400px; margin: 0 auto;" class="scanner-laser-container">
+            <div style="position: relative; max-width: 340px; margin: 0 auto;" class="scanner-laser-container">
                 <div class="scan-laser-line"></div>
                 <div id="qr-reader"></div>
+                <div class="scanner-guide-corner tl"></div>
+                <div class="scanner-guide-corner tr"></div>
+                <div class="scanner-guide-corner bl"></div>
+                <div class="scanner-guide-corner br"></div>
+                <button id="btnTorch" class="btn btn-sm rounded-circle d-none" onclick="toggleTorch()" title="Encender Linterna" style="position: absolute; bottom: 12px; right: 12px; width: 40px; height: 40px; z-index: 7; background: var(--brand); color: #fff; border: none; box-shadow: var(--shadow-card);">
+                    <i class="bi bi-lightbulb-fill"></i>
+                </button>
                 <div id="scannerOverlay" class="scanner-overlay">
                     <i class="bi bi-camera-video mb-2" style="font-size: 2.2rem; color: var(--apple-blue);"></i>
                     <h6 class="mb-1 fw-bold">Escáner de Código QR</h6>
@@ -670,22 +691,16 @@
                 </div>
             </div>
 
-            <!-- Controles Adicionales del Escáner (Linterna, Cambiar Cámara) -->
+            <!-- Cambiar cámara: solo aparece si el dispositivo tiene más de una trasera -->
             <div id="scannerControls" class="d-none mt-2 d-flex justify-content-center align-items-center gap-2">
-                <button id="btnTorch" class="btn btn-sm btn-outline-warning rounded-pill px-3" onclick="toggleTorch()" title="Encender Linterna">
-                    <i class="bi bi-lightbulb-fill me-1"></i> Linterna
-                </button>
-                <button id="btnSwitchCam" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="cambiarCamaraScanner()" title="Cambiar Cámara">
-                    <i class="bi bi-camera-reverse me-1"></i> Cambiar
-                </button>
-                <button id="btnPausarCam" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="pausarScanner()" title="Apagar la cámara">
-                    <i class="bi bi-pause-fill me-1"></i> Pausar
+                <button id="btnSwitchCam" class="btn btn-sm btn-outline-secondary rounded-pill px-3 d-none" onclick="cambiarCamaraScanner()" title="Cambiar Cámara">
+                    <i class="bi bi-camera-reverse me-1"></i> Cambiar cámara
                 </button>
             </div>
             <div id="scannerStatus" class="scanner-status d-none"></div>
 
             <!-- Entrada Manual por ID o Búsqueda Rápida -->
-            <div class="mt-2 container px-1" style="max-width: 400px;">
+            <div class="mt-2 container px-1" style="max-width: 340px;">
                 <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden border">
                     <span class="input-group-text bg-light border-0"><i class="bi bi-hash"></i></span>
                     <input type="number" inputmode="numeric" id="inputManualId" class="form-control border-0 bg-light" placeholder="ID manual (ej: 5)..." onkeypress="if(event.key==='Enter') buscarManualId()">
@@ -1085,14 +1100,27 @@
                     advanced: [{ torch: torchActive }]
                 });
                 const btn = document.getElementById('btnTorch');
-                if (btn) {
-                    btn.classList.toggle('btn-warning', torchActive);
-                    btn.classList.toggle('btn-outline-warning', !torchActive);
-                    btn.classList.toggle('text-dark', torchActive);
-                }
+                if (btn) btn.classList.toggle('torch-on', torchActive);
             } catch (e) {
                 mostrarEstado('La linterna no está disponible en este dispositivo.', 'info');
             }
+        }
+
+        // El escáner siempre está listo (sin botón "Pausar"): solo se muestra "Cambiar
+        // cámara" si el dispositivo realmente tiene más de una, para no sumar un botón
+        // que en el caso típico de terreno (una sola trasera) no hace nada.
+        let camarasDisponibles = null;
+        async function detectarCamaras() {
+            if (camarasDisponibles !== null) return camarasDisponibles;
+            try {
+                const camaras = await Html5Qrcode.getCameras();
+                camarasDisponibles = Array.isArray(camaras) ? camaras.length : 1;
+            } catch (e) {
+                camarasDisponibles = 1;
+            }
+            const btnSwitch = document.getElementById('btnSwitchCam');
+            if (btnSwitch) btnSwitch.classList.toggle('d-none', camarasDisponibles < 2);
+            return camarasDisponibles;
         }
 
         async function cambiarCamaraScanner() {
@@ -1107,23 +1135,8 @@
             }
         }
 
-        // Pausa explícita: la cámara seguía encendida mientras el operador revisaba las
-        // listas. El flag evita que el reinicio automático al cerrar un modal la reviva.
-        let scannerPausadoPorUsuario = false;
-
-        async function pausarScanner() {
-            if (!html5QrCode) return;
-            scannerPausadoPorUsuario = true;
-            try { await html5QrCode.stop(); } catch (e) {}
-            const overlay = document.getElementById('scannerOverlay');
-            if (overlay) overlay.style.display = 'flex';
-            const controls = document.getElementById('scannerControls');
-            if (controls) controls.classList.add('d-none');
-            mostrarToast('Cámara apagada. Toca "Activar Cámara" para seguir escaneando.', 'info', 4000);
-        }
-
         function reanudarScannerSiPausado() {
-            if (!html5QrCode || scannerPausadoPorUsuario) return;
+            if (!html5QrCode) return;
             try {
                 if (typeof html5QrCode.getState === 'function') {
                     const state = html5QrCode.getState();
@@ -1140,8 +1153,6 @@
         }
 
         function inicializarScanner() {
-            // Encender es siempre una acción deliberada: cancela la pausa manual
-            scannerPausadoPorUsuario = false;
             if (!html5QrCode) {
                 html5QrCode = new Html5Qrcode("qr-reader");
             }
@@ -1188,6 +1199,9 @@
                     if (overlay) overlay.style.display = 'none';
                     const controls = document.getElementById('scannerControls');
                     if (controls) controls.classList.remove('d-none');
+                    const btnTorch = document.getElementById('btnTorch');
+                    if (btnTorch) btnTorch.classList.remove('d-none');
+                    detectarCamaras();
                 })
                 .catch(err => {
                     console.error('Error scanner:', err);
@@ -1552,7 +1566,7 @@
                 <div class="mb-3">
                     <div class="search-filter-box">
                         <i class="bi bi-search"></i>
-                        <input type="text" id="buscadorArea" class="form-control" value="${filtroAreaActual.replace(/"/g, '&quot;')}" placeholder="Buscar equipo o sensor (Ctrl+K)" oninput="filtrarTermometrosEnArea(this.value)">
+                        <input type="text" id="buscadorArea" class="form-control" value="${filtroAreaActual.replace(/"/g, '&quot;')}" placeholder="Buscar equipo o sensor…" oninput="filtrarTermometrosEnArea(this.value)">
                     </div>
                 </div>
              `;
@@ -2465,6 +2479,19 @@
             bootstrap.Modal.getInstance(ultimo)?.hide();
             setTimeout(() => { cerrandoPorHistorial = false; }, 400);
         });
+
+        // El modal de "Termómetro Fuera de Servicio" también pausa la cámara al abrirse
+        // (ver show.bs.modal de registroModal, que se cierra antes de abrir este) pero no
+        // tenía su propio reanudador: cerrarlo con la X dejaba la cámara colgada para siempre.
+        const modalTermoFS = document.getElementById('termoFueraServicioModal');
+        if (modalTermoFS) {
+            modalTermoFS.addEventListener('hidden.bs.modal', () => {
+                if (sanearBackdrops()) return;
+                setTimeout(() => {
+                    reanudarScannerSiPausado();
+                }, 120);
+            });
+        }
 
         // Al abrir el modal, foco en la primera lectura: el teclado aparece solo
         document.getElementById('registroModal').addEventListener('shown.bs.modal', () => {
