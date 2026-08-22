@@ -747,11 +747,7 @@
     <div class="modal fade" id="registroModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
             <div class="modal-content">
-                <div class="modal-header py-2">
-                    <!-- Salida al alcance del pulgar: la X de la esquina queda lejos en pantalla completa -->
-                    <button type="button" class="btn-volver-modal" data-bs-dismiss="modal" aria-label="Volver">
-                        <i class="bi bi-chevron-left"></i>
-                    </button>
+                <div class="modal-header py-2 px-3">
                     <div class="me-auto min-w-0">
                         <div class="modal-title fw-bold text-truncate" id="termometroNombre">Termómetro</div>
                         <div class="small text-muted d-flex align-items-center gap-2 flex-wrap">
@@ -781,24 +777,21 @@
                                     <label for="tempActual" class="lectura-label">Temperatura actual</label>
                                     <input type="text" inputmode="decimal" class="lectura-input" id="tempActual"
                                            autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
-                                           enterkeyhint="next" aria-label="Temperatura actual en grados Celsius">
+                                           enterkeyhint="next" aria-label="Temperatura actual en grados Celsius" placeholder="Ej: 4.5">
                                 </div>
                                 <div class="lectura-campo">
                                     <label for="lectura2" class="lectura-label">Temperatura máxima</label>
                                     <input type="text" inputmode="decimal" class="lectura-input" id="lectura2"
                                            autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
-                                           enterkeyhint="next" aria-label="Temperatura máxima en grados Celsius">
+                                           enterkeyhint="next" aria-label="Temperatura máxima en grados Celsius" placeholder="Ej: 6.0">
                                 </div>
                                 <div class="lectura-campo">
                                     <label for="lectura3" class="lectura-label">Temperatura mínima</label>
                                     <input type="text" inputmode="decimal" class="lectura-input" id="lectura3"
                                            autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
-                                           enterkeyhint="done" aria-label="Temperatura mínima en grados Celsius">
+                                           enterkeyhint="done" aria-label="Temperatura mínima en grados Celsius" placeholder="Ej: 2.0">
                                 </div>
                             </div>
-
-                            <!-- Alerta de Evaluación en Tiempo Real -->
-                            <div id="liveRangeAlert" style="display: none;"></div>
 
                             <div class="mb-2" id="humedadGroup" style="display: none;">
                                 <label for="humedad" class="lectura-label d-block text-start mb-1">Humedad (%)</label>
@@ -963,10 +956,7 @@
                     <button type="button" class="btn btn-outline-secondary w-100 flex-sm-fill" data-bs-dismiss="modal">
                         <i class="bi bi-arrow-left me-1"></i> Seguir en la app
                     </button>
-                    <a class="btn btn-success w-100 flex-sm-fill" id="btnWhatsAppRonda" href="https://wa.me/" target="_blank" rel="noopener noreferrer">
-                        <i class="bi bi-whatsapp me-1"></i> WhatsApp
-                    </a>
-                    <button type="button" class="btn btn-danger w-100 flex-sm-fill" onclick="logout()" id="btnFinalizarLogout">
+                    <button type="button" class="btn btn-primary w-100 flex-sm-fill" onclick="logout()" id="btnFinalizarLogout">
                         <i class="bi bi-box-arrow-right me-1"></i> Finalizar y Salir
                     </button>
                 </div>
@@ -1811,31 +1801,11 @@
 
             document.getElementById('cierreBody').innerHTML = `
                 <div class="cierre-ok text-center py-3">
-                    <i class="bi bi-check-circle-fill"></i>
-                    <div class="fw-bold mt-2">¡Ronda de temperaturas completada!</div>
-                    <div class="small text-muted mt-1">Todos los equipos quedaron guardados exitosamente. Puedes enviar el reporte por WhatsApp o finalizar la sesión para el siguiente turno.</div>
+                    <i class="bi bi-check-circle-fill text-success" style="font-size: 2.5rem;"></i>
+                    <div class="fw-bold fs-5 mt-2">¡Ronda de temperaturas completada!</div>
+                    <div class="small text-muted mt-1">Todos los equipos quedaron guardados correctamente. Puedes finalizar tu sesión para el siguiente turno.</div>
                 </div>
-                ${recomendacion}
-                ${items ? `<div class="cierre-lista">${items}</div>` : ''}`;
-
-            const btn = document.getElementById('btnWhatsAppRonda');
-            btn.href = `https://wa.me/?text=${encodeURIComponent(textoResumenRonda())}`;
-            btn.target = '_blank';
-            btn.rel = 'noopener noreferrer';
-            btn.innerHTML = incidencias.length
-                ? '<i class="bi bi-whatsapp"></i> Enviar incidencias'
-                : '<i class="bi bi-whatsapp"></i> Enviar resumen';
-        }
-
-        function textoResumenRonda() {
-            const { completados, total } = totalesRonda();
-            return OperatorFlow.textoWhatsApp({
-                fecha: formatearFechaHoy(),
-                ventana: Object.values(areasData)[0]?.ventana || '',
-                completados,
-                total,
-                incidencias: recopilarIncidenciasRonda()
-            });
+                ${items ? `<div class="mt-2 mb-1 fw-semibold small text-muted">Resumen de desvíos detectados:</div><div class="cierre-lista">${items}</div>` : ''}`;
         }
 
         // ===== MODAL UNIFICADO =====
@@ -1915,21 +1885,14 @@
                 : null;
             actualizarUIHumedad();
 
-            // Alerta en vivo: marca el desvío mientras se teclea, pero nunca frena el guardado.
-            // La acción correctiva no se pide aquí; se aplica por lote al cerrar la ronda.
+            // Evaluación visual silenciosa: solo resalta el color del input si el valor está fuera de rango
             const updateLiveEval = () => {
-                const act = parseFloat(document.getElementById('tempActual').value);
-                const l2 = parseFloat(document.getElementById('lectura2').value);
-                const l3 = parseFloat(document.getElementById('lectura3').value);
-                evaluarRangoEnTiempoReal(termometro, isNaN(act)?null:act, isNaN(l3)?null:l3, isNaN(l2)?null:l2, 'liveRangeAlert');
-
                 const min = termometro.temp_min_operativa, max = termometro.temp_max_operativa;
-                const fuera = (min !== undefined && max !== undefined) &&
-                    [act, l2, l3].some(v => !isNaN(v) && (v < min || v > max));
                 ['tempActual', 'lectura2', 'lectura3'].forEach(id => {
                     const el = document.getElementById(id);
+                    if (!el) return;
                     const v = parseFloat(el.value);
-                    const malo = fuera && !isNaN(v) && (v < min || v > max);
+                    const malo = (min !== undefined && max !== undefined) && !isNaN(v) && (v < min || v > max);
                     el.classList.toggle('lectura-fuera-rango', malo);
                 });
             };
@@ -2012,15 +1975,14 @@
         async function abrirModalFueraServicio() {
             if (!termometroSeleccionado) return;
             
-            const seguro = await mostrarConfirmacion(
-                'Desactivar Termómetro',
-                `¿Seguro que deseas iniciar el proceso de reporte y deshabilitar el termómetro <strong>${termometroSeleccionado.nombre || termometroSeleccionado.id}</strong>?`
-            );
-            
-            if (seguro) {
-                bootstrap.Modal.getInstance(document.getElementById('registroModal')).hide();
-                new bootstrap.Modal(document.getElementById('fueraServicioModal')).show();
-            }
+            // Cerrar modal de registro y abrir DIRECTAMENTE el modal de fuera de servicio
+            const regModal = bootstrap.Modal.getInstance(document.getElementById('registroModal'));
+            if (regModal) regModal.hide();
+
+            document.getElementById('fs_motivo').selectedIndex = 0;
+            document.getElementById('fs_comentarios').value = '';
+
+            new bootstrap.Modal(document.getElementById('fueraServicioModal')).show();
         }
 
         async function confirmarFueraServicio() {
@@ -2352,11 +2314,7 @@
         // juntos en el cierre de ronda. El desvío ya se ve en vivo dentro del modal.
         function mostrarAvisoRegistro(actual, minima, maxima) {
             const resumen = `mín ${minima.toFixed(1)} · act ${actual.toFixed(1)} · máx ${maxima.toFixed(1)} °C`;
-            if ((maxima - minima) > 15) {
-                mostrarToast(`Registrado · ${resumen}. Hay más de 15°C entre mínima y máxima: verifica que no sea un error de tipeo.`, 'warning', 6000);
-            } else {
-                mostrarToast(`Registrado · ${resumen}`, 'success');
-            }
+            mostrarToast(`Registrado · ${resumen}`, 'success', 2500);
         }
 
         // ... (Funciones auxiliares: mostrarConfirmacion, mostrarEstado, mostrarToast, logout) ...
