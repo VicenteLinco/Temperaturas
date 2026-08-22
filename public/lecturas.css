@@ -1,22 +1,25 @@
-/* ===== Flat & Clean Design System (No Gradients) ===== */
+/* ===== Paleta sobria monocromática (Flat, sin degradados) ===== */
 :root {
     --apple-font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
-    --apple-bg: #f8fafc;
+    --apple-bg: #f5f5f7;
     --apple-card-bg: #ffffff;
-    --apple-card-border: #e2e8f0;
-    --apple-text: #0f172a;
-    --apple-text-secondary: #64748b;
-    --apple-blue: #0066cc;
-    --apple-blue-hover: #0052a3;
-    --apple-blue-soft: #eff6ff;
-    --apple-green: #16a34a;
-    --apple-orange: #d97706;
-    --apple-red: #dc2626;
-    --apple-purple: #7c3aed;
-    --apple-teal: #0284c7;
-    --apple-gray: #e2e8f0;
-    --apple-gray-light: #f1f5f9;
-    --apple-border: #e2e8f0;
+    --apple-card-border: #e2e2e5;
+    --apple-text: #1d1d1f;
+    --apple-text-secondary: #6e6e73;
+    /* "Primary" ya no es azul: el acento interactivo del sistema es negro/blanco. */
+    --apple-blue: #1d1d1f;
+    --apple-blue-hover: #000000;
+    --apple-blue-soft: #ececec;
+    --apple-secondary: #6e6e73;
+    /* Semántica de estado — muteada, nunca candy-colors */
+    --apple-green: #2f6b4f;
+    --apple-orange: #8a6a2f;
+    --apple-red: #9c3b3b;
+    --apple-purple: #6e6e73;
+    --apple-teal: #4b4b4d;
+    --apple-gray: #e2e2e5;
+    --apple-gray-light: #f2f2f4;
+    --apple-border: #e2e2e5;
     --apple-radius-sm: 6px;
     --apple-radius-md: 10px;
     --apple-radius-lg: 14px;
@@ -24,40 +27,138 @@
     --apple-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --apple-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
     --apple-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
-    --nav-bg: #0f172a;
-    --nav-text: #f8fafc;
+    --nav-bg: #1d1d1f;
+    --nav-text: #f5f5f7;
     --glass-bg: #ffffff;
-    --glass-border: #e2e8f0;
-    
-    /* Solid Flat Color Tokens (No Gradients) */
-    --gradient-primary: #0066cc;
-    --gradient-primary-hover: #0052a3;
-    --gradient-success: #16a34a;
-    --gradient-warning: #d97706;
-    --gradient-danger: #dc2626;
-    --gradient-info: #0284c7;
+    --glass-border: #e2e2e5;
+
+    /* Alias históricos (mismo valor que los tokens de arriba, sin degradado) */
+    --gradient-primary: #1d1d1f;
+    --gradient-primary-hover: #000000;
+    --gradient-success: #2f6b4f;
+    --gradient-warning: #8a6a2f;
+    --gradient-danger: #9c3b3b;
+    --gradient-info: #4b4b4d;
     --gradient-card-light: #ffffff;
 }
 
 /* Modo Oscuro (Dark Theme - Solid Flat) */
 [data-bs-theme="dark"], body.dark-mode {
-    --apple-bg: #0b0f19;
-    --apple-card-bg: #151c2c;
-    --apple-card-border: #1e293b;
-    --apple-text: #f8fafc;
-    --apple-text-secondary: #94a3b8;
-    --apple-gray: #1e293b;
-    --apple-gray-light: #0f172a;
-    --apple-border: #1e293b;
+    --apple-bg: #0c0c0e;
+    --apple-card-bg: #17171a;
+    --apple-card-border: #2a2a2d;
+    --apple-text: #f2f2f2;
+    --apple-text-secondary: #9a9aa0;
+    /* En oscuro el acento se invierte: blanco, no azul */
+    --apple-blue: #f2f2f2;
+    --apple-blue-hover: #ffffff;
+    --apple-blue-soft: #26262a;
+    --apple-secondary: #9a9aa0;
+    --apple-green: #5fae82;
+    --apple-orange: #c99a4c;
+    --apple-red: #c96b6b;
+    --apple-purple: #9a9aa0;
+    --apple-teal: #a3a3a8;
+    --apple-gray: #2a2a2d;
+    --apple-gray-light: #0f0f11;
+    --apple-border: #2a2a2d;
     --apple-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
     --apple-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
     --apple-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-    --nav-bg: #0b0f19;
-    --nav-text: #f8fafc;
-    --glass-bg: #151c2c;
-    --glass-border: #1e293b;
-    --gradient-card-light: #151c2c;
+    --nav-bg: #0c0c0e;
+    --nav-text: #f2f2f2;
+    --glass-bg: #17171a;
+    --glass-border: #2a2a2d;
+    --gradient-primary: #f2f2f2;
+    --gradient-primary-hover: #ffffff;
+    --gradient-success: #5fae82;
+    --gradient-warning: #c99a4c;
+    --gradient-danger: #c96b6b;
+    --gradient-info: #a3a3a8;
+    --gradient-card-light: #17171a;
 }
+
+/* ===== Overrides de Bootstrap: sus utilidades (btn-*, text-*, bg-*, alert-*)
+   usan variables --bs-* propias, algunas hardcodeadas por color en el CSS
+   compilado. Se redefinen aquí para que TODA la app — no solo lo que ya usa
+   --apple-* — herede la misma paleta sobria, en ambos temas. ===== */
+:root {
+    --bs-primary-rgb: 29, 29, 31;
+    --bs-secondary-rgb: 110, 110, 115;
+    --bs-success-rgb: 47, 107, 79;
+    --bs-danger-rgb: 156, 59, 59;
+    --bs-warning-rgb: 138, 106, 47;
+    --bs-info-rgb: 75, 75, 77;
+
+    --bs-primary-bg-subtle: #e7e7e8;
+    --bs-primary-border-subtle: #c9c9cb;
+    --bs-primary-text-emphasis: #000000;
+    --bs-secondary-bg-subtle: #ececed;
+    --bs-secondary-border-subtle: #d1d1d3;
+    --bs-secondary-text-emphasis: #3a3a3c;
+    --bs-success-bg-subtle: #e3ede8;
+    --bs-success-border-subtle: #b9d2c4;
+    --bs-success-text-emphasis: #1c4230;
+    --bs-danger-bg-subtle: #f3e3e3;
+    --bs-danger-border-subtle: #dcaeae;
+    --bs-danger-text-emphasis: #5f2323;
+    --bs-warning-bg-subtle: #f2e9d9;
+    --bs-warning-border-subtle: #ddc494;
+    --bs-warning-text-emphasis: #58421d;
+    --bs-info-bg-subtle: #e6e6e7;
+    --bs-info-border-subtle: #c6c6c8;
+    --bs-info-text-emphasis: #2f2f30;
+
+    --bs-link-color: #1d1d1f;
+    --bs-link-color-rgb: 29, 29, 31;
+    --bs-link-hover-color: #000000;
+    --bs-link-hover-color-rgb: 0, 0, 0;
+}
+[data-bs-theme="dark"], body.dark-mode {
+    --bs-primary-rgb: 242, 242, 242;
+    --bs-secondary-rgb: 154, 154, 160;
+    --bs-success-rgb: 95, 174, 130;
+    --bs-danger-rgb: 201, 107, 107;
+    --bs-warning-rgb: 201, 154, 76;
+    --bs-info-rgb: 154, 154, 160;
+
+    --bs-primary-bg-subtle: #26262a;
+    --bs-primary-border-subtle: #3d3d40;
+    --bs-primary-text-emphasis: #f5f5f5;
+    --bs-secondary-bg-subtle: #232326;
+    --bs-secondary-border-subtle: #3a3a3d;
+    --bs-secondary-text-emphasis: #c6c6ca;
+    --bs-success-bg-subtle: #16241d;
+    --bs-success-border-subtle: #2c4a3a;
+    --bs-success-text-emphasis: #a8d9bd;
+    --bs-danger-bg-subtle: #2c1a1a;
+    --bs-danger-border-subtle: #5a3232;
+    --bs-danger-text-emphasis: #e3a8a8;
+    --bs-warning-bg-subtle: #2c2313;
+    --bs-warning-border-subtle: #5b481f;
+    --bs-warning-text-emphasis: #e6c98a;
+    --bs-info-bg-subtle: #202023;
+    --bs-info-border-subtle: #38383c;
+    --bs-info-text-emphasis: #c6c6ca;
+
+    --bs-link-color: #f2f2f2;
+    --bs-link-color-rgb: 242, 242, 242;
+    --bs-link-hover-color: #ffffff;
+    --bs-link-hover-color-rgb: 255, 255, 255;
+}
+
+/* .btn-* fija sus colores en variables --bs-btn-* propias con valores
+   compilados (no leen --bs-primary), así que se sobreescriben una a una. */
+.btn-primary{--bs-btn-color:#fff;--bs-btn-bg:var(--apple-blue);--bs-btn-border-color:var(--apple-blue);--bs-btn-hover-color:#fff;--bs-btn-hover-bg:var(--apple-blue-hover);--bs-btn-hover-border-color:var(--apple-blue-hover);--bs-btn-active-color:#fff;--bs-btn-active-bg:var(--apple-blue-hover);--bs-btn-active-border-color:var(--apple-blue-hover);--bs-btn-disabled-bg:var(--apple-blue);--bs-btn-disabled-border-color:var(--apple-blue);--bs-btn-focus-shadow-rgb:var(--bs-primary-rgb)}
+.btn-secondary{--bs-btn-color:#fff;--bs-btn-bg:var(--apple-secondary);--bs-btn-border-color:var(--apple-secondary);--bs-btn-hover-color:#fff;--bs-btn-hover-bg:color-mix(in srgb, var(--apple-secondary) 85%, black);--bs-btn-hover-border-color:color-mix(in srgb, var(--apple-secondary) 80%, black);--bs-btn-active-color:#fff;--bs-btn-active-bg:color-mix(in srgb, var(--apple-secondary) 72%, black);--bs-btn-active-border-color:color-mix(in srgb, var(--apple-secondary) 65%, black);--bs-btn-disabled-bg:var(--apple-secondary);--bs-btn-disabled-border-color:var(--apple-secondary);--bs-btn-focus-shadow-rgb:var(--bs-secondary-rgb)}
+.btn-success{--bs-btn-color:#fff;--bs-btn-bg:var(--apple-green);--bs-btn-border-color:var(--apple-green);--bs-btn-hover-color:#fff;--bs-btn-hover-bg:color-mix(in srgb, var(--apple-green) 85%, black);--bs-btn-hover-border-color:color-mix(in srgb, var(--apple-green) 80%, black);--bs-btn-active-color:#fff;--bs-btn-active-bg:color-mix(in srgb, var(--apple-green) 72%, black);--bs-btn-active-border-color:color-mix(in srgb, var(--apple-green) 65%, black);--bs-btn-disabled-bg:var(--apple-green);--bs-btn-disabled-border-color:var(--apple-green);--bs-btn-focus-shadow-rgb:var(--bs-success-rgb)}
+.btn-danger{--bs-btn-color:#fff;--bs-btn-bg:var(--apple-red);--bs-btn-border-color:var(--apple-red);--bs-btn-hover-color:#fff;--bs-btn-hover-bg:color-mix(in srgb, var(--apple-red) 85%, black);--bs-btn-hover-border-color:color-mix(in srgb, var(--apple-red) 80%, black);--bs-btn-active-color:#fff;--bs-btn-active-bg:color-mix(in srgb, var(--apple-red) 72%, black);--bs-btn-active-border-color:color-mix(in srgb, var(--apple-red) 65%, black);--bs-btn-disabled-bg:var(--apple-red);--bs-btn-disabled-border-color:var(--apple-red);--bs-btn-focus-shadow-rgb:var(--bs-danger-rgb)}
+.btn-warning{--bs-btn-color:#fff;--bs-btn-bg:var(--apple-orange);--bs-btn-border-color:var(--apple-orange);--bs-btn-hover-color:#fff;--bs-btn-hover-bg:color-mix(in srgb, var(--apple-orange) 85%, black);--bs-btn-hover-border-color:color-mix(in srgb, var(--apple-orange) 80%, black);--bs-btn-active-color:#fff;--bs-btn-active-bg:color-mix(in srgb, var(--apple-orange) 72%, black);--bs-btn-active-border-color:color-mix(in srgb, var(--apple-orange) 65%, black);--bs-btn-disabled-bg:var(--apple-orange);--bs-btn-disabled-border-color:var(--apple-orange);--bs-btn-focus-shadow-rgb:var(--bs-warning-rgb)}
+.btn-info{--bs-btn-color:#fff;--bs-btn-bg:var(--apple-teal);--bs-btn-border-color:var(--apple-teal);--bs-btn-hover-color:#fff;--bs-btn-hover-bg:color-mix(in srgb, var(--apple-teal) 85%, black);--bs-btn-hover-border-color:color-mix(in srgb, var(--apple-teal) 80%, black);--bs-btn-active-color:#fff;--bs-btn-active-bg:color-mix(in srgb, var(--apple-teal) 72%, black);--bs-btn-active-border-color:color-mix(in srgb, var(--apple-teal) 65%, black);--bs-btn-disabled-bg:var(--apple-teal);--bs-btn-disabled-border-color:var(--apple-teal);--bs-btn-focus-shadow-rgb:var(--bs-info-rgb)}
+
+a { color: var(--bs-link-color); }
+a:hover { color: var(--bs-link-hover-color); }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--apple-blue); }
 
 * {
     box-sizing: border-box;
@@ -157,11 +258,11 @@ body {
     font-size: 1.4rem;
 }
 
-.kpi-icon-wrap.blue { background: rgba(0, 113, 227, 0.12); color: var(--apple-blue); }
-.kpi-icon-wrap.green { background: rgba(52, 199, 89, 0.12); color: var(--apple-green); }
-.kpi-icon-wrap.orange { background: rgba(255, 149, 0, 0.12); color: var(--apple-orange); }
-.kpi-icon-wrap.red { background: rgba(255, 59, 48, 0.12); color: var(--apple-red); }
-.kpi-icon-wrap.purple { background: rgba(175, 82, 222, 0.12); color: var(--apple-purple); }
+.kpi-icon-wrap.blue { background: rgba(29, 29, 31, 0.08); color: var(--apple-blue); }
+.kpi-icon-wrap.green { background: rgba(47, 107, 79, 0.12); color: var(--apple-green); }
+.kpi-icon-wrap.orange { background: rgba(138, 106, 47, 0.12); color: var(--apple-orange); }
+.kpi-icon-wrap.red { background: rgba(156, 59, 59, 0.12); color: var(--apple-red); }
+.kpi-icon-wrap.purple { background: rgba(110, 110, 115, 0.12); color: var(--apple-purple); }
 
 .kpi-value {
     font-size: 1.85rem;
@@ -193,7 +294,7 @@ body {
     font-size: 0.82rem;
     font-weight: 600;
     color: #fff;
-    background: var(--apple-red, #ff3b30);
+    background: var(--apple-red, #9c3b3b);
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
 }
 
@@ -262,7 +363,7 @@ body {
     outline: none;
 }
 .lectura-input.is-invalid-temp {
-    border-color: var(--apple-red, #ff3b30);
+    border-color: var(--apple-red, #9c3b3b);
 }
 
 /* Aviso de estado del registro: una línea, sin robar altura al teclado */
@@ -275,12 +376,12 @@ body {
     text-align: center;
 }
 .registro-banner.danger {
-    color: #b42318;
-    background: rgba(255, 59, 48, 0.12);
+    color: #5f2323;
+    background: rgba(156, 59, 59, 0.12);
 }
 .registro-banner.success {
-    color: #1a7f37;
-    background: rgba(52, 199, 89, 0.14);
+    color: #1c4230;
+    background: rgba(47, 107, 79, 0.14);
 }
 
 /* Observaciones plegadas: se muestran solo cuando hacen falta */
@@ -382,7 +483,7 @@ body {
     position: absolute;
     top: 0;
     bottom: 0;
-    background-color: rgba(52, 199, 89, 0.25);
+    background-color: rgba(47, 107, 79, 0.22);
     border-left: 2px solid var(--apple-green);
     border-right: 2px solid var(--apple-green);
     border-radius: 2px;
@@ -457,18 +558,18 @@ body {
     font-weight: 600;
 }
 .tarjeta-lectura.min {
-    background-color: rgba(0, 113, 227, 0.08);
-    border-color: rgba(0, 113, 227, 0.25);
+    background-color: rgba(29, 29, 31, 0.06);
+    border-color: rgba(29, 29, 31, 0.2);
     color: var(--apple-blue);
 }
 .tarjeta-lectura.max {
-    background-color: rgba(255, 149, 0, 0.1);
-    border-color: rgba(255, 149, 0, 0.3);
+    background-color: rgba(138, 106, 47, 0.1);
+    border-color: rgba(138, 106, 47, 0.3);
     color: var(--apple-orange);
 }
 .tarjeta-lectura.actual {
-    background-color: rgba(52, 199, 89, 0.1);
-    border-color: rgba(52, 199, 89, 0.3);
+    background-color: rgba(47, 107, 79, 0.1);
+    border-color: rgba(47, 107, 79, 0.3);
     color: var(--apple-green);
 }
 
@@ -482,7 +583,7 @@ body {
     left: 4%;
     right: 4%;
     height: 2px;
-    background: var(--apple-red, #dc2626);
+    background: var(--apple-red, #9c3b3b);
     animation: laserScan 2.4s infinite ease-in-out;
     z-index: 8;
     pointer-events: none;
@@ -519,9 +620,9 @@ body {
     font-size: 0.78rem;
     letter-spacing: 0.02em;
 }
-.badge-status.normal { background: rgba(22, 163, 74, 0.12); color: var(--apple-green); }
-.badge-status.warning { background: rgba(217, 119, 6, 0.12); color: var(--apple-orange); }
-.badge-status.danger { background: rgba(220, 38, 38, 0.12); color: var(--apple-red); }
+.badge-status.normal { background: rgba(47, 107, 79, 0.12); color: var(--apple-green); }
+.badge-status.warning { background: rgba(138, 106, 47, 0.12); color: var(--apple-orange); }
+.badge-status.danger { background: rgba(156, 59, 59, 0.12); color: var(--apple-red); }
 
 /* Apple Chip Selectors */
 .apple-chip-group {
@@ -579,7 +680,7 @@ body {
 .apple-chip.active, .apple-chip:has(input:checked) {
     background: var(--apple-blue-soft);
     color: var(--apple-blue);
-    border-color: rgba(0, 102, 204, 0.3);
+    border-color: rgba(29, 29, 31, 0.3);
     font-weight: 600;
 }
 
@@ -664,16 +765,16 @@ body {
 
 /* Tarjetas de Termómetros Fuera de Servicio / En Reparación */
 .termometro-card.fuera-servicio {
-    border-left: 4px solid var(--apple-red, #dc2626) !important;
-    background: rgba(220, 38, 38, 0.04) !important;
+    border-left: 4px solid var(--apple-red, #9c3b3b) !important;
+    background: rgba(156, 59, 59, 0.04) !important;
     cursor: pointer;
     transition: all 0.15s ease;
 }
 .termometro-card.fuera-servicio:hover {
-    background: rgba(220, 38, 38, 0.08) !important;
+    background: rgba(156, 59, 59, 0.08) !important;
 }
 [data-bs-theme="dark"] .termometro-card.fuera-servicio {
-    background: rgba(220, 38, 38, 0.1) !important;
+    background: rgba(156, 59, 59, 0.1) !important;
 }
 
 /* Scanner Overlay Compacto y Ergonómico (Flat) */
@@ -695,7 +796,7 @@ body {
     border: 1px solid var(--apple-border);
 }
 [data-bs-theme="dark"] .scanner-overlay {
-    background: #151c2c;
-    border-color: #1e293b;
+    background: #17171a;
+    border-color: #2a2a2d;
 }
 

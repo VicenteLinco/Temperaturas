@@ -12,13 +12,13 @@
     <link rel="stylesheet" href="lecturas.css">
     <style>
         :root {
-            /* Paleta Sobria Tipo Apple */
-            --brand: #0071e3;
-            --brand-dark: #0057b3;
+            /* Paleta Sobria Monocromática */
+            --brand: #1d1d1f;
+            --brand-dark: #000000;
             --ink: #1d1d1f;
             --slate: #1d1d1f;
             --bg: #f5f5f7;
-            --muted: #86868b;
+            --muted: #6e6e73;
 
             --sidebar-width: 260px;
             --header-height: 60px;
@@ -67,12 +67,12 @@
             top: 0;
             z-index: 100;
             padding: 20px 0;
-            box-shadow: 2px 0 10px rgba(15, 23, 42, 0.08);
+            box-shadow: 2px 0 10px rgba(20, 20, 22, 0.08);
             background-color: var(--slate);
             height: 100vh;
             overflow-y: auto;
             scrollbar-width: thin;
-            scrollbar-color: #334155 transparent;
+            scrollbar-color: #3a3a3c transparent;
         }
 
         .content-area {
@@ -90,7 +90,7 @@
         }
 
         .sidebar .nav-link {
-            color: #cbd5e1;
+            color: #b8b8bd;
             padding: 11px 20px;
             border-left: 3px solid transparent;
             transition: all 0.15s ease;
@@ -99,7 +99,7 @@
         }
 
         .sidebar .nav-link:hover {
-            background-color: #1e293b;
+            background-color: #2b2b2d;
             color: #ffffff;
         }
 
@@ -149,18 +149,18 @@
 
         /* Tarjetas */
         .card {
-            border: 1px solid #e2e8f0;
+            border: 1px solid #e2e2e5;
             border-radius: var(--radius);
             box-shadow: var(--shadow-card);
         }
         .card-header {
-            background-color: #f8fafc;
-            border-bottom: 1px solid #e2e8f0;
+            background-color: #f5f5f7;
+            border-bottom: 1px solid #e2e2e5;
         }
-        .card-header.bg-primary { background-color: #2563eb !important; }
-        .card-header.bg-success { background-color: #16a34a !important; }
-        .card-header.bg-warning { background-color: #d97706 !important; color: #fff; }
-        .card-header.bg-info { background-color: #0284c7 !important; }
+        .card-header.bg-primary { background-color: #1d1d1f !important; }
+        .card-header.bg-success { background-color: #2f6b4f !important; }
+        .card-header.bg-warning { background-color: #8a6a2f !important; color: #fff; }
+        .card-header.bg-info { background-color: #4b4b4d !important; }
 
         /* Botones Flat */
         .btn {
@@ -176,39 +176,39 @@
             transform: scale(0.98);
         }
         .btn-primary {
-            background-color: #2563eb;
+            background-color: #1d1d1f;
             border: 1px solid transparent;
             color: #ffffff;
         }
         .btn-primary:hover {
-            background-color: #1d4ed8;
+            background-color: #000000;
             color: #ffffff;
         }
         .btn-success {
-            background-color: #16a34a;
+            background-color: #2f6b4f;
             border: 1px solid transparent;
             color: #ffffff;
         }
         .btn-success:hover {
-            background-color: #15803d;
+            background-color: #1c4230;
             color: #ffffff;
         }
         .btn-danger {
-            background-color: #dc2626;
+            background-color: #9c3b3b;
             border: 1px solid transparent;
             color: #ffffff;
         }
         .btn-danger:hover {
-            background-color: #b91c1c;
+            background-color: #5f2323;
             color: #ffffff;
         }
         .btn-warning {
-            background-color: #d97706;
+            background-color: #8a6a2f;
             border: 1px solid transparent;
             color: #ffffff;
         }
         .btn-warning:hover {
-            background-color: #b45309;
+            background-color: #58421d;
             color: #ffffff;
         }
         .btn-sm {
@@ -219,23 +219,23 @@
 
         /* Tablas */
         .table {
-            --bs-table-hover-bg: #f8fafc;
+            --bs-table-hover-bg: #f5f5f7;
             margin-bottom: 0;
             vertical-align: middle;
         }
         .table thead th {
-            background-color: #f8fafc;
+            background-color: #f5f5f7;
             font-size: 0.78rem;
             text-transform: uppercase;
             letter-spacing: 0.04em;
             color: var(--muted);
             font-weight: 600;
             white-space: nowrap;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e2e5;
         }
         .table tbody td {
             padding: 0.7rem 0.75rem;
-            border-color: #f1f5f9;
+            border-color: #ececee;
         }
         .table-responsive {
             -webkit-overflow-scrolling: touch;
@@ -254,7 +254,7 @@
         }
         .form-control:focus, .form-select:focus {
             border-color: var(--brand);
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+            box-shadow: 0 0 0 4px rgba(29, 29, 31, 0.12);
         }
         .form-label {
             font-weight: 500;
@@ -266,10 +266,10 @@
             border: none;
             border-radius: 18px;
             overflow: hidden;
-            box-shadow: 0 30px 60px rgba(2, 6, 23, 0.35);
+            box-shadow: 0 30px 60px rgba(10, 10, 12, 0.35);
         }
         .modal-header {
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e2e5;
             padding: 1rem 1.25rem;
         }
         .modal-header.bg-primary,
@@ -278,7 +278,7 @@
             border-bottom: none;
         }
         .modal-footer {
-            border-top: 1px solid #e2e8f0;
+            border-top: 1px solid #e2e2e5;
         }
 
         /* KPIs */
@@ -301,7 +301,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(2, 6, 23, 0.5);
+            background: rgba(10, 10, 12, 0.5);
             z-index: 1040;
             opacity: 0;
             transition: opacity 0.3s ease;
@@ -332,19 +332,19 @@
                 height: calc(100vh - var(--header-height));
                 z-index: 1045;
                 transition: left 0.3s ease;
-                box-shadow: 4px 0 24px rgba(2, 6, 23, 0.35);
+                box-shadow: 4px 0 24px rgba(10, 10, 12, 0.35);
             }
             .sidebar.sidebar-open {
                 left: 0;
             }
             .sidebar-brand {
                 display: block;
-                color: #94a3b8;
+                color: #8a8a8f;
                 font-size: 0.75rem;
                 text-transform: uppercase;
                 letter-spacing: 0.08em;
                 padding: 0 20px 8px;
-                border-bottom: 1px solid #1e293b;
+                border-bottom: 1px solid #2b2b2d;
                 margin-bottom: 8px;
             }
             .content-area {
@@ -595,7 +595,7 @@
                             <div class="card h-100">
                                 <div class="card-body text-center">
                                     <div class="mb-3">
-                                        <i class="bi bi-qr-code" style="font-size: 3rem; color: #0d6efd;"></i>
+                                        <i class="bi bi-qr-code" style="font-size: 3rem; color: #1d1d1f;"></i>
                                     </div>
                                     <h5 class="card-title">Todos los Termómetros</h5>
                                     <p class="card-text text-muted">Imprime códigos QR de todos los termómetros registrados en el sistema.</p>
@@ -612,7 +612,7 @@
                             <div class="card h-100">
                                 <div class="card-body text-center">
                                     <div class="mb-3">
-                                        <i class="bi bi-building" style="font-size: 3rem; color: #198754;"></i>
+                                        <i class="bi bi-building" style="font-size: 3rem; color: #2f6b4f;"></i>
                                     </div>
                                     <h5 class="card-title">Por Área</h5>
                                     <p class="card-text text-muted">Selecciona un área específica para imprimir solo sus termómetros.</p>
@@ -629,7 +629,7 @@
                             <div class="card h-100">
                                 <div class="card-body text-center">
                                     <div class="mb-3">
-                                        <i class="bi bi-check-square" style="font-size: 3rem; color: #ffc107;"></i>
+                                        <i class="bi bi-check-square" style="font-size: 3rem; color: #8a6a2f;"></i>
                                     </div>
                                     <h5 class="card-title">Selección Personalizada</h5>
                                     <p class="card-text text-muted">Marca termómetros específicos en la lista para imprimirlos.</p>
@@ -1074,7 +1074,7 @@
 
                                 <!-- Selector Multi-Termómetro tipo Apple Chips -->
                                 <div class="col-12 mt-3">
-                                    <div class="p-3 border rounded-3 bg-light" style="border-color: rgba(0, 113, 227, 0.15) !important;">
+                                    <div class="p-3 border rounded-3 bg-light" style="border-color: rgba(29, 29, 31, 0.15) !important;">
                                         <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                                             <div class="d-flex align-items-center gap-2">
                                                 <label class="form-label fw-bold mb-0 text-dark" style="font-size: 0.88rem;">
@@ -1154,7 +1154,7 @@
                     <div class="row mb-3" id="graficos_kpis"></div>
 
                     <!-- Banner Info Límites Seleccionados -->
-                    <div id="banner_limites_info" class="alert alert-info py-2.5 px-3 mb-3 d-flex justify-content-between align-items-center rounded-3 shadow-sm" style="display: none; background: rgba(0,113,227,0.06); border-color: rgba(0,113,227,0.2); color: #0071e3;">
+                    <div id="banner_limites_info" class="alert alert-info py-2.5 px-3 mb-3 d-flex justify-content-between align-items-center rounded-3 shadow-sm" style="display: none; background: rgba(29,29,31,0.06); border-color: rgba(29,29,31,0.2); color: #1d1d1f;">
                         <div>
                             <i class="bi bi-shield-check me-2 fs-5"></i>
                             <span id="txt_limites_info">Cargando límites...</span>
@@ -1187,13 +1187,13 @@
                                         </span>
                                     </div>
                                     <div class="d-flex align-items-center gap-2 flex-wrap small">
-                                        <span class="badge rounded-pill px-2.5 py-1.5" style="background: rgba(0, 113, 227, 0.1); color: #0071e3; border: 1px solid rgba(0, 113, 227, 0.25); font-weight: 500;">
+                                        <span class="badge rounded-pill px-2.5 py-1.5" style="background: rgba(29, 29, 31, 0.1); color: #1d1d1f; border: 1px solid rgba(29, 29, 31, 0.25); font-weight: 500;">
                                             <i class="bi bi-circle-fill me-1" style="font-size: 0.65rem;"></i> Azul: En Norma
                                         </span>
-                                        <span class="badge rounded-pill px-2.5 py-1.5" style="background: rgba(255, 59, 48, 0.1); color: #ff3b30; border: 1px solid rgba(255, 59, 48, 0.3); font-weight: 500;">
+                                        <span class="badge rounded-pill px-2.5 py-1.5" style="background: rgba(156, 59, 59, 0.1); color: #9c3b3b; border: 1px solid rgba(156, 59, 59, 0.3); font-weight: 500;">
                                             <i class="bi bi-exclamation-circle-fill me-1" style="font-size: 0.7rem;"></i> Rojo: Fuera de Rango
                                         </span>
-                                        <span class="badge rounded-pill px-2.5 py-1.5 text-secondary" style="background: rgba(0, 0, 0, 0.04); border: 1px dashed rgba(255, 59, 48, 0.5); font-weight: 500;">
+                                        <span class="badge rounded-pill px-2.5 py-1.5 text-secondary" style="background: rgba(0, 0, 0, 0.04); border: 1px dashed rgba(156, 59, 59, 0.5); font-weight: 500;">
                                             <i class="bi bi-dash-lg text-danger me-1"></i> Límites Operativos
                                         </span>
                                     </div>
@@ -1502,7 +1502,7 @@
                         <div class="col-4">
                             <div class="p-2.5 rounded-3 text-center border bg-white h-100 shadow-2xs">
                                 <span class="text-secondary small d-block mb-1 fw-medium" style="font-size: 0.72rem;">Temp. Mínima</span>
-                                <h4 id="detalleLecturaTempMin" class="fw-extrabold mb-0" style="color: #30b0c7;">-- °C</h4>
+                                <h4 id="detalleLecturaTempMin" class="fw-extrabold mb-0" style="color: #3f7a80;">-- °C</h4>
                             </div>
                         </div>
                         <div class="col-12 mt-1">
@@ -3445,7 +3445,7 @@
             if (!tieneTermometros || !tieneLecturas || lecturasFiltradas.length === 0) {
                 container.innerHTML = `
                     <div class="col-md-4 col-12 mb-2">
-                        <div class="card text-center h-100 shadow-sm border-0 bg-white" style="border-radius:14px; border-left: 4px solid #6c757d !important;">
+                        <div class="card text-center h-100 shadow-sm border-0 bg-white" style="border-radius:14px; border-left: 4px solid #8a8a8f !important;">
                             <div class="card-body py-3 px-3">
                                 <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
                                     <i class="bi bi-dash-circle text-secondary fs-5"></i>
@@ -3457,7 +3457,7 @@
                         </div>
                     </div>
                     <div class="col-md-4 col-6 mb-2">
-                        <div class="card text-center h-100 shadow-sm border-0 bg-white" style="border-radius:14px; border-left: 4px solid #ff9500 !important;">
+                        <div class="card text-center h-100 shadow-sm border-0 bg-white" style="border-radius:14px; border-left: 4px solid #8a6a2f !important;">
                             <div class="card-body py-3 px-3">
                                 <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
                                     <i class="bi bi-hand-index-thumb text-warning fs-5"></i>
@@ -3469,7 +3469,7 @@
                         </div>
                     </div>
                     <div class="col-md-4 col-6 mb-2">
-                        <div class="card text-center h-100 shadow-sm border-0 bg-white" style="border-radius:14px; border-left: 4px solid #ff9500 !important;">
+                        <div class="card text-center h-100 shadow-sm border-0 bg-white" style="border-radius:14px; border-left: 4px solid #8a6a2f !important;">
                             <div class="card-body py-3 px-3">
                                 <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
                                     <i class="bi bi-hand-index-thumb text-warning fs-5"></i>
@@ -3492,7 +3492,7 @@
 
             container.innerHTML = `
                 <div class="col-md-4 col-12 mb-2">
-                    <div class="card text-center h-100 shadow-sm border-0 bg-white" style="border-radius:14px; border-left: 4px solid #0071e3 !important;">
+                    <div class="card text-center h-100 shadow-sm border-0 bg-white" style="border-radius:14px; border-left: 4px solid #1d1d1f !important;">
                         <div class="card-body py-3 px-3">
                             <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
                                 <i class="bi bi-bar-chart-fill text-primary fs-5"></i>
@@ -3504,7 +3504,7 @@
                     </div>
                 </div>
                 <div class="col-md-4 col-6 mb-2">
-                    <div class="card text-center h-100 shadow-sm border-0 bg-white" style="border-radius:14px; border-left: 4px solid #34c759 !important;">
+                    <div class="card text-center h-100 shadow-sm border-0 bg-white" style="border-radius:14px; border-left: 4px solid #2f6b4f !important;">
                         <div class="card-body py-3 px-3">
                             <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
                                 <i class="bi bi-check-circle-fill text-success fs-5"></i>
@@ -3516,7 +3516,7 @@
                     </div>
                 </div>
                 <div class="col-md-4 col-6 mb-2">
-                    <div class="card text-center h-100 shadow-sm border-0 bg-white" style="border-radius:14px; border-left: 4px solid #ff3b30 !important;">
+                    <div class="card text-center h-100 shadow-sm border-0 bg-white" style="border-radius:14px; border-left: 4px solid #9c3b3b !important;">
                         <div class="card-body py-3 px-3">
                             <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
                                 <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
@@ -3740,7 +3740,7 @@
             actualizarKpisGrafico(lecturas);
 
             const isDark = document.body.classList.contains('dark-mode') || document.documentElement.getAttribute('data-bs-theme') === 'dark';
-            const textColor = isDark ? '#e0e0e0' : '#1d1d1f';
+            const textColor = isDark ? '#f2f2f2' : '#1d1d1f';
             const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)';
 
             const totalPuntos = lecturas.length;
@@ -3751,16 +3751,16 @@
             const labels = lecturas.map(l => formatearFechaEjeX(l.fecha_registro));
 
             if (termometrosSeleccionadosGraficos.size === 1) {
-                // 1. Temp Actual (Azul #0071e3)
-                const pointBgAct = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? '#ff3b30' : '#34c759');
-                const pointBorderAct = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? '#ff3b30' : '#248a3d');
+                // 1. Temp Actual (Azul #1d1d1f)
+                const pointBgAct = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? '#9c3b3b' : '#2f6b4f');
+                const pointBorderAct = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? '#9c3b3b' : '#1c4230');
                 const pointStyleAct = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? 'crossRot' : 'rect');
                 const pointRadiusAct = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? 8 : (radiusBase || 5));
 
                 datasets.push({
                     label: 'Temp. Actual (°C)',
                     data: lecturas.map(l => l.temp_actual),
-                    borderColor: '#0071e3', // Azul vibrante
+                    borderColor: '#1d1d1f', // Azul vibrante
                     backgroundColor: 'transparent',
                     tension: 0.35,
                     pointBackgroundColor: pointBgAct,
@@ -3773,16 +3773,16 @@
                     order: 1
                 });
 
-                // 2. Temp Máxima (Naranja #ff9500)
-                const pointBgMax = lecturas.map(l => (mostrarAlertas && l.temp_maxima != null && l.temp_max_operativa != null && l.temp_maxima > l.temp_max_operativa) ? '#ff3b30' : '#ff9500');
-                const pointBorderMax = lecturas.map(l => (mostrarAlertas && l.temp_maxima != null && l.temp_max_operativa != null && l.temp_maxima > l.temp_max_operativa) ? '#ff3b30' : '#e08200');
+                // 2. Temp Máxima (Naranja #8a6a2f)
+                const pointBgMax = lecturas.map(l => (mostrarAlertas && l.temp_maxima != null && l.temp_max_operativa != null && l.temp_maxima > l.temp_max_operativa) ? '#9c3b3b' : '#8a6a2f');
+                const pointBorderMax = lecturas.map(l => (mostrarAlertas && l.temp_maxima != null && l.temp_max_operativa != null && l.temp_maxima > l.temp_max_operativa) ? '#9c3b3b' : '#58421d');
                 const pointStyleMax = lecturas.map(l => (mostrarAlertas && l.temp_maxima != null && l.temp_max_operativa != null && l.temp_maxima > l.temp_max_operativa) ? 'crossRot' : 'rect');
                 const pointRadiusMax = lecturas.map(l => (mostrarAlertas && l.temp_maxima != null && l.temp_max_operativa != null && l.temp_maxima > l.temp_max_operativa) ? 8 : (radiusBase || 4));
 
                 datasets.push({
                     label: 'Temp. Máxima (°C)',
                     data: lecturas.map(l => l.temp_maxima),
-                    borderColor: '#ff9500', // Naranja
+                    borderColor: '#8a6a2f', // Naranja
                     backgroundColor: 'transparent',
                     tension: 0.35,
                     pointBackgroundColor: pointBgMax,
@@ -3795,16 +3795,16 @@
                     order: 2
                 });
 
-                // 3. Temp Mínima (Cyan #30b0c7)
-                const pointBgMin = lecturas.map(l => (mostrarAlertas && l.temp_minima != null && l.temp_min_operativa != null && l.temp_minima < l.temp_min_operativa) ? '#ff3b30' : '#30b0c7');
-                const pointBorderMin = lecturas.map(l => (mostrarAlertas && l.temp_minima != null && l.temp_min_operativa != null && l.temp_minima < l.temp_min_operativa) ? '#ff3b30' : '#0284c7');
+                // 3. Temp Mínima (Cyan #3f7a80)
+                const pointBgMin = lecturas.map(l => (mostrarAlertas && l.temp_minima != null && l.temp_min_operativa != null && l.temp_minima < l.temp_min_operativa) ? '#9c3b3b' : '#3f7a80');
+                const pointBorderMin = lecturas.map(l => (mostrarAlertas && l.temp_minima != null && l.temp_min_operativa != null && l.temp_minima < l.temp_min_operativa) ? '#9c3b3b' : '#4b4b4d');
                 const pointStyleMin = lecturas.map(l => (mostrarAlertas && l.temp_minima != null && l.temp_min_operativa != null && l.temp_minima < l.temp_min_operativa) ? 'crossRot' : 'rect');
                 const pointRadiusMin = lecturas.map(l => (mostrarAlertas && l.temp_minima != null && l.temp_min_operativa != null && l.temp_minima < l.temp_min_operativa) ? 8 : (radiusBase || 4));
 
                 datasets.push({
                     label: 'Temp. Mínima (°C)',
                     data: lecturas.map(l => l.temp_minima),
-                    borderColor: '#30b0c7', // Cyan / Celeste
+                    borderColor: '#3f7a80', // Cyan / Celeste
                     backgroundColor: 'transparent',
                     tension: 0.35,
                     pointBackgroundColor: pointBgMin,
@@ -3831,8 +3831,8 @@
                 });
 
                 const applePalette = [
-                    '#0071e3', '#30b0c7', '#34c759', '#af52de',
-                    '#5856d6', '#ff9500', '#ff2d55', '#ffcc00'
+                    '#1d1d1f', '#3f7a80', '#2f6b4f', '#6e5a7a',
+                    '#5a5a80', '#8a6a2f', '#8a5a63', '#8a7a45'
                 ];
 
                 let colorIdx = 0;
@@ -3845,8 +3845,8 @@
                     const termDataMax = termLecturas.map(l => (l ? l.temp_maxima : null));
                     const termDataMin = termLecturas.map(l => (l ? l.temp_minima : null));
 
-                    const pointBg = termLecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? '#ff3b30' : '#34c759');
-                    const pointBorder = termLecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? '#ff3b30' : colorLine);
+                    const pointBg = termLecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? '#9c3b3b' : '#2f6b4f');
+                    const pointBorder = termLecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? '#9c3b3b' : colorLine);
                     const pointRadius = termLecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? 8 : (radiusBase || 4));
                     const pointStyle = termLecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? 'crossRot' : 'rect');
 
@@ -3869,7 +3869,7 @@
                     datasets.push({
                         label: `${term.nombre} (Máx)`,
                         data: termDataMax,
-                        borderColor: '#ff9500',
+                        borderColor: '#8a6a2f',
                         borderDash: [5, 4],
                         backgroundColor: 'transparent',
                         tension: 0.3,
@@ -3883,7 +3883,7 @@
                     datasets.push({
                         label: `${term.nombre} (Mín)`,
                         data: termDataMin,
-                        borderColor: '#30b0c7',
+                        borderColor: '#3f7a80',
                         borderDash: [3, 3],
                         backgroundColor: 'transparent',
                         tension: 0.3,
@@ -3904,7 +3904,7 @@
                 datasets.push({
                     label: `Límite Mín (${tempMinOp}°C)`,
                     data: labels.map(() => tempMinOp),
-                    borderColor: '#ff3b30',
+                    borderColor: '#9c3b3b',
                     borderWidth: 2,
                     borderDash: [6, 4],
                     pointRadius: 0,
@@ -3914,7 +3914,7 @@
                 datasets.push({
                     label: `Límite Máx (${tempMaxOp}°C)`,
                     data: labels.map(() => tempMaxOp),
-                    borderColor: '#ff3b30',
+                    borderColor: '#9c3b3b',
                     borderWidth: 2,
                     borderDash: [6, 4],
                     pointRadius: 0,
@@ -3974,8 +3974,8 @@
                                     type: 'box',
                                     yMin: tempMinOp,
                                     yMax: tempMaxOp,
-                                    backgroundColor: isDark ? 'rgba(0, 113, 227, 0.08)' : 'rgba(0, 113, 227, 0.04)',
-                                    borderColor: 'rgba(0, 113, 227, 0.18)',
+                                    backgroundColor: isDark ? 'rgba(29, 29, 31, 0.08)' : 'rgba(29, 29, 31, 0.04)',
+                                    borderColor: 'rgba(29, 29, 31, 0.18)',
                                     borderWidth: 1,
                                     borderDash: [4, 4]
                                 }
@@ -3983,9 +3983,9 @@
                         } : {},
                         tooltip: {
                             enabled: mostrarTooltip,
-                            backgroundColor: isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(15, 23, 42, 0.78)',
+                            backgroundColor: isDark ? 'rgba(20, 20, 22, 0.85)' : 'rgba(20, 20, 22, 0.78)',
                             titleColor: '#ffffff',
-                            bodyColor: '#f1f5f9',
+                            bodyColor: '#ececee',
                             titleFont: { family: '-apple-system, sans-serif', size: 11, weight: 'bold' },
                             bodyFont: { family: '-apple-system, sans-serif', size: 10.5 },
                             padding: { top: 5, bottom: 5, left: 9, right: 9 },
@@ -4070,7 +4070,7 @@
             const mostrarTooltip = document.getElementById('chkMostrarTooltip') ? document.getElementById('chkMostrarTooltip').checked : true;
 
             const isDark = document.body.classList.contains('dark-mode') || document.documentElement.getAttribute('data-bs-theme') === 'dark';
-            const textColor = isDark ? '#e0e0e0' : '#1d1d1f';
+            const textColor = isDark ? '#f2f2f2' : '#1d1d1f';
             const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)';
 
             let tempMinOp = (limites && limites.homogeneo !== false && limites.temp_min_operativa != null) ? limites.temp_min_operativa : null;
@@ -4080,16 +4080,16 @@
             const radiusBase = numTend > 40 ? 1 : 3;
 
             const datasets = [
-                { label: 'Promedio Actual (°C)', data: tendencias.map(t => t.promedio_actual), borderColor: '#0071e3', backgroundColor: 'transparent', tension: 0.35, pointRadius: radiusBase, borderWidth: 2.8, fill: false, order: 1 },
-                { label: 'Promedio Máximo (°C)', data: tendencias.map(t => t.promedio_max), borderColor: '#ff9500', backgroundColor: 'transparent', borderDash: [4, 4], tension: 0.35, pointRadius: 0, borderWidth: 1.8, fill: false, order: 2 },
-                { label: 'Promedio Mínimo (°C)', data: tendencias.map(t => t.promedio_min), borderColor: '#30b0c7', backgroundColor: 'transparent', borderDash: [4, 4], tension: 0.35, pointRadius: 0, borderWidth: 1.8, fill: false, order: 3 }
+                { label: 'Promedio Actual (°C)', data: tendencias.map(t => t.promedio_actual), borderColor: '#1d1d1f', backgroundColor: 'transparent', tension: 0.35, pointRadius: radiusBase, borderWidth: 2.8, fill: false, order: 1 },
+                { label: 'Promedio Máximo (°C)', data: tendencias.map(t => t.promedio_max), borderColor: '#8a6a2f', backgroundColor: 'transparent', borderDash: [4, 4], tension: 0.35, pointRadius: 0, borderWidth: 1.8, fill: false, order: 2 },
+                { label: 'Promedio Mínimo (°C)', data: tendencias.map(t => t.promedio_min), borderColor: '#3f7a80', backgroundColor: 'transparent', borderDash: [4, 4], tension: 0.35, pointRadius: 0, borderWidth: 1.8, fill: false, order: 3 }
             ];
 
             if (mostrarLimites && tempMinOp != null && tempMaxOp != null) {
                 datasets.push({
                     label: `Límite Mínimo (${tempMinOp}°C)`,
                     data: labels.map(() => tempMinOp),
-                    borderColor: '#ff3b30',
+                    borderColor: '#9c3b3b',
                     borderWidth: 2,
                     borderDash: [6, 4],
                     pointRadius: 0,
@@ -4099,7 +4099,7 @@
                 datasets.push({
                     label: `Límite Máximo (${tempMaxOp}°C)`,
                     data: labels.map(() => tempMaxOp),
-                    borderColor: '#ff3b30',
+                    borderColor: '#9c3b3b',
                     borderWidth: 2,
                     borderDash: [6, 4],
                     pointRadius: 0,
@@ -4138,9 +4138,9 @@
                         },
                         tooltip: {
                             enabled: mostrarTooltip,
-                            backgroundColor: isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(15, 23, 42, 0.78)',
+                            backgroundColor: isDark ? 'rgba(20, 20, 22, 0.85)' : 'rgba(20, 20, 22, 0.78)',
                             titleColor: '#ffffff',
-                            bodyColor: '#e0e0e0',
+                            bodyColor: '#f2f2f2',
                             titleFont: { family: '-apple-system, sans-serif', size: 11, weight: 'bold' },
                             bodyFont: { family: '-apple-system, sans-serif', size: 10.5 },
                             padding: { top: 5, bottom: 5, left: 9, right: 9 },
@@ -4186,7 +4186,7 @@
         function crearChartAlertas(tendencias) {
             const ctx = document.getElementById('chartAlertas').getContext('2d');
             const isDark = document.body.classList.contains('dark-mode') || document.documentElement.getAttribute('data-bs-theme') === 'dark';
-            const textColor = isDark ? '#e0e0e0' : '#1d1d1f';
+            const textColor = isDark ? '#f2f2f2' : '#1d1d1f';
             const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)';
 
             const chart = new Chart(ctx, {
@@ -4196,8 +4196,8 @@
                     datasets: [{
                         label: 'Alertas',
                         data: tendencias.map(t => t.alertas),
-                        backgroundColor: 'rgba(255, 149, 0, 0.85)',
-                        borderColor: '#ff9500',
+                        backgroundColor: 'rgba(138, 106, 47, 0.85)',
+                        borderColor: '#8a6a2f',
                         borderWidth: 1.5,
                         borderRadius: 8,
                         borderSkipped: false
@@ -4219,7 +4219,7 @@
         function crearChartAreas(areas) {
             const ctx = document.getElementById('chartAreas').getContext('2d');
             const isDark = document.body.classList.contains('dark-mode') || document.documentElement.getAttribute('data-bs-theme') === 'dark';
-            const textColor = isDark ? '#e0e0e0' : '#1d1d1f';
+            const textColor = isDark ? '#f2f2f2' : '#1d1d1f';
             const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)';
 
             const chart = new Chart(ctx, {
@@ -4227,8 +4227,8 @@
                 data: {
                     labels: areas.map(a => a.area),
                     datasets: [
-                        { label: 'Registros', data: areas.map(a => a.total), backgroundColor: 'rgba(0, 113, 227, 0.85)', borderRadius: 8, borderSkipped: false },
-                        { label: 'Alertas', data: areas.map(a => a.alertas), backgroundColor: 'rgba(255, 59, 48, 0.85)', borderRadius: 8, borderSkipped: false }
+                        { label: 'Registros', data: areas.map(a => a.total), backgroundColor: 'rgba(29, 29, 31, 0.85)', borderRadius: 8, borderSkipped: false },
+                        { label: 'Alertas', data: areas.map(a => a.alertas), backgroundColor: 'rgba(156, 59, 59, 0.85)', borderRadius: 8, borderSkipped: false }
                     ]
                 },
                 options: {

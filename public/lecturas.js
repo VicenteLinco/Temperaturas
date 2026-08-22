@@ -169,9 +169,9 @@ function renderBarra(containerId, minima, actual, maxima, t) {
         const zOptL = Math.max(0, (((minOp + buffer) - lo) / span) * 100);
         const zOptR = Math.min(100, (((maxOp - buffer) - lo) / span) * 100);
 
-        zonaAmarillaL = `<div class="zona-advertencia" style="position:absolute;top:0;bottom:0;left:${zl}%;width:${Math.max(0, zOptL - zl)}%;background:rgba(255,149,0,0.25);" title="Advertencia Preventiva Mínima: ${minOp}°C a ${(minOp+buffer).toFixed(1)}°C"></div>`;
-        zonaVerde = `<div class="zona-operativa" style="position:absolute;top:0;bottom:0;left:${zOptL}%;width:${Math.max(0, zOptR - zOptL)}%;background:rgba(52,199,89,0.3);border-left:2px solid #34c759;border-right:2px solid #34c759;" title="Zona Óptima de Laboratorio: ${(minOp+buffer).toFixed(1)}°C a ${(maxOp-buffer).toFixed(1)}°C"></div>`;
-        zonaAmarillaR = `<div class="zona-advertencia" style="position:absolute;top:0;bottom:0;left:${zOptR}%;width:${Math.max(0, zr - zOptR)}%;background:rgba(255,149,0,0.25);" title="Advertencia Preventiva Máxima: ${(maxOp-buffer).toFixed(1)}°C a ${maxOp}°C"></div>`;
+        zonaAmarillaL = `<div class="zona-advertencia" style="position:absolute;top:0;bottom:0;left:${zl}%;width:${Math.max(0, zOptL - zl)}%;background:rgba(138,106,47,0.25);" title="Advertencia Preventiva Mínima: ${minOp}°C a ${(minOp+buffer).toFixed(1)}°C"></div>`;
+        zonaVerde = `<div class="zona-operativa" style="position:absolute;top:0;bottom:0;left:${zOptL}%;width:${Math.max(0, zOptR - zOptL)}%;background:rgba(47,107,79,0.3);border-left:2px solid #2f6b4f;border-right:2px solid #2f6b4f;" title="Zona Óptima de Laboratorio: ${(minOp+buffer).toFixed(1)}°C a ${(maxOp-buffer).toFixed(1)}°C"></div>`;
+        zonaAmarillaR = `<div class="zona-advertencia" style="position:absolute;top:0;bottom:0;left:${zOptR}%;width:${Math.max(0, zr - zOptR)}%;background:rgba(138,106,47,0.25);" title="Advertencia Preventiva Máxima: ${(maxOp-buffer).toFixed(1)}°C a ${maxOp}°C"></div>`;
     }
 
     const marker = (v, color, label, cls) => `
@@ -186,9 +186,9 @@ function renderBarra(containerId, minima, actual, maxima, t) {
             ${zonaAmarillaL}
             ${zonaVerde}
             ${zonaAmarillaR}
-            ${marker(minima, '#0071e3', 'MIN', 'top')}
-            ${marker(actual, '#34c759', 'ACTUAL', 'bottom')}
-            ${marker(maxima, '#ff9500', 'MAX', 'top')}
+            ${marker(minima, '#3f7a80', 'MIN', 'top')}
+            ${marker(actual, '#2f6b4f', 'ACTUAL', 'bottom')}
+            ${marker(maxima, '#8a6a2f', 'MAX', 'top')}
         </div>
         <div class="d-flex justify-content-between small text-muted px-2" style="margin-top:-32px;">
             <span>Límite Mín: ${lo.toFixed(0)}°C</span><span>Límite Máx: ${hi.toFixed(0)}°C</span>
