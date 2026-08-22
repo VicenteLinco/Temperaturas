@@ -95,7 +95,6 @@ body {
 .card:hover {
     box-shadow: var(--apple-shadow-md);
 }
-}
 
 .table {
     --bs-table-bg: transparent;
