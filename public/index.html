@@ -218,35 +218,35 @@
         }
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, var(--brand), #3b82f6);
+            background-color: var(--brand, #2563eb);
             border-radius: 3px;
-            transition: width 0.5s ease;
+            transition: width 0.3s ease;
         }
-        /* Botones */
+        /* Botones Flat */
         .btn {
-            border-radius: 10px;
+            border-radius: 8px;
             font-weight: 500;
-            transition: all 0.2s ease;
+            transition: background-color 0.15s ease;
         }
         .btn-primary {
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            border: none;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            background-color: #2563eb;
+            border: 1px solid transparent;
+            color: #ffffff;
         }
         .btn-primary:hover {
-            background: linear-gradient(135deg, #1d4ed8, #1e40af);
-            transform: translateY(-1px);
+            background-color: #1d4ed8;
+            color: #ffffff;
         }
         .btn:active {
             transform: scale(0.98);
         }
 
-        /* Modales */
+        /* Modales Flat */
         .modal-content {
-            border: none;
-            border-radius: 18px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 30px 60px rgba(2, 6, 23, 0.3);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
         }
         .modal-header {
             border-bottom: 1px solid #e2e8f0;
@@ -308,7 +308,7 @@
             white-space: nowrap;
         }
         .progress-fill.completo {
-            background: linear-gradient(90deg, #16a34a, #22c55e);
+            background-color: #16a34a;
         }
 
         /* Tarjetas: la acción vive a la derecha y nunca se comprime */
@@ -554,38 +554,40 @@
         /* Responsive */
         @media (max-width: 575.98px) {
             .main-container {
-                margin-top: 52px;
-                min-height: calc(100vh - 52px);
+                margin-top: 50px;
+                min-height: calc(100vh - 50px);
             }
             .tabs-container {
-                top: 52px;
+                top: 50px;
             }
             .progreso-sticky {
-                top: calc(52px + 46px);
-                padding: 10px 12px;
+                top: calc(50px + 44px);
+                padding: 8px 10px;
                 border-radius: 12px;
             }
-            .progreso-cifra { font-size: 1.2rem; }
+            .progreso-cifra { font-size: 1.15rem; }
             .navbar-brand {
-                font-size: 1.05rem;
+                font-size: 1rem;
             }
             .scanner-section {
-                padding: 14px 12px;
+                padding: 10px 8px;
             }
             #qr-reader {
-                min-height: 240px;
+                min-height: 180px;
+                max-height: 220px;
                 border-radius: 14px;
             }
             .termometro-card {
-                padding: 13px;
-                margin-bottom: 10px;
-                min-height: 56px;
+                padding: 12px;
+                margin-bottom: 8px;
+                min-height: 52px;
             }
             .modal .btn-lg {
                 font-size: 1rem;
+                min-height: 48px;
             }
             .modal-dialog:not(.modal-fullscreen-sm-down) {
-                margin: 10px;
+                margin: 8px;
             }
             /* El margen genérico de .modal-dialog (aquí y en lecturas.css) pisaba el
                margin:0 de Bootstrap y dejaba el modal descentrado y desbordado. */
@@ -602,7 +604,7 @@
             }
             /* Fullscreen real: el modal no se corta bajo el notch ni bajo la barra de gestos */
             .modal-fullscreen-sm-down .modal-body {
-                padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+                padding: 12px 14px calc(1rem + env(safe-area-inset-bottom));
             }
             .modal-fullscreen-sm-down .modal-footer {
                 padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
@@ -659,10 +661,10 @@
                 <div class="scan-laser-line"></div>
                 <div id="qr-reader"></div>
                 <div id="scannerOverlay" class="scanner-overlay">
-                    <i class="bi bi-camera-video mb-3" style="font-size: 3rem; color: var(--apple-blue);"></i>
-                    <h5 class="mb-2 fw-bold">Escáner de Código QR</h5>
-                    <p class="text-muted small mb-3">Apunte la cámara al código QR del termómetro para iniciar el registro automáticamente</p>
-                    <button class="btn btn-primary btn-lg" onclick="inicializarScanner()">
+                    <i class="bi bi-camera-video mb-2" style="font-size: 2.2rem; color: var(--apple-blue);"></i>
+                    <h6 class="mb-1 fw-bold">Escáner de Código QR</h6>
+                    <p class="text-muted small mb-2" style="font-size: 0.82rem;">Apunte al QR del termómetro para registrar</p>
+                    <button class="btn btn-primary rounded-pill px-4 shadow-sm" style="min-height: 42px;" onclick="inicializarScanner()">
                         <i class="bi bi-power me-1"></i> Activar Cámara
                     </button>
                 </div>
@@ -674,7 +676,7 @@
                     <i class="bi bi-lightbulb-fill me-1"></i> Linterna
                 </button>
                 <button id="btnSwitchCam" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="cambiarCamaraScanner()" title="Cambiar Cámara">
-                    <i class="bi bi-camera-reverse me-1"></i> Cambiar Cámara
+                    <i class="bi bi-camera-reverse me-1"></i> Cambiar
                 </button>
                 <button id="btnPausarCam" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="pausarScanner()" title="Apagar la cámara">
                     <i class="bi bi-pause-fill me-1"></i> Pausar
@@ -683,10 +685,10 @@
             <div id="scannerStatus" class="scanner-status d-none"></div>
 
             <!-- Entrada Manual por ID o Búsqueda Rápida -->
-            <div class="mt-3 container" style="max-width: 400px;">
+            <div class="mt-2 container px-1" style="max-width: 400px;">
                 <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden border">
                     <span class="input-group-text bg-light border-0"><i class="bi bi-hash"></i></span>
-                    <input type="number" id="inputManualId" class="form-control border-0 bg-light" placeholder="ID manual (ej: 5)..." onkeypress="if(event.key==='Enter') buscarManualId()">
+                    <input type="number" inputmode="numeric" id="inputManualId" class="form-control border-0 bg-light" placeholder="ID manual (ej: 5)..." onkeypress="if(event.key==='Enter') buscarManualId()">
                     <button class="btn btn-primary fw-semibold px-3" onclick="buscarManualId()"><i class="bi bi-search me-1"></i> Buscar</button>
                 </div>
             </div>
@@ -777,19 +779,19 @@
                             <div class="lecturas-grid mb-2">
                                 <div class="lectura-campo">
                                     <label for="tempActual" class="lectura-label">Temperatura actual</label>
-                                    <input type="text" class="lectura-input" id="tempActual"
+                                    <input type="text" inputmode="decimal" class="lectura-input" id="tempActual"
                                            autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
                                            enterkeyhint="next" aria-label="Temperatura actual en grados Celsius">
                                 </div>
                                 <div class="lectura-campo">
                                     <label for="lectura2" class="lectura-label">Temperatura máxima</label>
-                                    <input type="text" class="lectura-input" id="lectura2"
+                                    <input type="text" inputmode="decimal" class="lectura-input" id="lectura2"
                                            autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
                                            enterkeyhint="next" aria-label="Temperatura máxima en grados Celsius">
                                 </div>
                                 <div class="lectura-campo">
                                     <label for="lectura3" class="lectura-label">Temperatura mínima</label>
-                                    <input type="text" class="lectura-input" id="lectura3"
+                                    <input type="text" inputmode="decimal" class="lectura-input" id="lectura3"
                                            autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
                                            enterkeyhint="done" aria-label="Temperatura mínima en grados Celsius">
                                 </div>
@@ -800,7 +802,7 @@
 
                             <div class="mb-2" id="humedadGroup" style="display: none;">
                                 <label for="humedad" class="lectura-label d-block text-start mb-1">Humedad (%)</label>
-                                <input type="text" class="lectura-input" id="humedad"
+                                <input type="text" inputmode="decimal" class="lectura-input" id="humedad"
                                        autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
                                        enterkeyhint="done" aria-label="Humedad en porcentaje">
                                 <div class="humedad-falla mt-2" aria-label="Estado del lector de humedad">
@@ -863,33 +865,83 @@
         </div>
     </div>
 
-    <!-- Modal Reparación -->
-    <div class="modal fade" id="repararModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title">Reparar Termómetro</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">¿Qué se hizo para repararlo?</label>
-                        <select class="form-select" id="rep_detalle">
-                            <option value="Se cambió la pila">Se cambió la pila</option>
-                            <option value="Se reemplazó el equipo">Se reemplazó el equipo</option>
-                            <option value="Se recalibró">Se recalibró</option>
-                            <option value="Limpieza de contactos">Limpieza de contactos</option>
-                            <option value="Otro">Otro</option>
-                        </select>
+    <!-- Modal Termómetro Fuera de Servicio / Acción Rápida de Reparación -->
+    <div class="modal fade" id="termoFueraServicioModal" tabindex="-1" aria-labelledby="termoFueraServicioModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-danger text-white py-3">
+                    <div class="d-flex align-items-center gap-2 min-width-0">
+                        <i class="bi bi-exclamation-octagon-fill fs-4 flex-shrink-0"></i>
+                        <div class="min-width-0">
+                            <h5 class="modal-title fw-bold mb-0 text-truncate" id="termoFueraServicioModalLabel">Termómetro Fuera de Servicio</h5>
+                            <span class="small opacity-75">Equipo en mantenimiento</span>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Descripción detallada</label>
-                        <textarea class="form-control" id="rep_descripcion" rows="3" placeholder="Opcional..."></textarea>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body p-3 p-sm-4">
+                    <!-- Ficha del equipo -->
+                    <div class="card border border-danger-subtle bg-danger-subtle bg-opacity-10 mb-3 rounded-3">
+                        <div class="card-body p-3">
+                            <div class="d-flex justify-content-between align-items-start mb-1 gap-2">
+                                <h5 class="fw-bold text-danger mb-0 text-truncate" id="fsModalTermoNombre">Termómetro #</h5>
+                                <span class="badge bg-danger text-white fw-bold px-2 py-1 text-nowrap" style="font-size: 0.72rem;">FUERA DE SERVICIO</span>
+                            </div>
+                            <div class="small text-muted mb-2" id="fsModalTermoInfo">
+                                <!-- Área y ubicación -->
+                            </div>
+                            <div class="p-2 bg-body rounded border border-secondary-subtle small d-flex align-items-center gap-2 text-secondary">
+                                <i class="bi bi-info-circle-fill text-danger fs-6 flex-shrink-0"></i>
+                                <span>Este termómetro está fuera de servicio.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pregunta de reactivación -->
+                    <div class="text-center my-3">
+                        <h5 class="fw-bold mb-1">¿Puedes repararlo ahora?</h5>
+                        <p class="text-muted small mb-0">Al reactivarlo, podrás registrar su temperatura de inmediato en esta ronda.</p>
+                    </div>
+
+                    <!-- Acciones Rápidas -->
+                    <div class="d-grid gap-2 mb-2">
+                        <!-- Botón Rápido: Cambio de Pila (1 toque) -->
+                        <button type="button" class="btn btn-success btn-lg py-3 fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm rounded-3" id="btnRapidoCambiarPila" onclick="reparacionRapida('Se cambió la pila')">
+                            <i class="bi bi-battery-charging fs-3"></i>
+                            <div class="text-start">
+                                <div class="lh-1">Cambiar Pila</div>
+                                <small class="fw-normal opacity-75" style="font-size: 0.78rem;">Reactivar y registrar temperatura ahora</small>
+                            </div>
+                        </button>
+
+                        <!-- Botón desplegable / acordeón de otras reparaciones -->
+                        <button type="button" class="btn btn-outline-secondary py-2.5 fw-semibold d-flex align-items-center justify-content-center gap-2 rounded-3" onclick="toggleOtrasReparaciones()">
+                            <i class="bi bi-tools"></i>
+                            <span>Otra reparación / Detalle...</span>
+                            <i class="bi bi-chevron-down ms-auto" id="iconOtrasReparaciones"></i>
+                        </button>
+
+                        <!-- Contenedor desplegable para otras reparaciones -->
+                        <div id="contenedorOtrasReparaciones" class="p-3 border rounded-3 bg-light-subtle d-none mt-1">
+                            <label class="form-label small fw-bold mb-1">Tipo de intervención realizada:</label>
+                            <select class="form-select form-select-sm mb-2" id="fs_otra_accion">
+                                <option value="Se cambió la pila">Se cambió la pila</option>
+                                <option value="Se reemplazó el equipo">Se reemplazó el equipo</option>
+                                <option value="Se recalibró">Se recalibró / Se ajustó</option>
+                                <option value="Limpieza de contactos">Limpieza de contactos / Sensor</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                            <input type="text" class="form-control form-control-sm mb-2" id="fs_otra_descripcion" placeholder="Descripción detallada (opcional)...">
+                            <button type="button" class="btn btn-success btn-sm w-100 fw-bold py-2" onclick="confirmarOtraReparacion()">
+                                <i class="bi bi-check2-circle me-1"></i> Reactivar y Registrar
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-success" onclick="confirmarReparacion()">Marcar como Reparado</button>
+                <div class="modal-footer bg-light-subtle py-2">
+                    <button type="button" class="btn btn-outline-secondary w-100 py-2" data-bs-dismiss="modal">
+                        <i class="bi bi-pause-circle me-1"></i> Mantener fuera de servicio
+                    </button>
                 </div>
             </div>
         </div>
@@ -950,6 +1002,7 @@
         // LOW/ERROR se elige con un toque y nunca abre confirmaciones.
         let humedadIncidencia = null;
         let equiposFueraServicio = [];
+        let termometrosRecienReactivados = new Set();
         let cargaGlobalCompleta = false;
         // Ventana de registro: si está cerrada, el servidor rechazará el guardado, así que
         // conviene decirlo antes de que el operador teclee tres temperaturas para nada.
@@ -1211,12 +1264,14 @@
             return NaN;
         }
 
-        // Segunda red: aunque el texto tenga forma de ID, solo se abre si ese equipo
-        // existe entre los ya cargados. Evita que un QR ajeno caiga sobre otro termómetro.
+        // Segunda red: aunque el texto tenga forma de ID, se valida con los equipos cargados
+        // o con la base de datos (incluso si está fuera de servicio).
         function idConocido(id) {
-            return Object.values(areasData).some(d =>
+            const enAreas = Object.values(areasData).some(d =>
                 (d.pendientes || []).some(t => t.id === id) ||
                 (d.completados || []).some(r => r.termometro_id === id));
+            const enFueraServicio = (equiposFueraServicio || []).some(t => t.id === id);
+            return enAreas || enFueraServicio;
         }
 
         // ===== LOGICA PRINCIPAL =====
@@ -1249,14 +1304,25 @@
                     return;
                 }
 
-                // El equipo debe estar entre los cargados. Sin esto, un QR ajeno cuyo
-                // número coincidiera con otro ID abría el formulario del equipo equivocado.
+                // El equipo debe estar entre los cargados. Si no está en el snapshot local,
+                // intentamos verificar con el backend antes de dar error.
                 if (Object.keys(areasData).length > 0 && !idConocido(termometroId)) {
-                    playScanSound('error');
-                    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-                    mostrarEstado(`Ese código no corresponde a un termómetro de esta ronda (leído: ${termometroId})`, 'warning');
-                    setTimeout(reanudarScannerSiPausado, 2500);
-                    return;
+                    try {
+                        const checkResp = await fetch(`/api/termometros/${termometroId}`);
+                        if (!checkResp.ok) {
+                            playScanSound('error');
+                            if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                            mostrarEstado(`Ese código no corresponde a un termómetro registrado (leído: ${termometroId})`, 'warning');
+                            setTimeout(reanudarScannerSiPausado, 2500);
+                            return;
+                        }
+                    } catch (e) {
+                        playScanSound('error');
+                        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                        mostrarEstado(`Ese código no corresponde a un termómetro de esta ronda (leído: ${termometroId})`, 'warning');
+                        setTimeout(reanudarScannerSiPausado, 2500);
+                        return;
+                    }
                 }
 
                 // Éxito: audio feedback + vibración
@@ -1290,6 +1356,16 @@
                     return;
                 }
                 const termometro = await response.json();
+                termometroSeleccionado = termometro;
+
+                // Si está fuera de servicio, abrir directamente el modal de reactivación y reparación
+                if (termometro.fuera_de_servicio) {
+                    if (areaActualId !== termometro.area_id) {
+                        await cambiarAreaActual(termometro.area_id);
+                    }
+                    abrirModalTermoFueraServicio(termometro);
+                    return;
+                }
 
                 // Identificar si ya posee registro completado hoy en esta ventana
                 const areaData = areasData[termometro.area_id];
@@ -1301,7 +1377,7 @@
                 }
 
                 // Abrir DIRECTAMENTE el modal para registrar o editar sus variables
-                await abrirModalRegistro(termometro, registro || null, termometro.fuera_de_servicio);
+                await abrirModalRegistro(termometro, registro || null, false);
 
             } catch (error) {
                 console.error('Error procesando termómetro:', error);
@@ -1518,8 +1594,10 @@
              `;
 
              const verPendientes = estadoTabActivo === 'pendientes';
-             const conContenido = areasList.filter(([, d]) =>
-                 (verPendientes ? d.pendientes.length : d.completados.length) > 0);
+             const conContenido = areasList.filter(([id, d]) => {
+                 const fsCount = (equiposFueraServicio || []).filter(t => t.area_id === Number(id)).length;
+                 return verPendientes ? (d.pendientes.length + fsCount > 0) : (d.completados.length > 0);
+             });
 
              if (conContenido.length === 0) {
                  html += verPendientes
@@ -1547,9 +1625,10 @@
                  const c = data.completados.length;
                  const tot = c + data.pendientes.length;
                  const dArea = data.completados.filter(r => r.fuera_rango_operativo).length;
+                 const fsArea = (equiposFueraServicio || []).filter(t => t.area_id === areaId);
                  const abierta = areasAbiertas.has(areaId) || areaId === abrirPorDefecto;
                  const items = verPendientes
-                    ? data.pendientes.map(t => tarjetaPendiente(t)).join('')
+                    ? (data.pendientes.map(t => tarjetaPendiente(t)).join('') + fsArea.map(t => tarjetaFueraServicio(t)).join(''))
                     : data.completados.map(r => tarjetaCompletado(r)).join('');
 
                  html += `
@@ -1559,6 +1638,7 @@
                             <i class="bi bi-building text-primary"></i>
                             <span class="area-nombre text-truncate">${data.area.nombre}</span>
                             ${dArea > 0 && !verPendientes ? `<span class="badge bg-danger ms-1">${dArea}</span>` : ''}
+                            ${fsArea.length > 0 && verPendientes ? `<span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1" title="${fsArea.length} fuera de servicio"><i class="bi bi-tools me-1"></i>${fsArea.length} FS</span>` : ''}
                             <span class="area-conteo ${c === tot ? 'completo' : ''}">${c}/${tot}</span>
                         </summary>
                         <div class="area-items">${items}</div>
@@ -1574,12 +1654,36 @@
         function tarjetaPendiente(t) {
             const rango = t.temp_min_operativa !== undefined
                 ? ` &bull; ${t.temp_min_operativa}°C a ${t.temp_max_operativa}°C` : '';
+            const reactivadoBadge = termometrosRecienReactivados.has(t.id)
+                ? `<span class="badge bg-success-subtle text-success border border-success-subtle ms-1" style="font-size:0.72rem;"><i class="bi bi-lightning-charge-fill me-0.5"></i>Reactivado</span>`
+                : '';
             return `<div class="termometro-card pendiente" onclick="seleccionarTermometro(${t.id})">
                 <div class="min-width-0">
-                    <div class="termometro-nombre fw-bold text-truncate">${t.nombre || 'ID: ' + t.id}</div>
+                    <div class="termometro-nombre fw-bold text-truncate d-flex align-items-center gap-1">
+                        <span class="text-truncate">${t.nombre || 'ID: ' + t.id}</span>
+                        ${reactivadoBadge}
+                    </div>
                     <div class="small text-muted text-truncate"><i class="bi bi-cpu me-1"></i>${t.tipo_nombre}${rango}</div>
                 </div>
                 <div class="termometro-accion"><i class="bi bi-chevron-right"></i></div>
+            </div>`;
+        }
+
+        function tarjetaFueraServicio(t) {
+            return `<div class="termometro-card fuera-servicio" onclick="seleccionarTermometro(${t.id})">
+                <div class="min-width-0">
+                    <div class="termometro-nombre fw-bold text-truncate text-secondary">
+                        <i class="bi bi-exclamation-octagon text-danger me-1"></i>${t.nombre || 'ID: ' + t.id}
+                    </div>
+                    <div class="small text-danger text-truncate">
+                        <i class="bi bi-tools me-1"></i>Fuera de servicio &bull; Toca para reparar
+                    </div>
+                </div>
+                <div class="termometro-accion">
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle fw-semibold px-2 py-1" style="font-size:0.75rem;">
+                        En reparación
+                    </span>
+                </div>
             </div>`;
         }
 
@@ -1629,7 +1733,12 @@
             // guardar actualice la lista correcta (sin saltar de pestaña de estado).
             if (termometro.area_id) areaActualId = termometro.area_id;
 
-            await abrirModalRegistro(termometro, registro, termometro.fuera_de_servicio);
+            if (termometro.fuera_de_servicio) {
+                abrirModalTermoFueraServicio(termometro);
+                return;
+            }
+
+            await abrirModalRegistro(termometro, registro, false);
         }
 
         async function editarRegistro(id) {
@@ -1782,39 +1891,9 @@
             // Configurar Banner Estado
             banner.style.display = 'block';
             
-            // Limpiar botones dinámicos previos en el footer
-            const footer = document.querySelector('#registroModal .modal-footer');
-            const btnRepararExistente = document.getElementById('btnReparar');
-            const btnMantenerExistente = document.getElementById('btnMantenerDeshabilitado');
-            if (btnRepararExistente) btnRepararExistente.remove();
-            if (btnMantenerExistente) btnMantenerExistente.remove();
-
             if (termometro.fuera_de_servicio) {
-                banner.className = 'registro-banner danger';
-                banner.textContent = 'FUERA DE SERVICIO';
-                btnGuardar.style.display = 'none';
-                btnFueraServicio.style.display = 'none';
-
-                // Opción 1: Reparar
-                const btnReparar = document.createElement('button');
-                btnReparar.id = 'btnReparar';
-                btnReparar.className = 'btn btn-success btn-lg w-100';
-                btnReparar.innerHTML = '<i class="bi bi-tools"></i> Reparar';
-                btnReparar.onclick = () => abrirModalReparacion();
-
-                // Opción 2: Mantener deshabilitado
-                const btnMantener = document.createElement('button');
-                btnMantener.id = 'btnMantenerDeshabilitado';
-                btnMantener.className = 'btn btn-outline-secondary w-100';
-                btnMantener.innerHTML = '<i class="bi bi-pause-circle"></i> Mantener deshabilitado';
-                btnMantener.onclick = () => {
-                    bootstrap.Modal.getInstance(document.getElementById('registroModal')).hide();
-                    mostrarToast('El termómetro sigue fuera de servicio', 'info');
-                };
-
-                footer.insertBefore(btnMantener, footer.firstChild);
-                footer.insertBefore(btnReparar, footer.firstChild);
-                
+                abrirModalTermoFueraServicio(termometro);
+                return;
             } else if (registro) {
                 // Ya hay registro en esta ventana: se avisa quién y cuándo para no duplicar por error
                 const quien = registro.usuario_nombre ? ` por ${registro.usuario_nombre}` : '';
@@ -2012,41 +2091,116 @@
             }
         }
 
-        function abrirModalReparacion() {
-            bootstrap.Modal.getInstance(document.getElementById('registroModal')).hide();
-            new bootstrap.Modal(document.getElementById('repararModal')).show();
+        function abrirModalTermoFueraServicio(termometro) {
+            termometroSeleccionado = termometro;
+
+            // Si el modal de registro está abierto, cerrarlo
+            const regModal = bootstrap.Modal.getInstance(document.getElementById('registroModal'));
+            if (regModal) regModal.hide();
+
+            const nombreEl = document.getElementById('fsModalTermoNombre');
+            const infoEl = document.getElementById('fsModalTermoInfo');
+            const otraDesc = document.getElementById('fs_otra_descripcion');
+            const contenedorOtras = document.getElementById('contenedorOtrasReparaciones');
+            const iconOtras = document.getElementById('iconOtrasReparaciones');
+
+            if (nombreEl) nombreEl.textContent = termometro.nombre || `Termómetro #${termometro.id}`;
+            if (infoEl) {
+                infoEl.innerHTML = `
+                    <i class="bi bi-building me-1"></i><strong>Área:</strong> ${termometro.area_nombre || 'N/A'}
+                    ${termometro.ubicacion ? ` &bull; <i class="bi bi-geo-alt me-1"></i>${termometro.ubicacion}` : ''}
+                    ${termometro.tipo_nombre ? ` &bull; <i class="bi bi-cpu me-1"></i>${termometro.tipo_nombre}` : ''}
+                `;
+            }
+            if (otraDesc) otraDesc.value = '';
+            if (contenedorOtras) contenedorOtras.classList.add('d-none');
+            if (iconOtras) iconOtras.className = 'bi bi-chevron-down ms-auto';
+
+            const modalEl = document.getElementById('termoFueraServicioModal');
+            if (modalEl) {
+                const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                bsModal.show();
+            }
         }
 
-        async function confirmarReparacion() {
-            const detalle = document.getElementById('rep_detalle').value;
-            const descripcion = document.getElementById('rep_descripcion').value;
-            const fullDetalle = descripcion ? `${detalle}: ${descripcion}` : detalle;
+        // Compatibilidad con invocaciones previas
+        function abrirModalReparacion() {
+            if (termometroSeleccionado) {
+                abrirModalTermoFueraServicio(termometroSeleccionado);
+            }
+        }
+
+        function toggleOtrasReparaciones() {
+            const contenedor = document.getElementById('contenedorOtrasReparaciones');
+            const icon = document.getElementById('iconOtrasReparaciones');
+            if (!contenedor) return;
+            const estaOculto = contenedor.classList.contains('d-none');
+            if (estaOculto) {
+                contenedor.classList.remove('d-none');
+                if (icon) icon.className = 'bi bi-chevron-up ms-auto';
+            } else {
+                contenedor.classList.add('d-none');
+                if (icon) icon.className = 'bi bi-chevron-down ms-auto';
+            }
+        }
+
+        async function confirmarOtraReparacion() {
+            if (!termometroSeleccionado) return;
+            const accion = document.getElementById('fs_otra_accion').value;
+            const desc = (document.getElementById('fs_otra_descripcion').value || '').trim();
+            const fullDetalle = desc ? `${accion}: ${desc}` : accion;
+            await reparacionRapida(fullDetalle);
+        }
+
+        async function reparacionRapida(detalle) {
+            if (!termometroSeleccionado) return;
+            const id = termometroSeleccionado.id;
+            const btnPila = document.getElementById('btnRapidoCambiarPila');
+            if (btnPila) {
+                btnPila.disabled = true;
+                btnPila.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Reactivando...';
+            }
 
             try {
-                const res = await fetch(`/api/termometros/${termometroSeleccionado.id}/reparar`, {
+                const res = await fetch(`/api/termometros/${id}/reparar`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
-                        detalle_reparacion: fullDetalle
+                        detalle_reparacion: detalle
                     })
                 });
-                
+
                 if (res.ok) {
-                    mostrarToast('Termómetro reparado exitosamente', 'success');
-                    bootstrap.Modal.getInstance(document.getElementById('repararModal')).hide();
+                    termometrosRecienReactivados.add(id);
+                    mostrarToast(`✅ Termómetro #${id} reactivado (${detalle})`, 'success', 3500);
+                    playScanSound('success');
+
+                    const modalEl = document.getElementById('termoFueraServicioModal');
+                    if (modalEl) {
+                        const bsModal = bootstrap.Modal.getInstance(modalEl);
+                        if (bsModal) bsModal.hide();
+                    }
+
                     await cargarTodasLasAreas();
                     renderizarAreas();
-                    cargarReparaciones(); // Recargar pestaña de reparaciones
-                    
-                    // Volver a abrir el modal de registro para que pueda registrar ahora que está activo
-                    const response = await fetch(`/api/termometros/${termometroSeleccionado.id}`);
-                    const termometro = await response.json();
-                    abrirModalRegistro(termometro, null, false);
+                    cargarReparaciones();
+
+                    // Abrir directamente modal de registro para este termómetro
+                    const response = await fetch(`/api/termometros/${id}`);
+                    const termometroActualizado = await response.json();
+                    termometroActualizado.fuera_de_servicio = false;
+                    await abrirModalRegistro(termometroActualizado, null, false);
                 } else {
-                    mostrarToast('Error al marcar como reparado', 'danger', 6000);
+                    const errText = await res.text();
+                    mostrarToast('Error al reactivar termómetro: ' + errText, 'danger', 6000);
                 }
             } catch (e) {
                 mostrarToast('Error de red: ' + e.message, 'danger', 6000);
+            } finally {
+                if (btnPila) {
+                    btnPila.disabled = false;
+                    btnPila.innerHTML = '<i class="bi bi-battery-charging fs-3"></i><div class="text-start"><div class="lh-1">Cambiar Pila</div><small class="fw-normal opacity-75" style="font-size: 0.78rem;">Reactivar y registrar temperatura ahora</small></div>';
+                }
             }
         }
 
@@ -2119,8 +2273,7 @@
         async function abrirReparacionDesdeLista(id) {
             const response = await fetch(`/api/termometros/${id}`);
             const termometro = await response.json();
-            termometroSeleccionado = termometro;
-            abrirModalReparacion();
+            abrirModalTermoFueraServicio(termometro);
         }
 
         async function guardarRegistro() {

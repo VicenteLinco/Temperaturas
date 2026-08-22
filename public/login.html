@@ -26,20 +26,7 @@
             margin: 0;
             padding: 20px;
             position: relative;
-            overflow-x: clip;
-        }
-
-        .ambient-bg {
-            position: absolute;
-            top: -20%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: min(800px, 100%);
-            height: 500px;
-            background: radial-gradient(circle, rgba(0, 113, 227, 0.15) 0%, rgba(52, 199, 89, 0.05) 50%, transparent 70%);
-            pointer-events: none;
-            z-index: 0;
-            filter: blur(40px);
+            background-color: var(--apple-bg);
         }
 
         .top-bar-controls {
@@ -52,15 +39,18 @@
         .login-card {
             position: relative;
             z-index: 1;
-            padding: 2.5rem;
+            padding: 2.25rem;
             border-radius: var(--apple-radius-lg);
             width: 100%;
-            max-width: 440px;
-            animation: fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            max-width: 420px;
+            background: var(--apple-card-bg);
+            border: 1px solid var(--apple-card-border);
+            box-shadow: var(--apple-shadow-md);
+            animation: fadeUp 0.3s ease;
         }
 
         @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(16px); }
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
@@ -70,47 +60,45 @@
         }
 
         .thermo-badge {
-            width: 72px;
-            height: 72px;
-            background: linear-gradient(135deg, rgba(0, 113, 227, 0.12), rgba(52, 199, 89, 0.12));
-            border: 1px solid var(--apple-blue-soft);
-            border-radius: 20px;
+            width: 64px;
+            height: 64px;
+            background: var(--apple-blue-soft);
+            border: 1px solid var(--apple-border);
+            border-radius: var(--apple-radius-md);
             display: inline-flex;
             align-items: center;
             justify-content: center;
             margin-bottom: 1.25rem;
-            box-shadow: var(--apple-shadow-sm);
         }
 
         .thermo-icon {
-            font-size: 2.4rem;
+            font-size: 2.2rem;
             color: var(--apple-blue);
         }
 
         .login-header h1 {
-            font-size: 1.65rem;
+            font-size: 1.5rem;
             font-weight: 800;
             letter-spacing: -0.02em;
-            margin-bottom: 0.4rem;
+            margin-bottom: 0.35rem;
         }
 
         .login-header p {
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             color: var(--apple-text-secondary);
             margin-bottom: 0;
             line-height: 1.4;
         }
 
         .btn-login {
-            padding: 0.85rem;
-            font-weight: 700;
+            padding: 0.75rem 1rem;
+            font-weight: 600;
             font-size: 0.95rem;
-            border-radius: var(--apple-radius-md);
-            background: linear-gradient(135deg, var(--apple-blue), var(--apple-blue-hover));
+            border-radius: var(--apple-radius-sm);
+            background: var(--apple-blue);
             border: none;
             color: #ffffff;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 14px rgba(0, 113, 227, 0.3);
+            transition: background-color 0.15s ease;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -118,8 +106,7 @@
         }
 
         .btn-login:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(0, 113, 227, 0.4);
+            background: var(--apple-blue-hover);
             color: #ffffff;
         }
 
@@ -140,7 +127,7 @@
         .role-hint-box {
             background: var(--apple-gray-light);
             border: 1px solid var(--apple-border);
-            border-radius: var(--apple-radius-md);
+            border-radius: var(--apple-radius-sm);
             padding: 0.85rem;
             margin-top: 1.5rem;
             font-size: 0.8rem;
@@ -152,10 +139,8 @@
             position: fixed;
             inset: 0;
             height: 100%;
-            /* dvh sigue a la barra de direcciones y al teclado del móvil */
             height: 100dvh;
-            background-color: rgba(11, 15, 25, 0.92);
-            backdrop-filter: blur(10px);
+            background-color: rgba(15, 23, 42, 0.85);
             display: none;
             flex-direction: column;
             align-items: center;
@@ -176,20 +161,20 @@
         }
 
         .progress {
-            height: 8px;
+            height: 6px;
             background-color: var(--apple-gray);
-            border-radius: 999px;
+            border-radius: 3px;
             overflow: hidden;
             margin-bottom: 1rem;
         }
 
         .progress-bar {
-            background: linear-gradient(90deg, var(--apple-blue), var(--apple-green));
+            background: var(--apple-blue);
             transition: width 0.1s linear;
         }
 
         .percentage-text {
-            font-size: 2.2rem;
+            font-size: 2rem;
             font-weight: 800;
             color: var(--apple-text);
             margin-bottom: 0.75rem;
@@ -198,8 +183,6 @@
     </style>
 </head>
 <body>
-    <div class="ambient-bg"></div>
-
     <div class="top-bar-controls">
         <button type="button" class="btn btn-outline-secondary btn-sm rounded-circle p-2" id="btnThemeToggle" onclick="toggleTheme()" title="Cambiar Tema (Oscuro/Claro)">
             <i class="bi bi-moon-stars-fill" id="themeToggleIcon"></i>

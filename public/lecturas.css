@@ -1,62 +1,62 @@
-/* ===== System Modern & Apple-Inspired Design Tokens ===== */
+/* ===== Flat & Clean Design System (No Gradients) ===== */
 :root {
     --apple-font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
-    --apple-bg: #f5f5f7;
+    --apple-bg: #f8fafc;
     --apple-card-bg: #ffffff;
-    --apple-card-border: rgba(0, 0, 0, 0.08);
-    --apple-text: #1d1d1f;
-    --apple-text-secondary: #6e6e73;
-    --apple-blue: #0071e3;
-    --apple-blue-hover: #0077ed;
-    --apple-blue-soft: rgba(0, 113, 227, 0.08);
-    --apple-green: #34c759;
-    --apple-orange: #ff9500;
-    --apple-red: #ff3b30;
-    --apple-purple: #af52de;
-    --apple-teal: #30b0c7;
-    --apple-gray: #e5e5ea;
-    --apple-gray-light: #f2f2f7;
-    --apple-border: rgba(0, 0, 0, 0.08);
-    --apple-radius-sm: 8px;
-    --apple-radius-md: 14px;
-    --apple-radius-lg: 20px;
+    --apple-card-border: #e2e8f0;
+    --apple-text: #0f172a;
+    --apple-text-secondary: #64748b;
+    --apple-blue: #0066cc;
+    --apple-blue-hover: #0052a3;
+    --apple-blue-soft: #eff6ff;
+    --apple-green: #16a34a;
+    --apple-orange: #d97706;
+    --apple-red: #dc2626;
+    --apple-purple: #7c3aed;
+    --apple-teal: #0284c7;
+    --apple-gray: #e2e8f0;
+    --apple-gray-light: #f1f5f9;
+    --apple-border: #e2e8f0;
+    --apple-radius-sm: 6px;
+    --apple-radius-md: 10px;
+    --apple-radius-lg: 14px;
     --apple-radius-pill: 9999px;
-    --apple-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.04);
-    --apple-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.04);
-    --apple-shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.12);
-    --nav-bg: #1d1d1f;
-    --nav-text: #f5f5f7;
-    --glass-bg: rgba(255, 255, 255, 0.85);
-    --glass-border: rgba(255, 255, 255, 0.2);
+    --apple-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --apple-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+    --apple-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+    --nav-bg: #0f172a;
+    --nav-text: #f8fafc;
+    --glass-bg: #ffffff;
+    --glass-border: #e2e8f0;
     
-    /* Dynamic Button & Header Gradients */
-    --gradient-primary: linear-gradient(135deg, #0071e3 0%, #0057b3 100%);
-    --gradient-primary-hover: linear-gradient(135deg, #0077ed 0%, #0062cc 100%);
-    --gradient-success: linear-gradient(135deg, #34c759 0%, #28a745 100%);
-    --gradient-warning: linear-gradient(135deg, #ff9500 0%, #e08200 100%);
-    --gradient-danger: linear-gradient(135deg, #ff3b30 0%, #d70015 100%);
-    --gradient-info: linear-gradient(135deg, #30b0c7 0%, #0284c7 100%);
-    --gradient-card-light: linear-gradient(180deg, #ffffff 0%, #fbfbfd 100%);
+    /* Solid Flat Color Tokens (No Gradients) */
+    --gradient-primary: #0066cc;
+    --gradient-primary-hover: #0052a3;
+    --gradient-success: #16a34a;
+    --gradient-warning: #d97706;
+    --gradient-danger: #dc2626;
+    --gradient-info: #0284c7;
+    --gradient-card-light: #ffffff;
 }
 
-/* Modo Oscuro (Dark Theme) */
+/* Modo Oscuro (Dark Theme - Solid Flat) */
 [data-bs-theme="dark"], body.dark-mode {
     --apple-bg: #0b0f19;
     --apple-card-bg: #151c2c;
-    --apple-card-border: rgba(255, 255, 255, 0.08);
-    --apple-text: #f1f5f9;
+    --apple-card-border: #1e293b;
+    --apple-text: #f8fafc;
     --apple-text-secondary: #94a3b8;
     --apple-gray: #1e293b;
     --apple-gray-light: #0f172a;
-    --apple-border: rgba(255, 255, 255, 0.1);
-    --apple-shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --apple-shadow-md: 0 10px 30px rgba(0, 0, 0, 0.4);
-    --apple-shadow-lg: 0 24px 48px rgba(0, 0, 0, 0.6);
-    --nav-bg: #0f172a;
+    --apple-border: #1e293b;
+    --apple-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --apple-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    --apple-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    --nav-bg: #0b0f19;
     --nav-text: #f8fafc;
-    --glass-bg: rgba(21, 28, 44, 0.85);
-    --glass-border: rgba(255, 255, 255, 0.1);
-    --gradient-card-light: linear-gradient(180deg, #151c2c 0%, #101726 100%);
+    --glass-bg: #151c2c;
+    --glass-border: #1e293b;
+    --gradient-card-light: #151c2c;
 }
 
 * {
@@ -69,35 +69,32 @@ body {
     background-color: var(--apple-bg);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Glassmorphism & Modern Utility Classes */
+/* Flat Utility Classes */
 .glass-header {
     background: var(--glass-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--apple-border);
 }
 
 .glass-panel {
     background: var(--glass-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--glass-border);
     border-radius: var(--apple-radius-md);
 }
 
 .card, .termometro-card, .area-header-card, .login-card {
-    background: var(--gradient-card-light) !important;
+    background: var(--apple-card-bg) !important;
     color: var(--apple-text) !important;
-    border-color: var(--apple-card-border) !important;
+    border: 1px solid var(--apple-card-border) !important;
     box-shadow: var(--apple-shadow-sm);
-    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .card:hover {
     box-shadow: var(--apple-shadow-md);
+}
 }
 
 .table {
@@ -485,13 +482,12 @@ body {
     position: absolute;
     left: 4%;
     right: 4%;
-    height: 3px;
-    background: linear-gradient(90deg, transparent, #0071e3, #34c759, #0071e3, transparent);
-    box-shadow: 0 0 12px #0071e3;
+    height: 2px;
+    background: var(--apple-red, #dc2626);
     animation: laserScan 2.4s infinite ease-in-out;
     z-index: 8;
     pointer-events: none;
-    border-radius: 999px;
+    border-radius: 1px;
 }
 @keyframes laserScan {
     0% { top: 12%; opacity: 0.6; }
@@ -513,20 +509,20 @@ body {
 }
 .search-filter-box input {
     padding-left: 42px;
-    border-radius: var(--apple-radius-pill);
+    border-radius: var(--apple-radius-md);
 }
 
 /* Pills & Badges */
 .badge-status {
     padding: 0.35em 0.8em;
-    border-radius: var(--apple-radius-pill);
+    border-radius: var(--apple-radius-sm);
     font-weight: 600;
     font-size: 0.78rem;
     letter-spacing: 0.02em;
 }
-.badge-status.normal { background: rgba(52, 199, 89, 0.15); color: var(--apple-green); }
-.badge-status.warning { background: rgba(255, 149, 0, 0.15); color: var(--apple-orange); }
-.badge-status.danger { background: rgba(255, 59, 48, 0.15); color: var(--apple-red); }
+.badge-status.normal { background: rgba(22, 163, 74, 0.12); color: var(--apple-green); }
+.badge-status.warning { background: rgba(217, 119, 6, 0.12); color: var(--apple-orange); }
+.badge-status.danger { background: rgba(220, 38, 38, 0.12); color: var(--apple-red); }
 
 /* Apple Chip Selectors */
 .apple-chip-group {
@@ -540,18 +536,18 @@ body {
     align-items: center;
     gap: 6px;
     padding: 6px 14px;
-    border-radius: var(--apple-radius-pill);
-    background: var(--apple-gray);
+    border-radius: var(--apple-radius-sm);
+    background: var(--apple-gray-light);
     color: var(--apple-text);
     font-size: 0.85rem;
     font-weight: 500;
     cursor: pointer;
     user-select: none;
-    transition: all 0.2s ease;
-    border: 1px solid transparent;
+    transition: all 0.15s ease;
+    border: 1px solid var(--apple-border);
 }
 .apple-chip:hover {
-    background: var(--apple-border);
+    background: var(--apple-gray);
 }
 .apple-chip input[type="checkbox"] {
     appearance: none;
@@ -584,7 +580,7 @@ body {
 .apple-chip.active, .apple-chip:has(input:checked) {
     background: var(--apple-blue-soft);
     color: var(--apple-blue);
-    border-color: rgba(0, 113, 227, 0.3);
+    border-color: rgba(0, 102, 204, 0.3);
     font-weight: 600;
 }
 
@@ -598,11 +594,11 @@ body {
     text-align: center;
     background: var(--apple-card-bg);
     border-radius: var(--apple-radius-lg);
-    border: 2px dashed var(--apple-border);
+    border: 1px dashed var(--apple-border);
     margin: 1rem 0;
 }
 .apple-empty-chart i {
-    font-size: 3.5rem;
+    font-size: 3rem;
     color: var(--apple-blue);
     opacity: 0.7;
     margin-bottom: 1rem;
@@ -641,7 +637,6 @@ body {
     .temp-stepper input {
         font-size: 1.35rem;
         height: 48px;
-        /* Fila propia arriba de los botones: evita que el valor se corte en pantallas angostas */
         order: -1;
         flex: 1 1 100%;
     }
@@ -649,7 +644,6 @@ body {
     .temp-stepper .btn-step-sm {
         flex: 1 1 0;
     }
-    /* Reduce texto secundario alrededor de los inputs en pantallas angostas */
     .lectura-detalle,
     .badge-text {
         display: none;
@@ -658,13 +652,51 @@ body {
         margin: 0.5rem;
     }
     .modal-content {
-        border-radius: 20px !important;
+        border-radius: 14px !important;
     }
     .termometro-card {
-        padding: 16px 14px;
-        min-height: 68px;
+        padding: 14px 12px;
+        min-height: 64px;
     }
     .scrollbar-none::-webkit-scrollbar {
         display: none;
     }
 }
+
+/* Tarjetas de Termómetros Fuera de Servicio / En Reparación */
+.termometro-card.fuera-servicio {
+    border-left: 4px solid var(--apple-red, #dc2626) !important;
+    background: rgba(220, 38, 38, 0.04) !important;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.termometro-card.fuera-servicio:hover {
+    background: rgba(220, 38, 38, 0.08) !important;
+}
+[data-bs-theme="dark"] .termometro-card.fuera-servicio {
+    background: rgba(220, 38, 38, 0.1) !important;
+}
+
+/* Scanner Overlay Compacto y Ergonómico (Flat) */
+.scanner-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--apple-card-bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 12px;
+    text-align: center;
+    border-radius: 10px;
+    z-index: 5;
+    border: 1px solid var(--apple-border);
+}
+[data-bs-theme="dark"] .scanner-overlay {
+    background: #151c2c;
+    border-color: #1e293b;
+}
+
