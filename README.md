@@ -1,6 +1,6 @@
-# Sistema de Registro de Temperaturas
+# Sistema de Control de Temperaturas HACCP
 
-Sistema completo de gestión y registro de temperaturas para termómetros en áreas técnicas, desarrollado en Rust con Axum y PostgreSQL.
+Sistema web de control de temperaturas para áreas técnicas: captura móvil con escaneo QR, gráficos interactivos en tiempo real, informes PDF/CSV auditables y panel de administración completo. Desarrollado en **Rust (Axum + PostgreSQL)** con frontend ligero sin framework.
 
 ## 🚀 Inicio Rápido
 
@@ -36,10 +36,12 @@ Scripts/iniciar_servidor.bat          (tradicional - con ventana)
 - **Registro por Ventanas Horarias**: Configuración de horarios específicos con ventanas de tolerancia
 - **Validación de Rangos**: Rangos operativos (advertencia) y físicos (rechazo) para temperaturas y humedad
 - **Temperatura Actual**: Registro de temperatura instantánea además de máxima/mínima
+- **Humedad Condicional**: Registro de humedad solo cuando el tipo de termómetro lo soporta
 - **Auditoría Completa**: Logs de todos los cambios en el sistema
-- **Interfaz Web**: Frontend responsive con Bootstrap 5
+- **Interfaz Web Mobile-First**: Diseño monocromo consistente, verificado en viewports móviles reales
 - **Escaneo QR Mejorado**: Scanner siempre activo con confirmaciones inteligentes
-- **Reportes**: Generación de reportes diarios y mensuales con exportación CSV/PDF
+- **Gráficos Interactivos**: Lecturas individuales y promedios diarios con zoom, pan táctil, límites operativos anotados y exportación PNG
+- **Reportes e Informes**: Reportes diarios/mensuales, auditoría de incidencias HACCP, análisis de estabilidad e informe de franja horaria — exportación PDF/CSV con envío por correo
 
 ### Sistema de Bandeja (Nuevo v2.0)
 - **Ejecución Oculta**: Sin ventanas visibles, todo en segundo plano
@@ -72,8 +74,9 @@ Scripts/iniciar_servidor.bat          (tradicional - con ventana)
 - **Chrono** - Manejo de fechas y horas
 
 ### Frontend
-- **HTML5 + JavaScript Vanilla**
-- **Bootstrap 5** - UI Framework
+- **HTML5 + JavaScript Vanilla** (sin framework)
+- **Bootstrap 5** - UI Framework con paleta monocroma personalizada
+- **Chart.js 4** + plugins de zoom y anotación - Gráficos interactivos
 - **html5-qrcode** - Escaneo de códigos QR
 
 ## Instalación
@@ -154,7 +157,8 @@ Temperaturas/
 │       ├── termometros.rs       # Handlers CRUD termómetros
 │       ├── registros.rs         # Handlers CRUD registros
 │       ├── configuracion.rs     # Handlers configuración
-│       └── reportes.rs          # Handlers reportes
+│       ├── reportes.rs          # Reportes PDF/CSV e informe de franja horaria
+│       └── graficos.rs          # Datos para gráficos (lecturas, tendencias, resumen)
 ├── public/               # Frontend HTML/JS
 │   ├── login.html        # Página de inicio de sesión
 │   ├── index.html        # Interfaz del registrador (con QR mejorado)
@@ -221,7 +225,22 @@ Temperaturas/
 - `GET /api/areas/:id/pendientes` - Obtener pendientes de un área
 - `POST /api/registros` - Crear registro (registrador)
 - `PUT /api/registros/:id` - Actualizar registro (registrador)
+- `POST /api/registros/accion-correctiva-lote` - Acción correctiva en lote (registrador)
+- `POST /api/termometros/reportar-fuera-servicio` - Reportar equipo fuera de servicio
+- `POST /api/termometros/:id/reparar` - Reparar / volver a servicio
 - `DELETE /api/admin/registros/:id` - Eliminar registro (admin)
+
+### Informes y Reportes
+- `GET /api/registros/informe-dia` - Informe JSON del día (registrador)
+- `GET /api/registros/informe-franja` - Informe de franja horaria (JSON o PDF)
+- `POST /api/registros/enviar-informe-franja` - Enviar informe de franja por correo
+- `GET /api/admin/reportes/diario` - Reporte diario (PDF/CSV, admin)
+- `GET /api/admin/reportes/mensual` - Reporte mensual (PDF/CSV, admin)
+- `GET /api/admin/reportes/incidencias` - Auditoría de incidencias HACCP (PDF/CSV, admin)
+- `GET /api/admin/reportes/estabilidad` - Análisis de estabilidad (PDF/CSV, admin)
+
+### Gráficos
+- `GET /api/admin/graficos` - Resumen, tendencias y lecturas por área/período (admin)
 
 ### Usuarios
 - `GET /api/admin/usuarios` - Listar usuarios (admin)
@@ -268,14 +287,16 @@ Cada tipo de termómetro define:
 ## Flujo de Trabajo del Administrador
 
 1. Login como administrador
-2. Acceso a panel con 7 secciones:
+2. Acceso a panel con 9 secciones:
    - Tipos de Termómetros
    - Áreas Técnicas
-   - Termómetros (con generación de QR)
+   - Termómetros (con generación e impresión de QR)
    - Usuarios
-   - Configuración Global
-   - Reportes (diario/mensual con exportación)
    - Gestión de Registros (CRUD completo)
+   - Configuración Global
+   - Análisis y Gráficos (interactivos, con zoom y límites operativos)
+   - Reportes (diario/mensual/incidencias/estabilidad, PDF y CSV)
+   - Impresión de QR
 
 ## Despliegue en Render (Render.com)
 
@@ -418,6 +439,13 @@ cargo test
 
 ## 📈 Historial de Versiones
 
+### v2.2 (2026-08) - Panel Pulido y Estandarización Visual ✨
+- ✅ **Gráficos móviles**: cero desbordamiento horizontal, altura responsiva y controles adaptables
+- ✅ **Paleta monocroma unificada**: toda la app (login, captura y admin) comparte la misma paleta
+- ✅ **PDFs sin solapes**: ajuste de texto por ancho real medido (tablas AFM Helvetica) en todos los reportes
+- ✅ **Hardening del panel admin**: buscadores funcionales, edición de usuarios sin resetear contraseñas, escape HTML anti-XSS
+- ✅ **Código limpio**: eliminación de ~150 líneas muertas y validación de configuración
+
 ### v2.1 (2026-01-08) - Refactorización y Organización 🎨
 - ✅ **Refactorización handlers**: División en 9 módulos por dominio
 - ✅ **Organización del proyecto**: Carpetas Docs/, Scripts/, Tests/, Archive/
@@ -454,12 +482,13 @@ Ver: [RESUMEN_MEJORAS_COMPLETO.md](Docs/historial_fixes/RESUMEN_MEJORAS_COMPLETO
 
 ### Media Prioridad
 - [x] Refactor handlers.rs en módulos ✅ (v2.1)
+- [x] Dashboard con gráficos de tendencias ✅ (gráficos interactivos con zoom y anotación)
 - [ ] Paginación real en listados
 - [ ] Error handling personalizado
 
 ### Baja Prioridad
 - [ ] Notificaciones push/email para alertas
-- [ ] Dashboard con gráficos de tendencias
+- [x] Informes por correo ✅ (informe de franja horaria)
 - [ ] WebSockets para updates en tiempo real
 - [ ] API REST completa con Swagger/OpenAPI
 - [ ] Integración con sensores IoT
