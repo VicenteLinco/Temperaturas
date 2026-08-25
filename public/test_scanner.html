@@ -21,25 +21,26 @@
             padding: 20px;
             margin-bottom: 16px;
         }
-        /* Wrapper del visor: el <video> es hijo directo de #qr-reader-diag.
-           border-radius + overflow:hidden en ese padre provocan pantalla negra
-           en Safari/iOS (bug de compositing de WebKit). El marco visual vive
-           en .scanner-wrap-diag, un nivel por encima del video. */
+        /* Wrapper del visor: ningún ancestro del <video> (ni .scanner-wrap-diag
+           ni #qr-reader-diag) puede combinar border-radius + overflow:hidden,
+           eso provoca pantalla negra en Safari/iOS (bug de compositing de
+           WebKit). El visor queda cuadrado y con esquinas vivas. */
         .scanner-wrap-diag {
             max-width: 320px;
+            aspect-ratio: 1 / 1;
             margin: 0 auto;
-            border-radius: 14px;
             border: 2px solid #0071e3 !important;
-            overflow: hidden;
             background: #000;
         }
         #qr-reader-diag {
             width: 100%;
+            height: 100%;
             position: relative;
         }
         #qr-reader-diag video {
             width: 100% !important;
-            height: auto !important;
+            height: 100% !important;
+            object-fit: cover;
             display: block !important;
         }
         .check-item {
@@ -167,8 +168,7 @@
                     facingMode: { ideal: "environment" },
                     width: { min: 640, ideal: 1280, max: 1920 },
                     height: { min: 480, ideal: 720, max: 1080 }
-                },
-                qrbox: { width: 200, height: 200 }
+                }
             };
 
             try {

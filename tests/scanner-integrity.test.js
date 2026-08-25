@@ -88,38 +88,35 @@ const css = cssMatch[1];
 assert.ok(!css.includes('transform: translateZ(0)'),
     'CSS no debe forzar translateZ(0) en video porque desacopla el render de WebKit');
 
-// B) No debe tener display: none !important en #qr-shaded-region
-assert.ok(!css.includes('#qr-shaded-region { display: none !important; }'),
-    'CSS no debe ocultar #qr-shaded-region porque rompe el cálculo de coordenadas de html5-qrcode');
-
 // C) #qr-reader debe tener posición definida
 assert.ok(css.includes('#qr-reader'), 'CSS debe definir #qr-reader');
 assert.ok(!css.match(/#qr-reader\s*\{[^}]*aspect-ratio:\s*1\s*\/\s*1/i),
     '#qr-reader no debe forzar aspect-ratio 1/1 que causa colapso de altura en video WebKit');
 
-// D) CRÍTICO para WebKit/iOS: #qr-reader es el padre DIRECTO del <video> que crea
-//    html5-qrcode. La combinación de overflow:hidden + border-radius en ese mismo
-//    elemento provoca pantalla negra en Safari/iOS (bug de compositing documentado).
-//    El frame visual debe estar en .scanner-wrap (el abuelo), no en #qr-reader.
-const qrReaderBlock = (css.match(/#qr-reader\s*\{([^}]*)?\}/i) || [,''])[1];
-assert.ok(qrReaderBlock !== undefined, 'Debe existir regla CSS para #qr-reader');
-assert.ok(!(qrReaderBlock.includes('overflow') && qrReaderBlock.includes('border-radius')),
-    '#qr-reader no debe combinar overflow + border-radius: es el padre directo del <video> ' +
-    'de html5-qrcode y ese combo provoca pantalla negra en Safari/iOS (bug de compositing de WebKit)');
-
-// E) .scanner-wrap (abuelo del video) debe contener overflow para recortar a las
-//    esquinas redondeadas, manteniendo el marco visual sin tocar al <video>.
-const scannerWrapBlock = (css.match(/\.scanner-wrap\s*\{([^}]*)?\}/i) || [,''])[1];
-assert.ok(scannerWrapBlock !== undefined, 'Debe existir regla CSS para .scanner-wrap');
-assert.ok(scannerWrapBlock.includes('overflow'),
-    '.scanner-wrap debe tener overflow para recortar el video a las esquinas redondeadas');
+// D) CRÍTICO para WebKit/iOS: el <video> que crea html5-qrcode vive dentro de
+//    #qr-reader (con #qr-reader__scan_region de por medio). NINGÚN ancestro del
+//    video puede combinar overflow:hidden + border-radius: ese combo provoca
+//    pantalla negra en Safari/iOS (bug de compositing documentado), sin importar
+//    en qué nivel de la cadena de ancestros aparezca.
+for (const selector of ['.scanner-wrap', '#qr-reader', '#qr-reader__scan_region']) {
+    const escaped = selector.replace(/[.#]/g, '\\$&');
+    const pattern = new RegExp(`${escaped}\\s*\\{([^}]*)?\\}`, 'i');
+    const block = (css.match(pattern) || [, ''])[1];
+    assert.ok(block !== undefined, `Debe existir regla CSS para ${selector}`);
+    assert.ok(!(block.includes('overflow') && block.includes('border-radius')),
+        `${selector} no debe combinar overflow + border-radius: es ancestro del <video> de ` +
+        'html5-qrcode y ese combo provoca pantalla negra en Safari/iOS (bug de compositing de WebKit)');
+}
 
 console.log('✓ Invariantes CSS de renderizado móvil pasadas');
 
 console.log('--- 3. Pruebas de Configuración del Escáner y Keep-Alive ---');
 
-// A) El escáner debe usar qrbox para enmarcar el objetivo
-assert.ok(inlineSource.includes('qrbox:'), 'Configuración del escáner debe incluir qrbox');
+// A) Diseño mínimo: el escáner NO debe usar qrbox. El visor ya es cuadrado y
+//    centrado por CSS, así que todo el frame es la zona de escaneo; agregar
+//    qrbox solo reintroduce el overlay/recorte de html5-qrcode sobre el video
+//    (una capa de DOM más, ya asociada al bug de pantalla negra en iOS).
+assert.ok(!inlineSource.includes('qrbox:'), 'scanConfig no debe incluir qrbox: el visor cuadrado ya es la zona de escaneo');
 
 // B) No debe incluir aspectRatio en config de start (provoca pantalla congelada en iOS Safari)
 assert.ok(!inlineSource.includes('aspectRatio: 1.0') && !inlineSource.includes('aspectRatio: 1,'),
