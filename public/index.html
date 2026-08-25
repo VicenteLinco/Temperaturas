@@ -1199,35 +1199,6 @@
             return [];
         }
 
-        // En iPhones con múltiples cámaras (11/12/13/14/15/16 Pro), WebKit puede
-        // seleccionar por defecto el lente "Ultra Wide" (0.5x), el cual tiene enfoque
-        // fijo y NO puede leer códigos QR de cerca (se ven borrosos). Aquí priorizamos
-        // el lente Wide principal que sí enfoca a corta distancia.
-        function elegirMejorCamara(camaras, facing) {
-            if (!camaras || camaras.length === 0) return null;
-            if (camaras.length === 1) return camaras[0].id;
-
-            if (facing === "environment") {
-                const traseras = camaras.filter(c => {
-                    const l = (c.label || '').toLowerCase();
-                    return l.includes('back') || l.includes('trasera') || l.includes('rear') || l.includes('environment');
-                });
-                const lista = traseras.length > 0 ? traseras : camaras;
-                const principal = lista.find(c => {
-                    const l = (c.label || '').toLowerCase();
-                    return !l.includes('ultra') && !l.includes('0.5') &&
-                           !l.includes('telephoto') && !l.includes('zoom') && !l.includes('depth');
-                });
-                return principal ? principal.id : lista[0].id;
-            } else {
-                const frontales = camaras.filter(c => {
-                    const l = (c.label || '').toLowerCase();
-                    return l.includes('front') || l.includes('frontal') || l.includes('user') || l.includes('selfie');
-                });
-                return frontales.length > 0 ? frontales[0].id : camaras[0].id;
-            }
-        }
-
         async function detectarCamaras() {
             await obtenerCamaras();
             const btnSwitch = document.getElementById('btnSwitchCam');
@@ -1411,17 +1382,15 @@
         async function inicializarScanner(silent = false) {
             solicitarWakeLock();
             if (!html5QrCode) {
-                // Optimización crítica para iPhone y móviles:
-                // 1) Limitar a QR_CODE para que ZXing no ejecute 17 decodificadores de códigos 1D/2D por frame.
-                // 2) Activar useBarCodeDetectorIfSupported para aprovechar el motor nativo acelerado en iOS 17+.
+                // Limitar a QR_CODE para que ZXing no ejecute 17 decodificadores de
+                // códigos 1D/2D por frame. Misma configuración mínima que
+                // test_scanner.html (probada y funcionando en iPhone/Android): sin
+                // experimentalFeatures, que agrega una variable no verificada.
                 const qrFormats = (typeof Html5QrcodeSupportedFormats !== 'undefined' && Html5QrcodeSupportedFormats.QR_CODE !== undefined)
                     ? [ Html5QrcodeSupportedFormats.QR_CODE ]
                     : [ 0 ];
                 html5QrCode = new Html5Qrcode("qr-reader", {
                     formatsToSupport: qrFormats,
-                    experimentalFeatures: {
-                        useBarCodeDetectorIfSupported: true
-                    },
                     verbose: false
                 });
             }
@@ -1450,24 +1419,22 @@
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Iniciando...';
             }
 
-            // Detectar cámaras si aún no se han listado (necesario para elegir
-            // el lente correcto en iPhones con cámara múltiple)
-            if (listaCamaras.length === 0) {
-                await obtenerCamaras();
-            }
-            if (!camaraActualId && listaCamaras.length > 0) {
-                camaraActualId = elegirMejorCamara(listaCamaras, currentFacingMode);
-            }
-
+            // Sin selección de lente por deviceId en el primer arranque: hacerlo
+            // requiere Html5Qrcode.getCameras(), que pide y suelta la cámara ANTES
+            // de la petición real de .start(). Dos getUserMedia seguidos así es una
+            // causa conocida de video "vivo pero negro" en Safari/iOS (el escaneo
+            // decodifica pero no pinta). Se arranca directo con facingMode, igual
+            // que test_scanner.html, ya confirmado funcionando en el mismo iPhone.
+            // camaraActualId solo se usa para el cambio MANUAL de cámara (ver
+            // cambiarCamaraScanner), donde la cámara ya está viva y el usuario
+            // decidió el cambio explícitamente.
             const cameraConfig = camaraActualId ? camaraActualId : { facingMode: currentFacingMode };
 
             // Configuración del escáner:
             // 1) fps optimizado (12 fps) para evitar saturación de CPU en decodificación JS.
             // 2) videoConstraints con resolución HD (ideal 1280x720): nitidez óptima para
             //    detección QR sin sobrecargar el canvas ni el decoder de iOS.
-            // 3) Si se eligió un deviceId específico (iPhone multi-cámara), se incluye
-            //    como 'ideal' (no 'exact') para permitir fallback si iOS invalida el ID.
-            // 4) Sin 'qrbox': el visor ya es cuadrado y centrado por CSS (.scanner-wrap),
+            // 3) Sin 'qrbox': el visor ya es cuadrado y centrado por CSS (.scanner-wrap),
             //    así que todo el frame visible es la zona de escaneo. Evita el overlay/
             //    recorte adicional que html5-qrcode dibuja sobre el video (una capa más
             //    de DOM que puede fallar en WebKit) y simplifica todo el sistema.

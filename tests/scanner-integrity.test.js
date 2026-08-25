@@ -122,6 +122,16 @@ assert.ok(!inlineSource.includes('qrbox:'), 'scanConfig no debe incluir qrbox: e
 assert.ok(!inlineSource.includes('aspectRatio: 1.0') && !inlineSource.includes('aspectRatio: 1,'),
     'scanConfig no debe incluir aspectRatio como restricción de hardware');
 
+// G) CRÍTICO para Safari/iOS: el primer arranque de la cámara (inicializarScanner)
+// no debe pedir la lista de cámaras (Html5Qrcode.getCameras()/obtenerCamaras) antes
+// de su .start() real. Hacerlo dispara un getUserMedia que se pide y se suelta,
+// seguido de un segundo getUserMedia real: dos peticiones de cámara seguidas así es
+// una causa conocida de video "vivo pero negro" en WebKit (decodifica, no pinta).
+const inicializarScannerBody = extractFunction(inlineSource, 'inicializarScanner');
+assert.ok(!inicializarScannerBody.includes('obtenerCamaras('),
+    'inicializarScanner no debe llamar a obtenerCamaras()/getCameras() antes del primer .start(): ' +
+    'un getUserMedia previo al arranque real provoca pantalla negra en Safari/iOS');
+
 // C) Debe incluir wakeLock para evitar apagado de pantalla
 assert.ok(inlineSource.includes('solicitarWakeLock'), 'Debe existir función solicitarWakeLock');
 assert.ok(inlineSource.includes('liberarWakeLock'), 'Debe existir función liberarWakeLock');
