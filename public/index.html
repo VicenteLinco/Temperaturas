@@ -69,8 +69,9 @@
         /* REGLA DE DISEÑO DEL ESCÁNER QR:
            1) Visor SIEMPRE cuadrado (aspect-ratio 1/1), con TODO el espacio
               disponible para escanear: sin marcos, esquinas ni diseños dentro.
-           2) Toda entrada de texto del flujo operador usa el teclado nativo
-              del sistema (type/inputmode correctos), en iPhone y Android. */
+           2) Toda entrada de datos del flujo operador usa el teclado ALFANUMÉRICO
+              CLÁSICO del sistema (type="text", sin inputmode numérico): es el más
+              nativo en iPhone y Android y tiene tecla "-" para negativos. */
         #qr-reader {
             width: 100%;
             max-width: 340px;
@@ -188,13 +189,6 @@
             color: var(--ink);
         }
         .manual-id-box input::placeholder { color: #8a8a8f; }
-        /* Oculta las flechas de spinner que type=number dibuja en desktop */
-        .manual-id-box input::-webkit-outer-spin-button,
-        .manual-id-box input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        .manual-id-box input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
         .manual-id-btn {
             flex-shrink: 0;
             display: flex;
@@ -214,7 +208,7 @@
         /* PESTAÑAS */
         .tabs-container {
             background: white;
-            border-bottom: 2px solid #e2e2e5;
+            border-bottom: 1px solid var(--apple-border);
             position: sticky;
             top: 56px;
             z-index: 100;
@@ -303,7 +297,7 @@
             margin-bottom: 10px;
             cursor: pointer;
             transition: all 0.2s;
-            border: 1px solid #e2e2e5;
+            border: 1px solid var(--apple-border);
             font-weight: 500;
         }
         .area-summary-card:hover {
@@ -347,17 +341,17 @@
 
         /* Modales Flat */
         .modal-content {
-            border: 1px solid #e2e2e5;
+            border: 1px solid var(--apple-border);
             border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
         }
         .modal-header {
-            border-bottom: 1px solid #e2e2e5;
+            border-bottom: 1px solid var(--apple-border);
             padding: 1rem 1.25rem;
         }
         .modal-footer {
-            border-top: 1px solid #e2e2e5;
+            border-top: 1px solid var(--apple-border);
         }
         .modal .btn-lg {
             min-height: 52px;
@@ -478,7 +472,7 @@
             color: #3a3a3c;
             padding: 12px 14px;
             background: white;
-            border: 1px solid #e2e2e5;
+            border: 1px solid var(--apple-border);
             border-radius: var(--radius);
             display: flex;
             align-items: center;
@@ -512,7 +506,7 @@
         .area-items {
             padding: 10px;
             background: #f5f5f7;
-            border: 1px solid #e2e2e5;
+            border: 1px solid var(--apple-border);
             border-top: 0;
             border-bottom-left-radius: var(--radius);
             border-bottom-right-radius: var(--radius);
@@ -620,7 +614,7 @@
         .cierre-lote .btn { min-height: 48px; }
         .cierre-informe {
             background: #f5f5f7;
-            border: 1px solid #e2e2e5;
+            border: 1px solid var(--apple-border);
             border-radius: var(--radius);
             padding: 14px;
         }
@@ -628,7 +622,7 @@
 
         .humedad-falla {
             padding: 10px;
-            border: 1px solid #e2e2e5;
+            border: 1px solid var(--apple-border);
             border-radius: 12px;
             background: #f5f5f7;
         }
@@ -781,7 +775,7 @@
 
             <!-- Entrada Manual por ID o Búsqueda Rápida -->
             <div class="manual-id-box">
-                <input type="number" inputmode="numeric" id="inputManualId" placeholder="Buscar o ingresar ID..." onkeypress="if(event.key==='Enter') buscarManualId()">
+                <input type="text" autocomplete="off" id="inputManualId" placeholder="Buscar o ingresar ID..." onkeypress="if(event.key==='Enter') buscarManualId()">
                 <button class="manual-id-btn" onclick="buscarManualId()" title="Buscar" aria-label="Buscar"><i class="bi bi-search"></i></button>
             </div>
         </div>
@@ -868,19 +862,19 @@
                             <div class="lecturas-grid mb-2">
                                 <div class="lectura-campo">
                                     <label for="tempActual" class="lectura-label">Temperatura actual</label>
-                                    <input type="text" inputmode="decimal" class="lectura-input" id="tempActual"
+                                    <input type="text" class="lectura-input" id="tempActual"
                                            autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
                                            enterkeyhint="next" aria-label="Temperatura actual en grados Celsius" placeholder="Ej: 4.5">
                                 </div>
                                 <div class="lectura-campo">
                                     <label for="lectura2" class="lectura-label">Temperatura máxima</label>
-                                    <input type="text" inputmode="decimal" class="lectura-input" id="lectura2"
+                                    <input type="text" class="lectura-input" id="lectura2"
                                            autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
                                            enterkeyhint="next" aria-label="Temperatura máxima en grados Celsius" placeholder="Ej: 6.0">
                                 </div>
                                 <div class="lectura-campo">
                                     <label for="lectura3" class="lectura-label">Temperatura mínima</label>
-                                    <input type="text" inputmode="decimal" class="lectura-input" id="lectura3"
+                                    <input type="text" class="lectura-input" id="lectura3"
                                            autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
                                            enterkeyhint="done" aria-label="Temperatura mínima en grados Celsius" placeholder="Ej: 2.0">
                                 </div>
@@ -888,7 +882,7 @@
 
                             <div class="mb-2" id="humedadGroup" style="display: none;">
                                 <label for="humedad" class="lectura-label d-block text-start mb-1">Humedad (%)</label>
-                                <input type="text" inputmode="decimal" class="lectura-input" id="humedad"
+                                <input type="text" class="lectura-input" id="humedad"
                                        autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
                                        enterkeyhint="done" aria-label="Humedad en porcentaje">
                                 <div class="humedad-falla mt-2" aria-label="Estado del lector de humedad">

@@ -3,7 +3,7 @@
     --apple-font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
     --apple-bg: #f5f5f7;
     --apple-card-bg: #ffffff;
-    --apple-card-border: #e2e2e5;
+    --apple-card-border: rgba(29, 29, 31, 0.08);
     --apple-text: #1d1d1f;
     --apple-text-secondary: #6e6e73;
     /* "Primary" ya no es azul: el acento interactivo del sistema es negro/blanco. */
@@ -19,10 +19,12 @@
     --apple-teal: #4b4b4d;
     --apple-gray: #e2e2e5;
     --apple-gray-light: #f2f2f4;
-    --apple-border: #e2e2e5;
-    --apple-radius-sm: 6px;
-    --apple-radius-md: 10px;
-    --apple-radius-lg: 14px;
+    /* Bordes estilo 2026: hairlines translúcidas que respiran sobre cualquier
+       fondo, en lugar de grises planos opacos */
+    --apple-border: rgba(29, 29, 31, 0.1);
+    --apple-radius-sm: 8px;
+    --apple-radius-md: 12px;
+    --apple-radius-lg: 16px;
     --apple-radius-pill: 9999px;
     --apple-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --apple-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
@@ -30,7 +32,7 @@
     --nav-bg: #1d1d1f;
     --nav-text: #f5f5f7;
     --glass-bg: #ffffff;
-    --glass-border: #e2e2e5;
+    --glass-border: var(--apple-border);
 
     /* Alias históricos (mismo valor que los tokens de arriba, sin degradado) */
     --gradient-primary: #1d1d1f;

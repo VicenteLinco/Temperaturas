@@ -149,13 +149,13 @@
 
         /* Tarjetas */
         .card {
-            border: 1px solid #e2e2e5;
+            border: 1px solid var(--apple-border);
             border-radius: var(--radius);
             box-shadow: var(--shadow-card);
         }
         .card-header {
             background-color: #f5f5f7;
-            border-bottom: 1px solid #e2e2e5;
+            border-bottom: 1px solid var(--apple-border);
         }
         .card-header.bg-primary { background-color: #1d1d1f !important; }
         .card-header.bg-success { background-color: #2f6b4f !important; }
@@ -231,7 +231,7 @@
             color: var(--muted);
             font-weight: 600;
             white-space: nowrap;
-            border-bottom: 1px solid #e2e2e5;
+            border-bottom: 1px solid var(--apple-border);
         }
         .table tbody td {
             padding: 0.7rem 0.75rem;
@@ -269,7 +269,7 @@
             box-shadow: 0 30px 60px rgba(10, 10, 12, 0.35);
         }
         .modal-header {
-            border-bottom: 1px solid #e2e2e5;
+            border-bottom: 1px solid var(--apple-border);
             padding: 1rem 1.25rem;
         }
         .modal-header.bg-primary,
@@ -278,7 +278,7 @@
             border-bottom: none;
         }
         .modal-footer {
-            border-top: 1px solid #e2e2e5;
+            border-top: 1px solid var(--apple-border);
         }
 
         /* KPIs */
@@ -1587,7 +1587,7 @@
                                 <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('admTempActual', -1)">−1</button>
                                 <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('admTempActual', -0.1)">−0.1</button>
                                 <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="toggleSignoTemp('admTempActual')" title="Cambiar signo">±</button>
-                                <input type="text" inputmode="decimal" class="form-control form-control-lg" id="admTempActual" placeholder="Valor actual (ej: 4.5)">
+                                <input type="text" class="form-control form-control-lg" id="admTempActual" placeholder="Valor actual (ej: 4.5)">
                                 <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('admTempActual', 0.1)">+0.1</button>
                                 <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('admTempActual', 1)">+1</button>
                             </div>
@@ -1602,7 +1602,7 @@
                                 <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('admLectura2', -1)">−1</button>
                                 <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('admLectura2', -0.1)">−0.1</button>
                                 <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="toggleSignoTemp('admLectura2')" title="Cambiar signo">±</button>
-                                <input type="text" inputmode="decimal" class="form-control" id="admLectura2" placeholder="Segunda lectura (ej: 2.1)">
+                                <input type="text" class="form-control" id="admLectura2" placeholder="Segunda lectura (ej: 2.1)">
                                 <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('admLectura2', 0.1)">+0.1</button>
                                 <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('admLectura2', 1)">+1</button>
                             </div>
@@ -1617,7 +1617,7 @@
                                 <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('admLectura3', -1)">−1</button>
                                 <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('admLectura3', -0.1)">−0.1</button>
                                 <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="toggleSignoTemp('admLectura3')" title="Cambiar signo">±</button>
-                                <input type="text" inputmode="decimal" class="form-control" id="admLectura3" placeholder="Tercera lectura (ej: 7.8)">
+                                <input type="text" class="form-control" id="admLectura3" placeholder="Tercera lectura (ej: 7.8)">
                                 <button type="button" class="btn btn-outline-secondary btn-step-sm" onclick="stepTemp('admLectura3', 0.1)">+0.1</button>
                                 <button type="button" class="btn btn-outline-secondary btn-step" onclick="stepTemp('admLectura3', 1)">+1</button>
                             </div>

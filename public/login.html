@@ -13,13 +13,19 @@
     <style>
         /* overflow-x en html además de body: sin él, el fondo ambiental de 800px
            ensancha el viewport de layout en móvil (390px reales → 595px de layout)
-           y todo lo posicionado a pantalla completa deja de verse centrado. */
+           y todo lo posicionado a pantalla completa deja de verse centrado.
+           text-size-adjust evita el auto-escalado de Safari que deformaba la tarjeta. */
         html {
             overflow-x: clip;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
         }
 
         body {
             min-height: 100vh;
+            /* dvh: con el teclado abierto el viewport real baja; sin él, el
+               centrado flex salta y la tarjeta "crece" al escribir usuario/pass */
+            min-height: 100dvh;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -108,6 +114,20 @@
             border-color: var(--apple-border);
             color: var(--apple-text-secondary);
         }
+
+        /* Inputs del login: 16px exactos para que iOS NUNCA haga zoom automático
+           al enfocar (era lo que hacía ver la tarjeta agrandada y fea), y radio
+           unificado estilo 2026 en la píldora del input-group. */
+        .login-card .form-control {
+            font-size: 16px;
+        }
+        /* Radio moderno solo en esquinas EXTERIORES de la píldora del grupo */
+        .input-group {
+            --bs-border-radius: var(--apple-radius-md);
+            border-radius: var(--apple-radius-md);
+        }
+        .input-group > *:first-child { border-radius: var(--apple-radius-md) 0 0 var(--apple-radius-md); }
+        .input-group > *:last-child { border-radius: 0 var(--apple-radius-md) var(--apple-radius-md) 0; }
 
         .toggle-password {
             cursor: pointer;
