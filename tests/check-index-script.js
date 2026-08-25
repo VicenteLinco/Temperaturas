@@ -15,10 +15,10 @@ for (const id of ['tempActual', 'lectura2', 'lectura3', 'humedad']) {
 }
 assert.match(html, /id="btnHumedadLow"/);
 assert.match(html, /id="btnHumedadError"/);
-const whatsapp = html.match(/<a[^>]*id="btnWhatsAppRonda"[^>]*>/i)?.[0] || '';
-assert.match(whatsapp, /href="https:\/\/wa\.me\/"/i);
-assert.match(whatsapp, /target="_blank"/i);
-assert.match(whatsapp, /rel="noopener noreferrer"/i);
+// El botón de WhatsApp se eliminó a propósito (commit 0d44837, "simplificar flujo
+// móvil, remover WhatsApp"); el cierre de ronda ya no debe reintroducirlo.
+assert.doesNotMatch(html, /id="btnWhatsAppRonda"/i,
+    'el flujo de cierre de ronda ya no debe incluir el botón de WhatsApp (eliminado intencionalmente)');
 assert.match(html, /modal-fullscreen-sm-down/);
 assert.match(html, /safe-area-inset-bottom/);
 console.log(`index-script: ${scripts.length} inline script(s) parsed; mobile capture contract passed`);

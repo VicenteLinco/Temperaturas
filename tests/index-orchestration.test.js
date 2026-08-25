@@ -54,8 +54,8 @@ function element(value = '') {
 }
 
 const functions = [
-    'cargarTodasLasAreas', 'leerLecturas', 'formatearFechaHoy', 'totalesRonda',
-    'recopilarIncidenciasRonda', 'fechaOperativaActual', 'claveCierreRonda',
+    'cargarTodasLasAreas', 'actualizarBadgeReparaciones', 'leerLecturas', 'formatearFechaHoy',
+    'totalesRonda', 'recopilarIncidenciasRonda', 'fechaOperativaActual', 'claveCierreRonda',
     'verificarCierreRonda', 'abrirCierreRonda', 'renderCierreRonda',
     'guardarRegistro', 'actualizarUIHumedad',
     'seleccionarIncidenciaHumedad'
@@ -75,7 +75,7 @@ function createHarness({ areas, areaResponses, failAreaId = null }) {
         btnHumedadLow: element(), btnHumedadError: element(), humedadAyuda: element(),
         loadingOverlay: element(), loadingProgressBar: element(), loadingStatus: element(),
         cierreRondaModal: element(), cierreTitulo: element(), cierreSubtitulo: element(),
-        cierreBody: element(), btnWhatsAppRonda: element()
+        cierreBody: element(), reparacionesTabBadge: element()
     };
     elements.humedadGroup.style.display = 'none';
     const storage = new Map();
@@ -192,9 +192,6 @@ const completed = (id, name) => ({
         'global refresh must observe another operator completing the other area');
     await vm.runInContext('verificarCierreRonda()', concurrentCompletion.context);
     assert.equal(concurrentCompletion.calls.modalShows, 1, 'completion must open exactly once');
-    assert.match(concurrentCompletion.elements.btnWhatsAppRonda.href, /^https:\/\/wa\.me\/\?text=/);
-    assert.equal(concurrentCompletion.elements.btnWhatsAppRonda.target, '_blank');
-    assert.equal(concurrentCompletion.elements.btnWhatsAppRonda.rel, 'noopener noreferrer');
 
     vm.runInContext("seleccionarIncidenciaHumedad('LOW')", concurrentCompletion.context);
     assert.equal(concurrentCompletion.context.humedadIncidencia, 'LOW');
@@ -208,7 +205,7 @@ const completed = (id, name) => ({
     assert.equal(vm.runInContext("sanearDecimal('4.5')", concurrentCompletion.context), '4.5');
     assert.equal(vm.runInContext("sanearDecimal('-1.2.3')", concurrentCompletion.context), '-1.23');
 
-    console.log('index-orchestration: roles, atomic refresh, concurrent completion, WhatsApp and humidity passed');
+    console.log('index-orchestration: roles, atomic refresh, concurrent completion and humidity passed');
 })().catch(error => {
     console.error(error);
     process.exitCode = 1;
