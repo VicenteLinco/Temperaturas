@@ -1128,6 +1128,9 @@
         async function inicializarApp() {
             await cargarTodasLasAreas();
 
+            // Auto-iniciar el escáner directamente para que el usuario no tenga que presionar botones
+            inicializarScanner(true);
+
             // Verificar si viene un ID por URL (cuando se abre escaneando con la cámara del celular)
             const urlParams = new URLSearchParams(window.location.search);
             const termId = urlParams.get('termometro') || urlParams.get('id') || urlParams.get('termometro_id') || urlParams.get('termo') || urlParams.get('t');
@@ -1176,55 +1179,251 @@
         // cámara" si el dispositivo realmente tiene más de una, para no sumar un botón
         // que en el caso típico de terreno (una sola trasera) no hace nada.
         let camarasDisponibles = null;
-        async function detectarCamaras() {
-            if (camarasDisponibles !== null) return camarasDisponibles;
+        let listaCamaras = [];
+        let camaraActualId = null;
+
+        async function obtenerCamaras() {
             try {
                 const camaras = await Html5Qrcode.getCameras();
-                camarasDisponibles = Array.isArray(camaras) ? camaras.length : 1;
+                if (Array.isArray(camaras) && camaras.length > 0) {
+                    listaCamaras = camaras;
+                    camarasDisponibles = camaras.length;
+                    return camaras;
+                }
             } catch (e) {
-                // getCameras()/enumerateDevices() es poco confiable en iOS Safari:
-                // ante un fallo de detección es peor esconder el botón (deja al
-                // operador sin forma de cambiar de cámara) que mostrarlo de más.
-                console.error('No se pudo detectar cámaras:', e);
-                camarasDisponibles = 2;
+                console.warn('No se pudo detectar lista de cámaras:', e);
             }
+            camarasDisponibles = 1;
+            return [];
+        }
+
+        function elegirMejorCamara(camaras, facing) {
+            if (!camaras || camaras.length === 0) return null;
+            if (camaras.length === 1) return camaras[0].id;
+
+            if (facing === "environment") {
+                // Filtrar cámaras traseras
+                const traseras = camaras.filter(c => {
+                    const l = (c.label || '').toLowerCase();
+                    return l.includes('back') || l.includes('trasera') || l.includes('rear') || l.includes('environment');
+                });
+                const lista = traseras.length > 0 ? traseras : camaras;
+
+                // En iPhones con múltiples cámaras (ej: 11/12/13/14/15/16 Pro), WebKit puede seleccionar
+                // por defecto el lente "Ultra Wide" (0.5x), el cual tiene enfoque fijo/lejano y NO puede
+                // enfocar códigos QR de cerca (se ven borrosos y no leen).
+                // Priorizamos el lente estándar / Wide principal:
+                const principal = lista.find(c => {
+                    const l = (c.label || '').toLowerCase();
+                    return !l.includes('ultra') && !l.includes('0.5') && !l.includes('telephoto') && !l.includes('zoom') && !l.includes('depth');
+                });
+                return principal ? principal.id : lista[0].id;
+            } else {
+                // Cámara frontal
+                const frontales = camaras.filter(c => {
+                    const l = (c.label || '').toLowerCase();
+                    return l.includes('front') || l.includes('frontal') || l.includes('user') || l.includes('selfie');
+                });
+                return frontales.length > 0 ? frontales[0].id : camaras[0].id;
+            }
+        }
+
+        async function detectarCamaras() {
+            await obtenerCamaras();
             const btnSwitch = document.getElementById('btnSwitchCam');
-            if (btnSwitch) btnSwitch.classList.toggle('d-none', camarasDisponibles < 2);
-            return camarasDisponibles;
+            if (btnSwitch) {
+                btnSwitch.classList.toggle('d-none', listaCamaras.length <= 1);
+            }
+            return listaCamaras.length;
         }
 
         async function cambiarCamaraScanner() {
             if (!html5QrCode) return;
-            currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+
+            if (listaCamaras.length > 1) {
+                const currentIndex = listaCamaras.findIndex(c => c.id === camaraActualId);
+                const nextIndex = (currentIndex + 1) % listaCamaras.length;
+                camaraActualId = listaCamaras[nextIndex].id;
+            } else {
+                currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+                camaraActualId = null;
+            }
+
             try {
-                await html5QrCode.stop();
-                inicializarScanner();
+                if (typeof html5QrCode.getState === 'function' && html5QrCode.getState() === Html5QrcodeScannerState.SCANNING) {
+                    await html5QrCode.stop();
+                }
+                inicializarScanner(false);
             } catch (e) {
                 console.error("Error al cambiar cámara:", e);
-                inicializarScanner();
+                inicializarScanner(false);
             }
         }
 
         function reanudarScannerSiPausado() {
-            if (!html5QrCode) return;
+            if (!html5QrCode) {
+                inicializarScanner(true);
+                return;
+            }
             try {
                 if (typeof html5QrCode.getState === 'function') {
                     const state = html5QrCode.getState();
                     if (state === Html5QrcodeScannerState.PAUSED) {
                         html5QrCode.resume();
+                        const overlay = document.getElementById('scannerOverlay');
+                        if (overlay) overlay.style.display = 'none';
                         return;
                     }
                     if (state === Html5QrcodeScannerState.SCANNING) {
+                        const overlay = document.getElementById('scannerOverlay');
+                        if (overlay) overlay.style.display = 'none';
                         return;
                     }
                 }
-            } catch (e) {}
-            inicializarScanner();
+            } catch (e) {
+                console.warn('No se pudo reanudar scanner pausado:', e);
+            }
+            inicializarScanner(true);
         }
 
-        function inicializarScanner() {
+        // ===== SCREEN WAKE LOCK & KEEP-ALIVE (ANTIAUTODESCONEXIÓN) =====
+        // Evita que la pantalla se apague por inactividad durante la ronda de temperaturas (Android y iOS 16.4+)
+        // y reanima automáticamente la cámara si el sistema suspende el stream por segundo plano.
+        let wakeLockSentinel = null;
+
+        async function solicitarWakeLock() {
+            try {
+                if ('wakeLock' in navigator && !wakeLockSentinel) {
+                    wakeLockSentinel = await navigator.wakeLock.request('screen');
+                    wakeLockSentinel.addEventListener('release', () => {
+                        wakeLockSentinel = null;
+                    });
+                }
+            } catch (err) {
+                // Wake Lock no permitido o en ahorro de energía; continuar normalmente
+            }
+        }
+
+        function liberarWakeLock() {
+            if (wakeLockSentinel) {
+                wakeLockSentinel.release().catch(() => {});
+                wakeLockSentinel = null;
+            }
+        }
+
+        function verificarYReanimarScanner() {
             if (!html5QrCode) {
-                html5QrCode = new Html5Qrcode("qr-reader");
+                inicializarScanner(true);
+                return;
+            }
+
+            const videoEl = document.querySelector('#qr-reader video');
+            let streamMuerto = false;
+
+            if (videoEl && videoEl.srcObject) {
+                const stream = videoEl.srcObject;
+                const tracks = stream.getVideoTracks ? stream.getVideoTracks() : [];
+                if (tracks.length === 0 || tracks.some(t => t.readyState === 'ended')) {
+                    streamMuerto = true;
+                }
+            } else if (!videoEl) {
+                streamMuerto = true;
+            }
+
+            if (streamMuerto) {
+                console.log('Stream de cámara desconectado por el sistema, reactivando...');
+                try {
+                    if (typeof html5QrCode.stop === 'function') {
+                        html5QrCode.stop().finally(() => {
+                            inicializarScanner(true);
+                        });
+                        return;
+                    }
+                } catch (e) {}
+                inicializarScanner(true);
+            } else {
+                reanudarScannerSiPausado();
+            }
+        }
+
+        // Recuperación instantánea cuando el operador regresa a la pestaña o desbloquea el teléfono
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                solicitarWakeLock();
+                const algunModalAbierto = document.querySelectorAll('.modal.show').length > 0;
+                if (!algunModalAbierto) {
+                    verificarYReanimarScanner();
+                }
+            }
+        });
+
+        window.addEventListener('focus', () => {
+            solicitarWakeLock();
+            const algunModalAbierto = document.querySelectorAll('.modal.show').length > 0;
+            if (!algunModalAbierto) {
+                verificarYReanimarScanner();
+            }
+        });
+
+        window.addEventListener('pageshow', () => {
+            solicitarWakeLock();
+            const algunModalAbierto = document.querySelectorAll('.modal.show').length > 0;
+            if (!algunModalAbierto) {
+                verificarYReanimarScanner();
+            }
+        });
+
+        // Watchdog periódico: verifica cada 7 segundos que el stream de video esté activo y no congelado
+        let ultimoTiempoVideo = -1;
+        let conteoStall = 0;
+
+        setInterval(() => {
+            if (document.visibilityState !== 'visible') return;
+            const algunModalAbierto = document.querySelectorAll('.modal.show').length > 0;
+            if (algunModalAbierto || escaneoEnProceso) return;
+
+            const overlay = document.getElementById('scannerOverlay');
+            if (overlay && overlay.style.display === 'none') {
+                const videoEl = document.querySelector('#qr-reader video');
+                if (!videoEl) {
+                    verificarYReanimarScanner();
+                    return;
+                }
+
+                if (videoEl.paused) {
+                    videoEl.play().catch(() => {});
+                }
+
+                if (videoEl.currentTime === ultimoTiempoVideo && videoEl.currentTime > 0) {
+                    conteoStall++;
+                    // Si el video se congeló durante 2 ciclos (14s), reanimar la cámara
+                    if (conteoStall >= 2) {
+                        conteoStall = 0;
+                        verificarYReanimarScanner();
+                    }
+                } else {
+                    ultimoTiempoVideo = videoEl.currentTime;
+                    conteoStall = 0;
+                }
+            }
+        }, 7000);
+
+        async function inicializarScanner(silent = false) {
+            solicitarWakeLock();
+            if (!html5QrCode) {
+                // Optimización crítica para iPhone y móviles:
+                // 1) Limitar a QR_CODE para que ZXing no ejecute 17 decodificadores de códigos 1D/2D por frame.
+                // 2) Activar useBarCodeDetectorIfSupported para aprovechar el motor nativo acelerado en iOS 17+.
+                const qrFormats = (typeof Html5QrcodeSupportedFormats !== 'undefined' && Html5QrcodeSupportedFormats.QR_CODE !== undefined)
+                    ? [ Html5QrcodeSupportedFormats.QR_CODE ]
+                    : [ 0 ];
+                html5QrCode = new Html5Qrcode("qr-reader", {
+                    formatsToSupport: qrFormats,
+                    experimentalFeatures: {
+                        useBarCodeDetectorIfSupported: true
+                    },
+                    verbose: false
+                });
             }
 
             if (typeof html5QrCode.getState === 'function') {
@@ -1246,33 +1445,83 @@
 
             const btn = document.querySelector('#scannerOverlay button');
             const originalText = btn ? btn.innerHTML : '';
-            if (btn) {
+            if (btn && !silent) {
                 btn.disabled = true;
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Iniciando...';
             }
 
-            // Regla de diseño: visor cuadrado y área de escaneo COMPLETA. Sin qrbox,
-            // el decodificador analiza todo el cuadro de video (antes se recortaba
-            // al 72% central y un QR cerca del borde no se leía).
-            // Sin "aspectRatio": html5-qrcode lo envía como restricción real de la
-            // cámara (getUserMedia/applyConstraints), y en iOS Safari forzar un
-            // aspectRatio no nativo deja el track de video congelado en negro
-            // (el permiso se concede pero no llega imagen). El recorte cuadrado ya
-            // lo resuelve el CSS (#qr-reader video { object-fit: cover }).
-            const config = {
-                fps: 15
+            // Detectar cámaras si aún no se han listado
+            if (listaCamaras.length === 0) {
+                await obtenerCamaras();
+            }
+            if (!camaraActualId && listaCamaras.length > 0) {
+                camaraActualId = elegirMejorCamara(listaCamaras, currentFacingMode);
+            }
+
+            const cameraConfig = camaraActualId ? camaraActualId : { facingMode: currentFacingMode };
+
+            // Configuración del escáner:
+            // 1) fps optimizado (12 fps) para evitar saturación de CPU en decodificación JS.
+            // 2) videoConstraints con resolución HD (ideal 1280x720) para nitidez óptima sin sobrecargar el canvas.
+            const scanConfig = {
+                fps: 12,
+                videoConstraints: {
+                    facingMode: { ideal: currentFacingMode },
+                    width: { min: 640, ideal: 1280, max: 1920 },
+                    height: { min: 480, ideal: 720, max: 1080 }
+                }
             };
 
-            html5QrCode.start({ facingMode: currentFacingMode }, config, onScanSuccess, onScanError)
+            html5QrCode.start(cameraConfig, scanConfig, onScanSuccess, onScanError)
                 .then(() => {
                     const overlay = document.getElementById('scannerOverlay');
                     if (overlay) overlay.style.display = 'none';
                     const controls = document.getElementById('scannerControls');
                     if (controls) controls.classList.remove('d-none');
+
+                    // Asegurar reproducción fluida e inline en iOS Safari
+                    const videoEl = document.querySelector('#qr-reader video');
+                    if (videoEl) {
+                        videoEl.setAttribute('playsinline', 'true');
+                        videoEl.setAttribute('webkit-playsinline', 'true');
+                        videoEl.muted = true;
+                        if (videoEl.paused) {
+                            videoEl.play().catch(() => {});
+                        }
+                    }
+
                     detectarCamaras();
                 })
-                .catch(err => {
-                    console.error('Error scanner:', err);
+                .catch(async err => {
+                    console.warn('Error iniciando scanner con cámara seleccionada:', err);
+
+                    // Fallback a facingMode genérico si falló con ID específico
+                    if (camaraActualId) {
+                        camaraActualId = null;
+                        try {
+                            await html5QrCode.start({ facingMode: currentFacingMode }, { fps: 12 }, onScanSuccess, onScanError);
+                            const overlay = document.getElementById('scannerOverlay');
+                            if (overlay) overlay.style.display = 'none';
+                            const controls = document.getElementById('scannerControls');
+                            if (controls) controls.classList.remove('d-none');
+
+                            const videoEl = document.querySelector('#qr-reader video');
+                            if (videoEl) {
+                                videoEl.setAttribute('playsinline', 'true');
+                                videoEl.setAttribute('webkit-playsinline', 'true');
+                                videoEl.muted = true;
+                                if (videoEl.paused) {
+                                    videoEl.play().catch(() => {});
+                                }
+                            }
+
+                            detectarCamaras();
+                            return;
+                        } catch (e2) {
+                            console.error('Error fallback scanner:', e2);
+                        }
+                    }
+
                     if (btn) {
                         btn.disabled = false;
                         btn.innerHTML = originalText;
@@ -1281,7 +1530,7 @@
                     if (errStr.includes('is already scanning') || errStr.includes('already paused')) {
                         const overlay = document.getElementById('scannerOverlay');
                         if (overlay) overlay.style.display = 'none';
-                    } else {
+                    } else if (!silent) {
                         mostrarEstado('Error al acceder a la cámara. Verifique los permisos del navegador.', 'danger');
                     }
                 });
@@ -2387,7 +2636,7 @@
         })}
         function mostrarEstado(m,t){ const s=document.getElementById('scannerStatus');s.className=`scanner-status alert alert-${t}`;s.textContent=m;s.classList.remove('d-none');setTimeout(()=>s.classList.add('d-none'),3000)}
         function mostrarToast(m,t,ms){const d=document.createElement('div');d.className=`alert alert-${t} toast-msg`;d.textContent=m;d.onclick=()=>d.remove();document.body.appendChild(d);setTimeout(()=>d.remove(),ms||3000)}
-        async function logout(){ await fetch('/api/logout',{method:'POST'}); window.location.href='/login.html';}
+        async function logout(){ liberarWakeLock(); await fetch('/api/logout',{method:'POST'}); window.location.href='/login.html';}
 
         // ===== ESTADO DE CONEXIÓN =====
         // El registro depende del backend: si no hay red conviene saberlo antes de teclear.
@@ -2412,20 +2661,18 @@
         });
         
         // ===== EVENTOS DEL SCANNER =====
-        // Estrategia: Detener completamente el scanner al abrir el modal y reiniciarlo al cerrar.
-        // Esto es más seguro que pausar/reanudar para evitar problemas de "pantalla negra" en móviles.
+        // Pausar escáner al abrir el modal para no consumir recursos ni leer de fondo,
+        // y reanudarlo instantáneamente al cerrar sin reiniciar la cámara ni provocar demoras.
         
         document.getElementById('registroModal').addEventListener('show.bs.modal', () => {
-            if (html5QrCode) {
-                // Intentamos detener. Si falla (p.ej. ya estaba detenido), no pasa nada.
-                html5QrCode.stop().then(() => {
-                    console.log('Scanner detenido correctamente');
-                    // Mostrar overlay para que se vea "bonito" mientras está detenido (opcional)
-                    document.getElementById('scannerOverlay').style.display = 'flex';
-                    // Pero cambiamos el texto o botón si queremos
-                }).catch(err => {
-                    console.log('El scanner ya estaba detenido o error:', err);
-                });
+            if (html5QrCode && typeof html5QrCode.getState === 'function') {
+                try {
+                    if (html5QrCode.getState() === Html5QrcodeScannerState.SCANNING) {
+                        html5QrCode.pause(true);
+                    }
+                } catch (e) {
+                    console.log('Error al pausar scanner en modal:', e);
+                }
             }
         });
 

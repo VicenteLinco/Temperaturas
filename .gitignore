@@ -18,6 +18,7 @@ Archive/
 Limpieza_*/
 .claude/
 .codegraph/
+.atl/
 
 # Accesos Directos de Windows (Solo locales)
 *.lnk
