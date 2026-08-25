@@ -1241,9 +1241,13 @@
             // Regla de diseño: visor cuadrado y área de escaneo COMPLETA. Sin qrbox,
             // el decodificador analiza todo el cuadro de video (antes se recortaba
             // al 72% central y un QR cerca del borde no se leía).
+            // Sin "aspectRatio": html5-qrcode lo envía como restricción real de la
+            // cámara (getUserMedia/applyConstraints), y en iOS Safari forzar un
+            // aspectRatio no nativo deja el track de video congelado en negro
+            // (el permiso se concede pero no llega imagen). El recorte cuadrado ya
+            // lo resuelve el CSS (#qr-reader video { object-fit: cover }).
             const config = {
-                fps: 15,
-                aspectRatio: 1.0
+                fps: 15
             };
 
             html5QrCode.start({ facingMode: currentFacingMode }, config, onScanSuccess, onScanError)
