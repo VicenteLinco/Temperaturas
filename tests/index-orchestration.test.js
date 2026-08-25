@@ -57,7 +57,7 @@ const functions = [
     'cargarTodasLasAreas', 'leerLecturas', 'formatearFechaHoy', 'totalesRonda',
     'recopilarIncidenciasRonda', 'fechaOperativaActual', 'claveCierreRonda',
     'verificarCierreRonda', 'abrirCierreRonda', 'renderCierreRonda',
-    'textoResumenRonda', 'guardarRegistro', 'actualizarUIHumedad',
+    'guardarRegistro', 'actualizarUIHumedad',
     'seleccionarIncidenciaHumedad'
 ].map(name => extractFunction(inlineSource, name)).join('\n');
 const sharedFunctions = extractFunction(lecturasSource, 'sanearDecimal');

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Diagnóstico de Cámara y Escáner QR</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f5f5f7;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #1d1d1f;
+            padding-bottom: 40px;
+        }
+        .card-diag {
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+            border: 1px solid #e2e2e5;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+        #qr-reader-diag {
+            width: 100%;
+            max-width: 320px;
+            margin: 0 auto;
+            border-radius: 14px;
+            border: 2px solid #0071e3 !important;
+            overflow: hidden;
+            background: #000;
+        }
+        #qr-reader-diag video {
+            width: 100% !important;
+            height: auto !important;
+            display: block !important;
+        }
+        .check-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f2;
+        }
+        .check-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4" style="max-width: 500px;">
+        <div class="text-center mb-4">
+            <h4 class="fw-bold mb-1"><i class="bi bi-camera-video text-primary me-2"></i>Diagnóstico de Escáner</h4>
+            <p class="text-muted small">Verificación de compatibilidad y renderizado de video para iPhone y Android</p>
+            <a href="/index.html" class="btn btn-outline-secondary btn-sm rounded-pill"><i class="bi bi-arrow-left me-1"></i> Volver a la App</a>
+        </div>
+
+        <div class="card-diag">
+            <h6 class="fw-bold mb-3"><i class="bi bi-shield-check me-2"></i>Capacidades del Navegador</h6>
+            <div class="check-item">
+                <span>Protocolo Seguro (HTTPS)</span>
+                <span id="chkHttps" class="badge bg-secondary">Comprobando...</span>
+            </div>
+            <div class="check-item">
+                <span>Acceso a Cámara (getUserMedia)</span>
+                <span id="chkGUM" class="badge bg-secondary">Comprobando...</span>
+            </div>
+            <div class="check-item">
+                <span>BarcodeDetector Nativo (Hardware)</span>
+                <span id="chkBarcode" class="badge bg-secondary">Comprobando...</span>
+            </div>
+            <div class="check-item">
+                <span>Screen Wake Lock (Anti-apagado)</span>
+                <span id="chkWakeLock" class="badge bg-secondary">Comprobando...</span>
+            </div>
+            <div class="check-item">
+                <span>Motor de Renderizado</span>
+                <span id="chkEngine" class="badge bg-secondary">Comprobando...</span>
+            </div>
+        </div>
+
+        <div class="card-diag text-center">
+            <h6 class="fw-bold mb-3"><i class="bi bi-qr-code-scan me-2"></i>Prueba de Visor de Cámara</h6>
+            <div id="qr-reader-diag"></div>
+            <div id="diagStatus" class="alert alert-info mt-3 py-2 small">Cámara en espera...</div>
+            <div class="d-flex gap-2 justify-content-center mt-3">
+                <button class="btn btn-primary btn-sm rounded-pill px-3" onclick="iniciarDiagnostico()">
+                    <i class="bi bi-play-circle me-1"></i> Probar Cámara
+                </button>
+                <button class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="detenerDiagnostico()">
+                    <i class="bi bi-stop-circle me-1"></i> Detener
+                </button>
+            </div>
+        </div>
+
+        <div class="card-diag">
+            <h6 class="fw-bold mb-3"><i class="bi bi-journal-text me-2"></i>Resultados de Lectura</h6>
+            <div id="logResultados" class="small text-muted" style="min-height: 50px;">
+                Apunte a un código QR para ver el resultado en tiempo real.
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script>
+        let html5QrCodeDiag = null;
+
+        // Comprobaciones iniciales
+        document.addEventListener('DOMContentLoaded', () => {
+            // HTTPS
+            const isHttps = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+            const elHttps = document.getElementById('chkHttps');
+            elHttps.className = isHttps ? 'badge bg-success' : 'badge bg-danger';
+            elHttps.textContent = isHttps ? 'Correcto (HTTPS)' : 'Inseguro (HTTP)';
+
+            // getUserMedia
+            const hasGUM = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+            const elGUM = document.getElementById('chkGUM');
+            elGUM.className = hasGUM ? 'badge bg-success' : 'badge bg-danger';
+            elGUM.textContent = hasGUM ? 'Disponible' : 'No disponible';
+
+            // BarcodeDetector
+            const hasBarcode = 'BarcodeDetector' in window;
+            const elBarcode = document.getElementById('chkBarcode');
+            elBarcode.className = hasBarcode ? 'badge bg-success' : 'badge bg-warning text-dark';
+            elBarcode.textContent = hasBarcode ? 'Nativo (Vision/Play Services)' : 'Software (ZXing JS)';
+
+            // WakeLock
+            const hasWakeLock = 'wakeLock' in navigator;
+            const elWake = document.getElementById('chkWakeLock');
+            elWake.className = hasWakeLock ? 'badge bg-success' : 'badge bg-warning text-dark';
+            elWake.textContent = hasWakeLock ? 'Soportado' : 'No soportado';
+
+            // Engine
+            const ua = navigator.userAgent;
+            let engine = 'Estándar';
+            if (/iPhone|iPad|iPod/.test(ua)) engine = 'Apple iOS (WebKit)';
+            else if (/Android/.test(ua)) engine = 'Android (Chromium)';
+            document.getElementById('chkEngine').className = 'badge bg-info text-dark';
+            document.getElementById('chkEngine').textContent = engine;
+        });
+
+        async function iniciarDiagnostico() {
+            const status = document.getElementById('diagStatus');
+            status.className = 'alert alert-info mt-3 py-2 small';
+            status.textContent = 'Iniciando cámara...';
+
+            if (!html5QrCodeDiag) {
+                html5QrCodeDiag = new Html5Qrcode("qr-reader-diag", {
+                    formatsToSupport: [ 0 ],
+                    verbose: false
+                });
+            }
+
+            const scanConfig = {
+                fps: 10,
+                qrbox: { width: 200, height: 200 }
+            };
+
+            try {
+                await html5QrCodeDiag.start(
+                    { facingMode: "environment" },
+                    scanConfig,
+                    (decodedText) => {
+                        const log = document.getElementById('logResultados');
+                        log.innerHTML = `<div class="p-2 bg-success text-white rounded mb-2">
+                            <strong><i class="bi bi-check-circle-fill me-1"></i> QR Detectado:</strong> <code>${decodedText}</code>
+                        </div>` + log.innerHTML;
+                        status.className = 'alert alert-success mt-3 py-2 small';
+                        status.textContent = '¡Video y escaneo funcionando al 100%!';
+                    },
+                    (err) => {}
+                );
+
+                const videoEl = document.querySelector('#qr-reader-diag video');
+                if (videoEl) {
+                    videoEl.setAttribute('playsinline', 'true');
+                    videoEl.setAttribute('webkit-playsinline', 'true');
+                    videoEl.muted = true;
+                    videoEl.play().catch(() => {});
+                }
+
+                status.className = 'alert alert-success mt-3 py-2 small';
+                status.textContent = 'Cámara activa y transmitiendo video sin pantalla negra.';
+            } catch (e) {
+                status.className = 'alert alert-danger mt-3 py-2 small';
+                status.textContent = 'Error al activar cámara: ' + e;
+            }
+        }
+
+        async function detenerDiagnostico() {
+            if (html5QrCodeDiag) {
+                try {
+                    await html5QrCodeDiag.stop();
+                    document.getElementById('diagStatus').className = 'alert alert-secondary mt-3 py-2 small';
+                    document.getElementById('diagStatus').textContent = 'Cámara detenida.';
+                } catch (e) {}
+            }
+        }
+    </script>
+</body>
+</html>
