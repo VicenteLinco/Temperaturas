@@ -77,18 +77,25 @@
             max-width: 340px;
             aspect-ratio: 1 / 1;
             margin: 0 auto;
-            border-radius: 18px;
-            overflow: hidden;
             position: relative;
             background-color: var(--scanner-bg);
-            box-shadow: var(--shadow-card);
         }
         /* Envoltura del visor: bloque centrado que marca el ancho exacto para que
-           el overlay de reposo cubra EXACTAMENTE el video (#qr-reader es 100%). */
+           el overlay de reposo cubra EXACTAMENTE el video (#qr-reader es 100%).
+           El radio y el recorte viven AQUÍ, un nivel por encima del <video>: en
+           Safari/iOS, un <video> cuyo padre directo combina border-radius +
+           overflow:hidden puede decodificar el frame (el escaneo sigue
+           funcionando) pero queda sin pintar en pantalla (pantalla negra). Es un
+           bug de compositing de WebKit documentado en varios issues de
+           html5-qrcode (iOS 11 a iOS 17). Subir el recorte a este wrapper evita
+           que el <video> mismo tenga ese padre problemático. */
         .scanner-wrap {
             position: relative;
             max-width: 340px;
             margin: 0 auto;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: var(--shadow-card);
         }
         /* Overlay de reposo: tarjeta limpia con icono en pastilla blanda,
            título y una sola acción. Nada de decoración dentro del video. */
@@ -151,6 +158,10 @@
             height: 100% !important;
             object-fit: cover;
             display: block;
+            /* Fuerza su propia capa de composición en Safari: mitiga el mismo
+               bug de pintado (ver comentario en .scanner-wrap). */
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
         }
         .scanner-status {
             margin-top: 15px;
@@ -672,8 +683,6 @@
             }
             .scanner-wrap {
                 max-width: 240px;
-            }
-            #qr-reader {
                 border-radius: 14px;
             }
             .termometro-card {
@@ -1173,7 +1182,11 @@
                 const camaras = await Html5Qrcode.getCameras();
                 camarasDisponibles = Array.isArray(camaras) ? camaras.length : 1;
             } catch (e) {
-                camarasDisponibles = 1;
+                // getCameras()/enumerateDevices() es poco confiable en iOS Safari:
+                // ante un fallo de detección es peor esconder el botón (deja al
+                // operador sin forma de cambiar de cámara) que mostrarlo de más.
+                console.error('No se pudo detectar cámaras:', e);
+                camarasDisponibles = 2;
             }
             const btnSwitch = document.getElementById('btnSwitchCam');
             if (btnSwitch) btnSwitch.classList.toggle('d-none', camarasDisponibles < 2);
