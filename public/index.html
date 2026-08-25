@@ -75,30 +75,21 @@
         #qr-reader {
             width: 100%;
             max-width: 340px;
-            aspect-ratio: 1 / 1;
             margin: 0 auto;
+            border-radius: 16px;
+            border: 2px solid var(--apple-border) !important;
+            background-color: #000000;
+            overflow: hidden;
+            box-shadow: var(--shadow-card);
             position: relative;
-            background-color: var(--scanner-bg);
         }
-        /* Envoltura del visor: bloque centrado que marca el ancho exacto para que
-           el overlay de reposo cubra EXACTAMENTE el video (#qr-reader es 100%).
-           El radio y el recorte viven AQUÍ, un nivel por encima del <video>: en
-           Safari/iOS, un <video> cuyo padre directo combina border-radius +
-           overflow:hidden puede decodificar el frame (el escaneo sigue
-           funcionando) pero queda sin pintar en pantalla (pantalla negra). Es un
-           bug de compositing de WebKit documentado en varios issues de
-           html5-qrcode (iOS 11 a iOS 17). Subir el recorte a este wrapper evita
-           que el <video> mismo tenga ese padre problemático. */
         .scanner-wrap {
             position: relative;
             max-width: 340px;
             margin: 0 auto;
-            border-radius: 18px;
-            overflow: hidden;
-            box-shadow: var(--shadow-card);
         }
         /* Overlay de reposo: tarjeta limpia con icono en pastilla blanda,
-           título y una sola acción. Nada de decoración dentro del video. */
+           título y una sola acción. */
         .scanner-overlay {
             position: absolute;
             top: 0;
@@ -112,7 +103,7 @@
             justify-content: center;
             padding: 20px;
             background-color: rgba(255, 255, 255, 0.96);
-            border-radius: inherit;
+            border-radius: 16px;
         }
         .scanner-overlay-icono {
             display: flex;
@@ -148,20 +139,23 @@
             padding-right: 1.75rem;
             box-shadow: 0 6px 16px rgba(29, 29, 31, 0.18);
         }
-        /* html5-qrcode inyecta su propia UI sobre el visor: un icono "info" azul,
-           esquinas blancas cuadradas desalineadas y sombreado duro. La desactivamos:
-           el visor queda limpio, solo video a pantalla completa (regla de diseño). */
-        #qr-reader img { display: none !important; }
-        #qr-shaded-region { display: none !important; }
         #qr-reader video {
             width: 100% !important;
-            height: 100% !important;
-            object-fit: cover;
-            display: block;
-            /* Fuerza su propia capa de composición en Safari: mitiga el mismo
-               bug de pintado (ver comentario en .scanner-wrap). */
-            transform: translateZ(0);
-            -webkit-transform: translateZ(0);
+            height: auto !important;
+            display: block !important;
+            border-radius: 14px;
+        }
+        #qr-reader__scan_region {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 240px;
+        }
+        #qr-reader__dashboard_section {
+            display: none !important;
+        }
+        #qr-reader img {
+            display: none !important;
         }
         .scanner-status {
             margin-top: 15px;
@@ -1179,75 +1173,28 @@
         // cámara" si el dispositivo realmente tiene más de una, para no sumar un botón
         // que en el caso típico de terreno (una sola trasera) no hace nada.
         let camarasDisponibles = null;
-        let listaCamaras = [];
-        let camaraActualId = null;
-
-        async function obtenerCamaras() {
-            try {
-                const camaras = await Html5Qrcode.getCameras();
-                if (Array.isArray(camaras) && camaras.length > 0) {
-                    listaCamaras = camaras;
-                    camarasDisponibles = camaras.length;
-                    return camaras;
-                }
-            } catch (e) {
-                console.warn('No se pudo detectar lista de cámaras:', e);
-            }
-            camarasDisponibles = 1;
-            return [];
-        }
-
-        function elegirMejorCamara(camaras, facing) {
-            if (!camaras || camaras.length === 0) return null;
-            if (camaras.length === 1) return camaras[0].id;
-
-            if (facing === "environment") {
-                // Filtrar cámaras traseras
-                const traseras = camaras.filter(c => {
-                    const l = (c.label || '').toLowerCase();
-                    return l.includes('back') || l.includes('trasera') || l.includes('rear') || l.includes('environment');
-                });
-                const lista = traseras.length > 0 ? traseras : camaras;
-
-                // En iPhones con múltiples cámaras (ej: 11/12/13/14/15/16 Pro), WebKit puede seleccionar
-                // por defecto el lente "Ultra Wide" (0.5x), el cual tiene enfoque fijo/lejano y NO puede
-                // enfocar códigos QR de cerca (se ven borrosos y no leen).
-                // Priorizamos el lente estándar / Wide principal:
-                const principal = lista.find(c => {
-                    const l = (c.label || '').toLowerCase();
-                    return !l.includes('ultra') && !l.includes('0.5') && !l.includes('telephoto') && !l.includes('zoom') && !l.includes('depth');
-                });
-                return principal ? principal.id : lista[0].id;
-            } else {
-                // Cámara frontal
-                const frontales = camaras.filter(c => {
-                    const l = (c.label || '').toLowerCase();
-                    return l.includes('front') || l.includes('frontal') || l.includes('user') || l.includes('selfie');
-                });
-                return frontales.length > 0 ? frontales[0].id : camaras[0].id;
-            }
-        }
 
         async function detectarCamaras() {
-            await obtenerCamaras();
+            let cant = 1;
+            try {
+                const camaras = await Html5Qrcode.getCameras();
+                if (Array.isArray(camaras)) {
+                    cant = camaras.length;
+                }
+            } catch (e) {
+                cant = 2;
+            }
+            camarasDisponibles = cant;
             const btnSwitch = document.getElementById('btnSwitchCam');
             if (btnSwitch) {
-                btnSwitch.classList.toggle('d-none', listaCamaras.length <= 1);
+                btnSwitch.classList.toggle('d-none', cant < 2);
             }
-            return listaCamaras.length;
+            return cant;
         }
 
         async function cambiarCamaraScanner() {
             if (!html5QrCode) return;
-
-            if (listaCamaras.length > 1) {
-                const currentIndex = listaCamaras.findIndex(c => c.id === camaraActualId);
-                const nextIndex = (currentIndex + 1) % listaCamaras.length;
-                camaraActualId = listaCamaras[nextIndex].id;
-            } else {
-                currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
-                camaraActualId = null;
-            }
+            currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
 
             try {
                 if (typeof html5QrCode.getState === 'function' && html5QrCode.getState() === Html5QrcodeScannerState.SCANNING) {
@@ -1450,25 +1397,17 @@
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Iniciando...';
             }
 
-            // Detectar cámaras si aún no se han listado
-            if (listaCamaras.length === 0) {
-                await obtenerCamaras();
-            }
-            if (!camaraActualId && listaCamaras.length > 0) {
-                camaraActualId = elegirMejorCamara(listaCamaras, currentFacingMode);
-            }
+            const cameraConfig = { facingMode: currentFacingMode };
 
-            const cameraConfig = camaraActualId ? camaraActualId : { facingMode: currentFacingMode };
-
-            // Configuración del escáner:
-            // 1) fps optimizado (12 fps) para evitar saturación de CPU en decodificación JS.
-            // 2) videoConstraints con resolución HD (ideal 1280x720) para nitidez óptima sin sobrecargar el canvas.
             const scanConfig = {
-                fps: 12,
-                videoConstraints: {
-                    facingMode: { ideal: currentFacingMode },
-                    width: { min: 640, ideal: 1280, max: 1920 },
-                    height: { min: 480, ideal: 720, max: 1080 }
+                fps: 10,
+                qrbox: function(viewfinderWidth, viewfinderHeight) {
+                    const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+                    const qrboxSize = Math.max(160, Math.floor(minEdge * 0.75));
+                    return {
+                        width: qrboxSize,
+                        height: qrboxSize
+                    };
                 }
             };
 
@@ -1479,7 +1418,6 @@
                     const controls = document.getElementById('scannerControls');
                     if (controls) controls.classList.remove('d-none');
 
-                    // Asegurar reproducción fluida e inline en iOS Safari
                     const videoEl = document.querySelector('#qr-reader video');
                     if (videoEl) {
                         videoEl.setAttribute('playsinline', 'true');
@@ -1492,36 +1430,8 @@
 
                     detectarCamaras();
                 })
-                .catch(async err => {
-                    console.warn('Error iniciando scanner con cámara seleccionada:', err);
-
-                    // Fallback a facingMode genérico si falló con ID específico
-                    if (camaraActualId) {
-                        camaraActualId = null;
-                        try {
-                            await html5QrCode.start({ facingMode: currentFacingMode }, { fps: 12 }, onScanSuccess, onScanError);
-                            const overlay = document.getElementById('scannerOverlay');
-                            if (overlay) overlay.style.display = 'none';
-                            const controls = document.getElementById('scannerControls');
-                            if (controls) controls.classList.remove('d-none');
-
-                            const videoEl = document.querySelector('#qr-reader video');
-                            if (videoEl) {
-                                videoEl.setAttribute('playsinline', 'true');
-                                videoEl.setAttribute('webkit-playsinline', 'true');
-                                videoEl.muted = true;
-                                if (videoEl.paused) {
-                                    videoEl.play().catch(() => {});
-                                }
-                            }
-
-                            detectarCamaras();
-                            return;
-                        } catch (e2) {
-                            console.error('Error fallback scanner:', e2);
-                        }
-                    }
-
+                .catch(err => {
+                    console.error('Error scanner:', err);
                     if (btn) {
                         btn.disabled = false;
                         btn.innerHTML = originalText;
