@@ -101,9 +101,18 @@ pub async fn actualizar_usuario(
 
     let mut query = String::from("UPDATE usuarios SET updated_at = CURRENT_TIMESTAMP");
     let mut i = 1;
-    
+
+    // An empty/whitespace password means "no change": keep the existing hash
+    // instead of storing a hash of the empty string.
+    let nueva_password = payload
+        .password
+        .as_deref()
+        .map(str::trim)
+        .filter(|p| !p.is_empty())
+        .map(str::to_string);
+
     if payload.username.is_some() { i += 1; query.push_str(&format!(", username = ${}", i)); }
-    if payload.password.is_some() { i += 1; query.push_str(&format!(", password_hash = ${}", i)); }
+    if nueva_password.is_some() { i += 1; query.push_str(&format!(", password_hash = ${}", i)); }
     if payload.rol.is_some() { i += 1; query.push_str(&format!(", rol = ${}", i)); }
     if payload.activo.is_some() { i += 1; query.push_str(&format!(", activo = ${}", i)); }
 
@@ -112,7 +121,7 @@ pub async fn actualizar_usuario(
     let mut q = sqlx::query(&query).bind(id as i32);
     
     if let Some(username) = &payload.username { q = q.bind(username); }
-    if let Some(password) = &payload.password {
+    if let Some(password) = &nueva_password {
         let hash = hash_password(password).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
         q = q.bind(hash);
     }
