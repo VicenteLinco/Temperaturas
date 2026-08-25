@@ -66,6 +66,11 @@
             background-color: #ffffff;
             text-align: center;
         }
+        /* REGLA DE DISEÑO DEL ESCÁNER QR:
+           1) Visor SIEMPRE cuadrado (aspect-ratio 1/1), con TODO el espacio
+              disponible para escanear: sin marcos, esquinas ni diseños dentro.
+           2) Toda entrada de texto del flujo operador usa el teclado nativo
+              del sistema (type/inputmode correctos), en iPhone y Android. */
         #qr-reader {
             width: 100%;
             max-width: 340px;
@@ -77,23 +82,67 @@
             background-color: var(--scanner-bg);
             box-shadow: var(--shadow-card);
         }
+        /* Envoltura del visor: bloque centrado que marca el ancho exacto para que
+           el overlay de reposo cubra EXACTAMENTE el video (#qr-reader es 100%). */
+        .scanner-wrap {
+            position: relative;
+            max-width: 340px;
+            margin: 0 auto;
+        }
+        /* Overlay de reposo: tarjeta limpia con icono en pastilla blanda,
+           título y una sola acción. Nada de decoración dentro del video. */
         .scanner-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(255, 255, 255, 0.95);
+            z-index: 10;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 10;
             padding: 20px;
+            background-color: rgba(255, 255, 255, 0.96);
+            border-radius: inherit;
+        }
+        .scanner-overlay-icono {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            height: 60px;
+            margin-bottom: 12px;
+            border-radius: 50%;
+            background: var(--brand-soft);
+            color: var(--brand);
+            font-size: 1.7rem;
+        }
+        .scanner-overlay-titulo {
+            margin: 0 0 2px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: -0.01em;
+            color: var(--ink);
+        }
+        .scanner-overlay-texto {
+            margin: 0 0 14px;
+            font-size: 0.82rem;
+            line-height: 1.4;
+            color: #6e6e73;
+            max-width: 220px;
+        }
+        .scanner-overlay .btn {
+            min-height: 46px;
+            font-weight: 600;
+            border-radius: 999px;
+            padding-left: 1.75rem;
+            padding-right: 1.75rem;
+            box-shadow: 0 6px 16px rgba(29, 29, 31, 0.18);
         }
         /* html5-qrcode inyecta su propia UI sobre el visor: un icono "info" azul,
-           esquinas blancas cuadradas desalineadas y sombreado duro. La desactivamos
-           y dibujamos un marco guía propio, redondeado y coherente con el sistema. */
+           esquinas blancas cuadradas desalineadas y sombreado duro. La desactivamos:
+           el visor queda limpio, solo video a pantalla completa (regla de diseño). */
         #qr-reader img { display: none !important; }
         #qr-shaded-region { display: none !important; }
         #qr-reader video {
@@ -102,46 +151,65 @@
             object-fit: cover;
             display: block;
         }
-        /* Marco guía propio: cuadrado redondeado centrado sobre el video.
-           Vive como ::after de #qr-reader para que el oscurecido exterior
-           (sombra de 2000px) quede recortado por el overflow:hidden del visor
-           y no se derrame sobre la página. */
-        #qr-reader::after {
-            content: "";
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: min(72%, 260px);
-            aspect-ratio: 1 / 1;
-            border-radius: 18px;
-            box-shadow:
-                inset 0 0 0 2.5px rgba(255, 255, 255, 0.9),
-                0 0 0 2000px rgba(0, 0, 0, 0.35);
-            pointer-events: none;
-            z-index: 3;
-        }
-        .scanner-overlay {
-            border-radius: inherit;
-            border: none;
-        }
-        .scanner-overlay i {
-            color: var(--brand);
-        }
-        .scanner-overlay .btn {
-            min-height: 50px;
-            font-weight: 600;
-            border-radius: 12px;
-            padding-left: 1.5rem;
-            padding-right: 1.5rem;
-            box-shadow: 0 6px 16px rgba(29, 29, 31, 0.25);
-        }
         .scanner-status {
             margin-top: 15px;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 1em;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 0.92rem;
         }
+
+        /* Búsqueda manual por ID: pastilla propia (sin input-group de Bootstrap)
+           para controlar altura táctil, foco y radio. font-size 16px evita el
+           zoom automático de iOS al abrir el teclado nativo. */
+        .manual-id-box {
+            display: flex;
+            align-items: stretch;
+            max-width: 340px;
+            margin: 14px auto 0;
+            background: #ffffff;
+            border: 1px solid rgba(29, 29, 31, 0.15);
+            border-radius: 999px;
+            overflow: hidden;
+            box-shadow: var(--shadow-card);
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .manual-id-box:focus-within {
+            border-color: var(--brand);
+            box-shadow: 0 0 0 3px var(--brand-soft);
+        }
+        .manual-id-box input {
+            flex: 1 1 auto;
+            min-width: 0;
+            border: 0;
+            outline: none;
+            background: transparent;
+            padding: 11px 18px;
+            font-size: 16px;
+            color: var(--ink);
+        }
+        .manual-id-box input::placeholder { color: #8a8a8f; }
+        /* Oculta las flechas de spinner que type=number dibuja en desktop */
+        .manual-id-box input::-webkit-outer-spin-button,
+        .manual-id-box input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .manual-id-box input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+        .manual-id-btn {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            border: 0;
+            border-radius: 999px;
+            margin: 4px;
+            background: var(--brand);
+            color: #ffffff;
+            transition: background-color 0.15s ease;
+        }
+        .manual-id-btn:hover { background: var(--brand-dark); }
+        .manual-id-btn:active { transform: scale(0.96); }
 
         /* PESTAÑAS */
         .tabs-container {
@@ -608,8 +676,10 @@
             .scanner-section {
                 padding: 10px 8px;
             }
-            #qr-reader {
+            .scanner-wrap {
                 max-width: 240px;
+            }
+            #qr-reader {
                 border-radius: 14px;
             }
             .termometro-card {
@@ -689,13 +759,13 @@
     <div class="main-container">
         <!-- Scanner Section -->
         <div class="scanner-section">
-            <div style="position: relative; max-width: 340px; margin: 0 auto;">
+            <div class="scanner-wrap">
                 <div id="qr-reader"></div>
                 <div id="scannerOverlay" class="scanner-overlay">
-                    <i class="bi bi-camera-video mb-2" style="font-size: 2.2rem; color: var(--apple-blue);"></i>
-                    <h6 class="mb-1 fw-bold">Escáner de Código QR</h6>
-                    <p class="text-muted small mb-2" style="font-size: 0.82rem;">Apunte al QR del termómetro para registrar</p>
-                    <button class="btn btn-primary rounded-pill px-4 shadow-sm" style="min-height: 42px;" onclick="inicializarScanner()">
+                    <span class="scanner-overlay-icono"><i class="bi bi-qr-code-scan"></i></span>
+                    <h6 class="scanner-overlay-titulo">Escáner de Código QR</h6>
+                    <p class="scanner-overlay-texto">Apunte al QR del termómetro para registrar</p>
+                    <button class="btn btn-primary" onclick="inicializarScanner()">
                         <i class="bi bi-power me-1"></i> Activar Cámara
                     </button>
                 </div>
@@ -710,11 +780,9 @@
             <div id="scannerStatus" class="scanner-status d-none"></div>
 
             <!-- Entrada Manual por ID o Búsqueda Rápida -->
-            <div class="mt-2 container px-1" style="max-width: 340px;">
-                <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden border">
-                    <input type="number" inputmode="numeric" id="inputManualId" class="form-control border-0 bg-light" placeholder="Buscar o ingresar ID..." onkeypress="if(event.key==='Enter') buscarManualId()">
-                    <button class="btn btn-primary px-3" onclick="buscarManualId()" title="Buscar" aria-label="Buscar"><i class="bi bi-search"></i></button>
-                </div>
+            <div class="manual-id-box">
+                <input type="number" inputmode="numeric" id="inputManualId" placeholder="Buscar o ingresar ID..." onkeypress="if(event.key==='Enter') buscarManualId()">
+                <button class="manual-id-btn" onclick="buscarManualId()" title="Buscar" aria-label="Buscar"><i class="bi bi-search"></i></button>
             </div>
         </div>
 
@@ -1176,16 +1244,12 @@
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Iniciando...';
             }
 
-            // El recuadro se calcula sobre el ancho real del visor: en pantallas de 360px
-            // un cuadro fijo de 230px se salía del encuadre y el QR no entraba entero.
+            // Regla de diseño: visor cuadrado y área de escaneo COMPLETA. Sin qrbox,
+            // el decodificador analiza todo el cuadro de video (antes se recortaba
+            // al 72% central y un QR cerca del borde no se leía).
             const config = {
                 fps: 15,
-                aspectRatio: 1.0,
-                qrbox: (anchoVista, altoVista) => {
-                    const lado = Math.floor(Math.min(anchoVista, altoVista) * 0.72);
-                    const acotado = Math.max(150, Math.min(lado, 300));
-                    return { width: acotado, height: acotado };
-                }
+                aspectRatio: 1.0
             };
 
             html5QrCode.start({ facingMode: currentFacingMode }, config, onScanSuccess, onScanError)
@@ -2310,7 +2374,7 @@
             const limpiar=()=>{si.removeEventListener('click',fSi);no.removeEventListener('click',fNo)};
             si.addEventListener('click',fSi); no.addEventListener('click',fNo); mo.show();
         })}
-        function mostrarEstado(m,t){ const s=document.getElementById('scannerStatus');s.className=`alert alert-${t}`;s.textContent=m;s.classList.remove('d-none');setTimeout(()=>s.classList.add('d-none'),3000)}
+        function mostrarEstado(m,t){ const s=document.getElementById('scannerStatus');s.className=`scanner-status alert alert-${t}`;s.textContent=m;s.classList.remove('d-none');setTimeout(()=>s.classList.add('d-none'),3000)}
         function mostrarToast(m,t,ms){const d=document.createElement('div');d.className=`alert alert-${t} toast-msg`;d.textContent=m;d.onclick=()=>d.remove();document.body.appendChild(d);setTimeout(()=>d.remove(),ms||3000)}
         async function logout(){ await fetch('/api/logout',{method:'POST'}); window.location.href='/login.html';}
 
