@@ -110,7 +110,7 @@ for (const selector of ['.scanner-wrap', '#qr-reader', '#qr-reader__scan_region'
 
 console.log('✓ Invariantes CSS de renderizado móvil pasadas');
 
-console.log('--- 3. Pruebas de Configuración del Escáner y Keep-Alive ---');
+console.log('--- 3. Pruebas de Configuración Mínima del Escáner ---');
 
 // A) Diseño mínimo: el escáner NO debe usar qrbox. El visor ya es cuadrado y
 //    centrado por CSS, así que todo el frame es la zona de escaneo; agregar
@@ -154,9 +154,15 @@ assert.ok(!inlineSource.includes('facingMode: "user"') && !inlineSource.includes
 assert.ok(inlineSource.includes('solicitarWakeLock'), 'Debe existir función solicitarWakeLock');
 assert.ok(inlineSource.includes('liberarWakeLock'), 'Debe existir función liberarWakeLock');
 
-// D) Debe escuchar visibilitychange y focus para reanimación automática
-assert.ok(inlineSource.includes("addEventListener('visibilitychange'"), 'Debe escuchar visibilitychange');
-assert.ok(inlineSource.includes("addEventListener('focus'"), 'Debe escuchar focus');
+// D) CRÍTICO para Safari/iOS: la versión estable previa no tenía watchdog ni
+// reanimación automática de cámara (setInterval + visibilitychange/focus/pageshow
+// forzando stop()+start()). Ese watchdog multiplicaba los getUserMedia por falsos
+// positivos de "stream congelado" y coincide con cuando empezó a fallar. No debe
+// reaparecer: solo debe quedar el visibilitychange que renueva el WakeLock.
+assert.ok(!inlineSource.includes("addEventListener('focus'", ) && !inlineSource.includes("addEventListener('pageshow'"),
+    'no debe existir reanimación de cámara en focus/pageshow: fuente conocida de pantalla negra en Safari/iOS');
+assert.ok(!inlineSource.includes('verificarYReanimarScanner') && !inlineSource.includes('ultimoTiempoVideo'),
+    'no debe existir el watchdog periódico que reinicia la cámara sola');
 
 // E) Modal debe pausar (pause) y no destruir (stop) en show.bs.modal para reanudación instantánea
 const modalShowMatch = inlineSource.match(/document\.getElementById\('registroModal'\)\.addEventListener\('show\.bs\.modal',\s*\(\)\s*=>\s*\{([\s\S]*?)\}\);/);
@@ -164,14 +170,14 @@ assert.ok(modalShowMatch, 'Debe existir listener show.bs.modal');
 assert.ok(modalShowMatch[1].includes('html5QrCode.pause(true)'),
     'show.bs.modal debe pausar el escáner (pause) y no destruirlo (stop)');
 
-// F) Debe incluir videoConstraints con resolución de cámara (1280x720 ideal) para
-//    detección QR confiable, especialmente en iPhone donde la resolución por defecto
-//    puede ser insuficiente o el lente equivocado (Ultra Wide) no enfoca a corta distancia.
-assert.ok(inlineSource.includes('videoConstraints'), 'scanConfig debe incluir videoConstraints');
-assert.ok(/width:\s*\{\s*min:\s*640/.test(inlineSource), 'videoConstraints debe pedir ancho mínimo 640px');
-assert.ok(/ideal:\s*1280/.test(inlineSource), 'videoConstraints debe pedir ancho ideal 1280px (HD)');
-assert.ok(/height:\s*\{\s*min:\s*480/.test(inlineSource), 'videoConstraints debe pedir alto mínimo 480px');
-assert.ok(/ideal:\s*720/.test(inlineSource), 'videoConstraints debe pedir alto ideal 720px (HD)');
+// F) CRÍTICO para Safari/iOS: la última versión confirmada estable en producción
+// NUNCA forzó resolución de cámara (videoConstraints con width/height min-ideal-max).
+// Ese bloque se agregó como "optimización" y coincide exactamente con cuando
+// empezaron los reportes de pantalla negra: forzar una resolución exacta es una
+// restricción más que getUserMedia puede negociar mal en Safari/iOS.
+assert.ok(!inlineSource.includes('videoConstraints:'),
+    'scanConfig no debe forzar videoConstraints (resolución): dejar que el navegador ' +
+    'elija su propio modo de captura es más robusto en Safari/iOS');
 
-console.log('✓ Invariantes de ciclo de vida, WakeLock y keep-alive pasadas');
+console.log('✓ Invariantes de configuración mínima del escáner pasadas');
 console.log('\nTODOS LOS TESTS DE INTEGRIDAD DEL ESCÁNER PASARON EXITOSAMENTE.');

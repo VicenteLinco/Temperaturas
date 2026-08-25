@@ -1221,102 +1221,16 @@
             }
         }
 
-        function verificarYReanimarScanner() {
-            // Si nunca se inició (el operador aún no toca "Activar Cámara"), no hacer
-            // nada: arrancar la cámara sola aquí sería el mismo auto-inicio sin gesto
-            // que se evita en inicializarApp().
-            if (!html5QrCode) return;
-
-            const videoEl = document.querySelector('#qr-reader video');
-            let streamMuerto = false;
-
-            if (videoEl && videoEl.srcObject) {
-                const stream = videoEl.srcObject;
-                const tracks = stream.getVideoTracks ? stream.getVideoTracks() : [];
-                if (tracks.length === 0 || tracks.some(t => t.readyState === 'ended')) {
-                    streamMuerto = true;
-                }
-            } else if (!videoEl) {
-                streamMuerto = true;
-            }
-
-            if (streamMuerto) {
-                console.log('Stream de cámara desconectado por el sistema, reactivando...');
-                try {
-                    if (typeof html5QrCode.stop === 'function') {
-                        html5QrCode.stop().finally(() => {
-                            inicializarScanner(true);
-                        });
-                        return;
-                    }
-                } catch (e) {}
-                inicializarScanner(true);
-            } else {
-                reanudarScannerSiPausado();
-            }
-        }
-
-        // Recuperación instantánea cuando el operador regresa a la pestaña o desbloquea el teléfono
+        // La versión estable de antes de este fin de semana NO tenía watchdog ni
+        // reanimación automática de la cámara (setInterval, visibilitychange/focus/
+        // pageshow forzando stop()+start()) y funcionaba bien. Ese watchdog reiniciaba
+        // la cámara sola por falsos positivos de "stream congelado", multiplicando los
+        // getUserMedia y con ellos el riesgo de pantalla negra en Safari/iOS. Se quita:
+        // si el modal de registro pausa/reanuda el escáner (ver abajo, pause/resume
+        // sobre el MISMO stream) alcanza para el uso real, sin tocar getUserMedia.
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') {
-                solicitarWakeLock();
-                const algunModalAbierto = document.querySelectorAll('.modal.show').length > 0;
-                if (!algunModalAbierto) {
-                    verificarYReanimarScanner();
-                }
-            }
+            if (document.visibilityState === 'visible') solicitarWakeLock();
         });
-
-        window.addEventListener('focus', () => {
-            solicitarWakeLock();
-            const algunModalAbierto = document.querySelectorAll('.modal.show').length > 0;
-            if (!algunModalAbierto) {
-                verificarYReanimarScanner();
-            }
-        });
-
-        window.addEventListener('pageshow', () => {
-            solicitarWakeLock();
-            const algunModalAbierto = document.querySelectorAll('.modal.show').length > 0;
-            if (!algunModalAbierto) {
-                verificarYReanimarScanner();
-            }
-        });
-
-        // Watchdog periódico: verifica cada 7 segundos que el stream de video esté activo y no congelado
-        let ultimoTiempoVideo = -1;
-        let conteoStall = 0;
-
-        setInterval(() => {
-            if (document.visibilityState !== 'visible') return;
-            const algunModalAbierto = document.querySelectorAll('.modal.show').length > 0;
-            if (algunModalAbierto || escaneoEnProceso) return;
-
-            const overlay = document.getElementById('scannerOverlay');
-            if (overlay && overlay.style.display === 'none') {
-                const videoEl = document.querySelector('#qr-reader video');
-                if (!videoEl) {
-                    verificarYReanimarScanner();
-                    return;
-                }
-
-                if (videoEl.paused) {
-                    videoEl.play().catch(() => {});
-                }
-
-                if (videoEl.currentTime === ultimoTiempoVideo && videoEl.currentTime > 0) {
-                    conteoStall++;
-                    // Si el video se congeló durante 2 ciclos (14s), reanimar la cámara
-                    if (conteoStall >= 2) {
-                        conteoStall = 0;
-                        verificarYReanimarScanner();
-                    }
-                } else {
-                    ultimoTiempoVideo = videoEl.currentTime;
-                    conteoStall = 0;
-                }
-            }
-        }, 7000);
 
         async function inicializarScanner(silent = false) {
             solicitarWakeLock();
@@ -1358,26 +1272,14 @@
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Iniciando...';
             }
 
-            // Regla primaria: evitar problemas. Solo cámara trasera (facingMode fijo,
-            // sin deviceId ni selección de lente): menos ramas de cámara = menos
-            // formas de que Safari/iOS deje el video "vivo pero negro".
-            //
-            // Configuración del escáner:
-            // 1) fps optimizado (12 fps) para evitar saturación de CPU en decodificación JS.
-            // 2) videoConstraints con resolución HD (ideal 1280x720): nitidez óptima para
-            //    detección QR sin sobrecargar el canvas ni el decoder de iOS.
-            // 3) Sin 'qrbox': el visor ya es cuadrado y centrado por CSS (.scanner-wrap),
-            //    así que todo el frame visible es la zona de escaneo. Evita el overlay/
-            //    recorte adicional que html5-qrcode dibuja sobre el video (una capa más
-            //    de DOM que puede fallar en WebKit) y simplifica todo el sistema.
-            const scanConfig = {
-                fps: 12,
-                videoConstraints: {
-                    facingMode: { ideal: "environment" },
-                    width: { min: 640, ideal: 1280, max: 1920 },
-                    height: { min: 480, ideal: 720, max: 1080 }
-                }
-            };
+            // Regla primaria: evitar problemas. Configuración mínima, la misma forma
+            // que la última versión confirmada estable en producción: solo fps y
+            // cámara trasera fija, SIN forzar resolución (videoConstraints con
+            // width/height min-ideal-max). Forzar una resolución exacta es una
+            // restricción más que getUserMedia puede negociar mal en Safari/iOS;
+            // dejar que el navegador elija su propio modo de captura es más robusto.
+            // Sin 'qrbox': el visor ya es cuadrado y centrado por CSS (.scanner-wrap).
+            const scanConfig = { fps: 12 };
 
             html5QrCode.start({ facingMode: "environment" }, scanConfig, onScanSuccess, onScanError)
                 .then(() => {
