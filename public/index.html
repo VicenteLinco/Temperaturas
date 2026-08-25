@@ -12,13 +12,13 @@
     <link rel="stylesheet" href="lecturas.css">
     <style>
         :root {
-            --brand: #0f8a8f;
-            --brand-dark: #0b6b6f;
-            --brand-soft: #e2f3f2;
-            --ink: #10151c;
-            --slate: #10151c;
+            --brand: #1d1d1f;
+            --brand-dark: #000000;
+            --brand-soft: #ececec;
+            --ink: #1d1d1f;
+            --slate: #1d1d1f;
             --bg: #f5f5f7;
-            --scanner-bg: #10151c;
+            --scanner-bg: #1d1d1f;
             --radius: 14px;
             --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.04);
             --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.08);
@@ -90,6 +90,40 @@
             justify-content: center;
             z-index: 10;
             padding: 20px;
+        }
+        /* html5-qrcode inyecta su propia UI sobre el visor: un icono "info" azul,
+           esquinas blancas cuadradas desalineadas y sombreado duro. La desactivamos
+           y dibujamos un marco guía propio, redondeado y coherente con el sistema. */
+        #qr-reader img { display: none !important; }
+        #qr-shaded-region { display: none !important; }
+        #qr-reader video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover;
+            display: block;
+        }
+        /* Marco guía propio: cuadrado redondeado centrado sobre el video.
+           Vive como ::after de #qr-reader para que el oscurecido exterior
+           (sombra de 2000px) quede recortado por el overflow:hidden del visor
+           y no se derrame sobre la página. */
+        #qr-reader::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: min(72%, 260px);
+            aspect-ratio: 1 / 1;
+            border-radius: 18px;
+            box-shadow:
+                inset 0 0 0 2.5px rgba(255, 255, 255, 0.9),
+                0 0 0 2000px rgba(0, 0, 0, 0.35);
+            pointer-events: none;
+            z-index: 3;
+        }
+        .scanner-overlay {
+            border-radius: inherit;
+            border: none;
         }
         .scanner-overlay i {
             color: var(--brand);
@@ -214,7 +248,7 @@
 
         .progress-bar-custom {
             height: 6px;
-            background-color: rgba(15, 138, 143, 0.15);
+            background-color: rgba(29, 29, 31, 0.08);
             border-radius: 3px;
             overflow: hidden;
         }
@@ -293,7 +327,7 @@
             top: calc(56px + 48px);
             z-index: 90;
             background: var(--brand-soft);
-            border: 1px solid rgba(15, 138, 143, 0.18);
+            border: 1px solid rgba(29, 29, 31, 0.12);
             border-radius: var(--radius);
             padding: 12px 14px;
             box-shadow: var(--shadow-card);

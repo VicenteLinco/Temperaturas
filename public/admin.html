@@ -3810,7 +3810,7 @@
 
                 // 3. Temp Mínima (Cyan #3f7a80)
                 const pointBgMin = lecturas.map(l => (mostrarAlertas && l.temp_minima != null && l.temp_min_operativa != null && l.temp_minima < l.temp_min_operativa) ? '#9c3b3b' : '#3f7a80');
-                const pointBorderMin = lecturas.map(l => (mostrarAlertas && l.temp_minima != null && l.temp_min_operativa != null && l.temp_minima < l.temp_min_operativa) ? '#9c3b3b' : '#4b4b4d');
+                const pointBorderMin = lecturas.map(l => (mostrarAlertas && l.temp_minima != null && l.temp_min_operativa != null && l.temp_minima < l.temp_min_operativa) ? '#9c3b3b' : '#1c4230');
                 const pointStyleMin = lecturas.map(l => (mostrarAlertas && l.temp_minima != null && l.temp_min_operativa != null && l.temp_minima < l.temp_min_operativa) ? 'crossRot' : 'rect');
                 const pointRadiusMin = lecturas.map(l => (mostrarAlertas && l.temp_minima != null && l.temp_min_operativa != null && l.temp_minima < l.temp_min_operativa) ? 8 : (radiusBase || 4));
 
@@ -3843,9 +3843,12 @@
                     termMap.get(l.termometro_id).readings.push(l);
                 });
 
+                // Paleta de series: solo tonos del sistema (negro, teal de mínima,
+                // verde, ámbar, rojo y grises). Fuera quedan el violeta #5a5a80 y
+                // el resto de tintes que rompían la paleta monocromática.
                 const applePalette = [
-                    '#1d1d1f', '#3f7a80', '#2f6b4f', '#6e5a7a',
-                    '#5a5a80', '#8a6a2f', '#8a5a63', '#8a7a45'
+                    '#1d1d1f', '#3f7a80', '#2f6b4f', '#8a6a2f',
+                    '#9c3b3b', '#6e6e73', '#58421d', '#8a8a8f'
                 ];
 
                 let colorIdx = 0;
@@ -4024,9 +4027,9 @@
                                         return `➖ ${label}: ${val}°C`;
                                     }
 
-                                    let prefixIcon = '🔵';
-                                    if (label.includes('Máx')) prefixIcon = '🟠';
-                                    else if (label.includes('Mín')) prefixIcon = '🔷';
+                                    let prefixIcon = '●';
+                                    if (label.includes('Máx')) prefixIcon = '▲';
+                                    else if (label.includes('Mín')) prefixIcon = '◆';
 
                                     let esAlertaMetrica = false;
                                     if (item) {
@@ -4045,7 +4048,7 @@
                                         }
                                     }
 
-                                    const badge = esAlertaMetrica ? '🔴 ALERTA' : '✅ OK';
+                                    const badge = esAlertaMetrica ? '— ALERTA' : '— OK';
                                     return `${prefixIcon} ${label}: ${val} °C ${badge}`;
                                 },
                                 footer: () => ''
