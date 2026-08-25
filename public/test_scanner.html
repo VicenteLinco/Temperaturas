@@ -21,14 +21,21 @@
             padding: 20px;
             margin-bottom: 16px;
         }
-        #qr-reader-diag {
-            width: 100%;
+        /* Wrapper del visor: el <video> es hijo directo de #qr-reader-diag.
+           border-radius + overflow:hidden en ese padre provocan pantalla negra
+           en Safari/iOS (bug de compositing de WebKit). El marco visual vive
+           en .scanner-wrap-diag, un nivel por encima del video. */
+        .scanner-wrap-diag {
             max-width: 320px;
             margin: 0 auto;
             border-radius: 14px;
             border: 2px solid #0071e3 !important;
             overflow: hidden;
             background: #000;
+        }
+        #qr-reader-diag {
+            width: 100%;
+            position: relative;
         }
         #qr-reader-diag video {
             width: 100% !important;
@@ -81,7 +88,9 @@
 
         <div class="card-diag text-center">
             <h6 class="fw-bold mb-3"><i class="bi bi-qr-code-scan me-2"></i>Prueba de Visor de Cámara</h6>
-            <div id="qr-reader-diag"></div>
+            <div class="scanner-wrap-diag">
+                <div id="qr-reader-diag"></div>
+            </div>
             <div id="diagStatus" class="alert alert-info mt-3 py-2 small">Cámara en espera...</div>
             <div class="d-flex gap-2 justify-content-center mt-3">
                 <button class="btn btn-primary btn-sm rounded-pill px-3" onclick="iniciarDiagnostico()">
@@ -153,7 +162,12 @@
             }
 
             const scanConfig = {
-                fps: 10,
+                fps: 12,
+                videoConstraints: {
+                    facingMode: { ideal: "environment" },
+                    width: { min: 640, ideal: 1280, max: 1920 },
+                    height: { min: 480, ideal: 720, max: 1080 }
+                },
                 qrbox: { width: 200, height: 200 }
             };
 

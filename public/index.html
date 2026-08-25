@@ -72,8 +72,15 @@
            2) Toda entrada de datos del flujo operador usa el teclado ALFANUMÉRICO
               CLÁSICO del sistema (type="text", sin inputmode numérico): es el más
               nativo en iPhone y Android y tiene tecla "-" para negativos. */
-        #qr-reader {
-            width: 100%;
+        /* IMPORTANTE para WebKit/iOS: el <video> que crea html5-qrcode es un
+           hijo DIRECTO de #qr-reader. Si #qr-reader combina border-radius +
+           overflow:hidden, WebKit decodifica los frames (el escaneo sigue
+           funcionando) pero NO pinta el video → pantalla negra en Safari/iOS.
+           El marco visual (radio, borde, sombra, fondo negro) vive en
+           .scanner-wrap, un nivel POR ENCIMA del video, de modo que el padre
+           directo del <video> (#qr-reader) queda sin overflow ni border-radius. */
+        .scanner-wrap {
+            position: relative;
             max-width: 340px;
             margin: 0 auto;
             border-radius: 16px;
@@ -81,12 +88,10 @@
             background-color: #000000;
             overflow: hidden;
             box-shadow: var(--shadow-card);
-            position: relative;
         }
-        .scanner-wrap {
+        #qr-reader {
+            width: 100%;
             position: relative;
-            max-width: 340px;
-            margin: 0 auto;
         }
         /* Overlay de reposo: tarjeta limpia con icono en pastilla blanda,
            título y una sola acción. */
@@ -143,7 +148,6 @@
             width: 100% !important;
             height: auto !important;
             display: block !important;
-            border-radius: 14px;
         }
         #qr-reader__scan_region {
             display: flex;
@@ -1173,28 +1177,77 @@
         // cámara" si el dispositivo realmente tiene más de una, para no sumar un botón
         // que en el caso típico de terreno (una sola trasera) no hace nada.
         let camarasDisponibles = null;
+        let listaCamaras = [];
+        let camaraActualId = null;
 
-        async function detectarCamaras() {
-            let cant = 1;
+        async function obtenerCamaras() {
             try {
                 const camaras = await Html5Qrcode.getCameras();
-                if (Array.isArray(camaras)) {
-                    cant = camaras.length;
+                if (Array.isArray(camaras) && camaras.length > 0) {
+                    listaCamaras = camaras;
+                    camarasDisponibles = camaras.length;
+                    return camaras;
                 }
             } catch (e) {
-                cant = 2;
+                // getCameras()/enumerateDevices() es poco confiable en iOS Safari:
+                // ante un falló de detección, asumimos más de una para no ocultar
+                // el botón de cambio de cámara que el operador pudiera necesitar.
+                console.warn('No se pudo detectar lista de cámaras:', e);
             }
-            camarasDisponibles = cant;
+            camarasDisponibles = 1;
+            listaCamaras = [];
+            return [];
+        }
+
+        // En iPhones con múltiples cámaras (11/12/13/14/15/16 Pro), WebKit puede
+        // seleccionar por defecto el lente "Ultra Wide" (0.5x), el cual tiene enfoque
+        // fijo y NO puede leer códigos QR de cerca (se ven borrosos). Aquí priorizamos
+        // el lente Wide principal que sí enfoca a corta distancia.
+        function elegirMejorCamara(camaras, facing) {
+            if (!camaras || camaras.length === 0) return null;
+            if (camaras.length === 1) return camaras[0].id;
+
+            if (facing === "environment") {
+                const traseras = camaras.filter(c => {
+                    const l = (c.label || '').toLowerCase();
+                    return l.includes('back') || l.includes('trasera') || l.includes('rear') || l.includes('environment');
+                });
+                const lista = traseras.length > 0 ? traseras : camaras;
+                const principal = lista.find(c => {
+                    const l = (c.label || '').toLowerCase();
+                    return !l.includes('ultra') && !l.includes('0.5') &&
+                           !l.includes('telephoto') && !l.includes('zoom') && !l.includes('depth');
+                });
+                return principal ? principal.id : lista[0].id;
+            } else {
+                const frontales = camaras.filter(c => {
+                    const l = (c.label || '').toLowerCase();
+                    return l.includes('front') || l.includes('frontal') || l.includes('user') || l.includes('selfie');
+                });
+                return frontales.length > 0 ? frontales[0].id : camaras[0].id;
+            }
+        }
+
+        async function detectarCamaras() {
+            await obtenerCamaras();
             const btnSwitch = document.getElementById('btnSwitchCam');
             if (btnSwitch) {
-                btnSwitch.classList.toggle('d-none', cant < 2);
+                btnSwitch.classList.toggle('d-none', (listaCamaras.length || (camarasDisponibles || 1)) < 2);
             }
-            return cant;
+            return listaCamaras.length || (camarasDisponibles || 1);
         }
 
         async function cambiarCamaraScanner() {
             if (!html5QrCode) return;
-            currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+
+            if (listaCamaras.length > 1) {
+                const currentIndex = listaCamaras.findIndex(c => c.id === camaraActualId);
+                const nextIndex = (currentIndex + 1) % listaCamaras.length;
+                camaraActualId = listaCamaras[nextIndex].id;
+            } else {
+                currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+                camaraActualId = null;
+            }
 
             try {
                 if (typeof html5QrCode.getState === 'function' && html5QrCode.getState() === Html5QrcodeScannerState.SCANNING) {
@@ -1397,10 +1450,25 @@
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Iniciando...';
             }
 
-            const cameraConfig = { facingMode: currentFacingMode };
+            // Detectar cámaras si aún no se han listado (necesario para elegir
+            // el lente correcto en iPhones con cámara múltiple)
+            if (listaCamaras.length === 0) {
+                await obtenerCamaras();
+            }
+            if (!camaraActualId && listaCamaras.length > 0) {
+                camaraActualId = elegirMejorCamara(listaCamaras, currentFacingMode);
+            }
 
+            const cameraConfig = camaraActualId ? camaraActualId : { facingMode: currentFacingMode };
+
+            // Configuración del escáner:
+            // 1) fps optimizado (12 fps) para evitar saturación de CPU en decodificación JS.
+            // 2) videoConstraints con resolución HD (ideal 1280x720): nitidez óptima para
+            //    detección QR sin sobrecargar el canvas ni el decoder de iOS.
+            // 3) Si se eligió un deviceId específico (iPhone multi-cámara), se incluye
+            //    como 'ideal' (no 'exact') para permitir fallback si iOS invalida el ID.
             const scanConfig = {
-                fps: 10,
+                fps: 12,
                 qrbox: function(viewfinderWidth, viewfinderHeight) {
                     const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
                     const qrboxSize = Math.max(160, Math.floor(minEdge * 0.75));
@@ -1408,6 +1476,11 @@
                         width: qrboxSize,
                         height: qrboxSize
                     };
+                },
+                videoConstraints: {
+                    ...(camaraActualId ? { deviceId: { ideal: camaraActualId } } : { facingMode: { ideal: currentFacingMode } }),
+                    width: { min: 640, ideal: 1280, max: 1920 },
+                    height: { min: 480, ideal: 720, max: 1080 }
                 }
             };
 
@@ -1418,6 +1491,7 @@
                     const controls = document.getElementById('scannerControls');
                     if (controls) controls.classList.remove('d-none');
 
+                    // Asegurar reproducción fluida e inline en iOS Safari
                     const videoEl = document.querySelector('#qr-reader video');
                     if (videoEl) {
                         videoEl.setAttribute('playsinline', 'true');
@@ -1430,7 +1504,50 @@
 
                     detectarCamaras();
                 })
-                .catch(err => {
+                .catch(async err => {
+                    console.warn('Error iniciando scanner con cámara seleccionada:', err);
+
+                    // Fallback a facingMode genérico si falló con deviceId específico
+                    // (iOS puede invalidar IDs de dispositivo entre sesiones)
+                    if (camaraActualId) {
+                        camaraActualId = null;
+                        const fallbackScanConfig = {
+                            fps: 12,
+                            qrbox: function(viewfinderWidth, viewfinderHeight) {
+                                const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+                                const qrboxSize = Math.max(160, Math.floor(minEdge * 0.75));
+                                return { width: qrboxSize, height: qrboxSize };
+                            },
+                            videoConstraints: {
+                                facingMode: { ideal: currentFacingMode },
+                                width: { min: 640, ideal: 1280, max: 1920 },
+                                height: { min: 480, ideal: 720, max: 1080 }
+                            }
+                        };
+                        try {
+                            await html5QrCode.start({ facingMode: currentFacingMode }, fallbackScanConfig, onScanSuccess, onScanError);
+                            const overlay = document.getElementById('scannerOverlay');
+                            if (overlay) overlay.style.display = 'none';
+                            const controls = document.getElementById('scannerControls');
+                            if (controls) controls.classList.remove('d-none');
+
+                            const videoEl = document.querySelector('#qr-reader video');
+                            if (videoEl) {
+                                videoEl.setAttribute('playsinline', 'true');
+                                videoEl.setAttribute('webkit-playsinline', 'true');
+                                videoEl.muted = true;
+                                if (videoEl.paused) {
+                                    videoEl.play().catch(() => {});
+                                }
+                            }
+
+                            detectarCamaras();
+                            return;
+                        } catch (e2) {
+                            console.error('Fallback scanner también falló:', e2);
+                        }
+                    }
+
                     console.error('Error scanner:', err);
                     if (btn) {
                         btn.disabled = false;

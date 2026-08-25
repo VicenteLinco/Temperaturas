@@ -92,10 +92,27 @@ assert.ok(!css.includes('transform: translateZ(0)'),
 assert.ok(!css.includes('#qr-shaded-region { display: none !important; }'),
     'CSS no debe ocultar #qr-shaded-region porque rompe el cálculo de coordenadas de html5-qrcode');
 
-// C) #qr-reader debe tener borde y posición definida
+// C) #qr-reader debe tener posición definida
 assert.ok(css.includes('#qr-reader'), 'CSS debe definir #qr-reader');
 assert.ok(!css.match(/#qr-reader\s*\{[^}]*aspect-ratio:\s*1\s*\/\s*1/i),
     '#qr-reader no debe forzar aspect-ratio 1/1 que causa colapso de altura en video WebKit');
+
+// D) CRÍTICO para WebKit/iOS: #qr-reader es el padre DIRECTO del <video> que crea
+//    html5-qrcode. La combinación de overflow:hidden + border-radius en ese mismo
+//    elemento provoca pantalla negra en Safari/iOS (bug de compositing documentado).
+//    El frame visual debe estar en .scanner-wrap (el abuelo), no en #qr-reader.
+const qrReaderBlock = (css.match(/#qr-reader\s*\{([^}]*)?\}/i) || [,''])[1];
+assert.ok(qrReaderBlock !== undefined, 'Debe existir regla CSS para #qr-reader');
+assert.ok(!(qrReaderBlock.includes('overflow') && qrReaderBlock.includes('border-radius')),
+    '#qr-reader no debe combinar overflow + border-radius: es el padre directo del <video> ' +
+    'de html5-qrcode y ese combo provoca pantalla negra en Safari/iOS (bug de compositing de WebKit)');
+
+// E) .scanner-wrap (abuelo del video) debe contener overflow para recortar a las
+//    esquinas redondeadas, manteniendo el marco visual sin tocar al <video>.
+const scannerWrapBlock = (css.match(/\.scanner-wrap\s*\{([^}]*)?\}/i) || [,''])[1];
+assert.ok(scannerWrapBlock !== undefined, 'Debe existir regla CSS para .scanner-wrap');
+assert.ok(scannerWrapBlock.includes('overflow'),
+    '.scanner-wrap debe tener overflow para recortar el video a las esquinas redondeadas');
 
 console.log('✓ Invariantes CSS de renderizado móvil pasadas');
 
@@ -121,6 +138,15 @@ const modalShowMatch = inlineSource.match(/document\.getElementById\('registroMo
 assert.ok(modalShowMatch, 'Debe existir listener show.bs.modal');
 assert.ok(modalShowMatch[1].includes('html5QrCode.pause(true)'),
     'show.bs.modal debe pausar el escáner (pause) y no destruirlo (stop)');
+
+// F) Debe incluir videoConstraints con resolución de cámara (1280x720 ideal) para
+//    detección QR confiable, especialmente en iPhone donde la resolución por defecto
+//    puede ser insuficiente o el lente equivocado (Ultra Wide) no enfoca a corta distancia.
+assert.ok(inlineSource.includes('videoConstraints'), 'scanConfig debe incluir videoConstraints');
+assert.ok(/width:\s*\{\s*min:\s*640/.test(inlineSource), 'videoConstraints debe pedir ancho mínimo 640px');
+assert.ok(/ideal:\s*1280/.test(inlineSource), 'videoConstraints debe pedir ancho ideal 1280px (HD)');
+assert.ok(/height:\s*\{\s*min:\s*480/.test(inlineSource), 'videoConstraints debe pedir alto mínimo 480px');
+assert.ok(/ideal:\s*720/.test(inlineSource), 'videoConstraints debe pedir alto ideal 720px (HD)');
 
 console.log('✓ Invariantes de ciclo de vida, WakeLock y keep-alive pasadas');
 console.log('\nTODOS LOS TESTS DE INTEGRIDAD DEL ESCÁNER PASARON EXITOSAMENTE.');
