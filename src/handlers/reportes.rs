@@ -255,6 +255,43 @@ pub async fn generar_reporte_incidencias(
 }
 
 #[cfg(test)]
+mod tests_ajuste_ancho_pdf {
+    use super::*;
+
+    #[test]
+    fn texto_corto_no_se_trunca() {
+        assert_eq!(truncar_a_ancho("Cámara Fría", 40.0, 7.5, false), "Cámara Fría");
+    }
+
+    #[test]
+    fn nombre_largo_de_termometro_cabe_en_columna_estrecha() {
+        // Peor caso real: nombre larguísimo con letras anchas
+        let nombre = "Termómetro MUMMÁX WAREHOUSE CÁMARA CONGELACIÓN N°4 PASILLO NORTE";
+        // Columna "Termómetro" del informe de franja: 42 - 1.5 mm
+        let ajustado = truncar_a_ancho(nombre, 40.5, 7.5, false);
+        assert!(ancho_texto_mm(&ajustado, 7.5, false) <= 40.5);
+        assert!(ajustado.ends_with("..."));
+        assert!(ajustado.chars().count() < nombre.chars().count());
+    }
+
+    #[test]
+    fn texto_vacio_y_ancho_minimo_no_panic() {
+        assert_eq!(truncar_a_ancho("", 4.0, 7.5, false), "");
+        let ajustado = truncar_a_ancho("MMMMM", 1.0, 7.5, true);
+        assert!(ancho_texto_mm(&ajustado, 7.5, true) <= 1.0 + 0.001);
+    }
+
+    #[test]
+    fn anchos_helvetica_son_coherentes() {
+        // 'M' es más ancha que 'i'; el punto es ancho fijo conocido
+        assert!(ancho_texto_mm("M", 7.5, false) > ancho_texto_mm("i", 7.5, false));
+        let punto = ancho_texto_mm(".", 7.5, false);
+        let esperado = 278.0 / 1000.0 * 7.5 * 0.352778;
+        assert!((punto - esperado).abs() < 1e-6);
+    }
+}
+
+#[cfg(test)]
 mod tests_reporte_incidencias {
     use super::*;
 
@@ -439,15 +476,15 @@ fn generar_pdf_diario(rows: Vec<PgRow>, fecha: &str) -> Result<(StatusCode, Vec<
                 id.to_string(),
                 fecha_registro.format("%Y-%m-%d").to_string(),
                 ventana,
-                truncar(&area, 16),
-                truncar(&termo_full, 24),
-                truncar(&tipo, 14),
+                area,
+                termo_full,
+                tipo,
                 format!("{:.1}°C", temp_max),
                 format!("{:.1}°C", temp_min),
                 humedad.map(|h| format!("{:.1}%", h)).unwrap_or_else(|| "-".to_string()),
                 if fuera_rango { "⚠ Alerta".to_string() } else { "✓ OK".to_string() },
-                truncar(&usuario, 12),
-                truncar(&observaciones.unwrap_or_else(|| "-".to_string()), 22),
+                usuario,
+                observaciones.unwrap_or_else(|| "-".to_string()),
             ]
         })
         .collect();
@@ -679,18 +716,65 @@ pub async fn enviar_informe_franja(
 // ===== GENERACIÓN DE PDF DEL INFORME DE FRANJA =====
 
 /// Recorta un texto para que quepa en una columna del PDF sin solapamiento
-fn truncar(texto: &str, max: usize) -> String {
+/// Anchos estándar de Helvetica (AFM, unidades/1000) para los caracteres ASCII 32..=126.
+/// Cualquier carácter fuera de ese rango usa el ancho por defecto (556).
+const HELV_WIDTHS: [u16; 95] = [
+    278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278, 556, 556, 556,
+    556, 556, 556, 556, 556, 556, 556, 278, 278, 584, 584, 584, 556, 1015, 667, 667, 722, 722, 667,
+    611, 778, 722, 278, 500, 667, 556, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667,
+    667, 611, 278, 278, 278, 469, 556, 333, 556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500,
+    222, 833, 556, 556, 556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584,
+];
+const HELV_BOLD_WIDTHS: [u16; 95] = [
+    278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 278, 333, 278, 278, 556, 556, 556,
+    556, 556, 556, 556, 556, 556, 556, 333, 333, 584, 584, 584, 611, 975, 722, 722, 722, 722, 667,
+    611, 778, 722, 278, 556, 722, 611, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667,
+    667, 611, 333, 278, 333, 584, 556, 333, 556, 611, 556, 611, 556, 333, 611, 611, 278, 278, 556,
+    278, 889, 611, 611, 611, 611, 389, 556, 333, 611, 556, 778, 556, 556, 500, 389, 280, 389, 584,
+];
+
+const PT_A_MM: f32 = 0.352778;
+
+/// Ancho estimado del texto en mm para Helvetica a `size` pt
+fn ancho_texto_mm(texto: &str, size: f32, bold: bool) -> f32 {
+    let tabla = if bold { &HELV_BOLD_WIDTHS } else { &HELV_WIDTHS };
+    let unidades: u32 = texto
+        .chars()
+        .map(|c| {
+            let u = c as u32;
+            if (32..=126).contains(&u) {
+                tabla[(u - 32) as usize] as u32
+            } else {
+                556
+            }
+        })
+        .sum();
+    unidades as f32 / 1000.0 * size * PT_A_MM
+}
+
+/// Trunca el texto con "..." para que quepa dentro de `max_mm` según la fuente.
+/// A diferencia de `truncar` (por cantidad de caracteres), garantiza que el texto
+/// no se solape con la columna siguiente sin importar qué caracteres contenga.
+fn truncar_a_ancho(texto: &str, max_mm: f32, size: f32, bold: bool) -> String {
     let clean = texto.trim();
-    if clean.chars().count() > max {
-        if max <= 3 {
-            clean.chars().take(max).collect()
-        } else {
-            let recortado: String = clean.chars().take(max - 3).collect();
-            format!("{}...", recortado.trim_end())
-        }
-    } else {
-        clean.to_string()
+    if ancho_texto_mm(clean, size, bold) <= max_mm {
+        return clean.to_string();
     }
+    const ELLIPSIS: &str = "...";
+    let presupuesto = max_mm - ancho_texto_mm(ELLIPSIS, size, bold);
+    if presupuesto <= 0.0 {
+        // La columna es más angosta que los propios "...": mejor vacío
+        return String::new();
+    }
+    let mut out = String::new();
+    for ch in clean.chars() {
+        let candidato = format!("{}{}", out, ch);
+        if ancho_texto_mm(&candidato, size, bold) > presupuesto {
+            break;
+        }
+        out = candidato;
+    }
+    format!("{}{}", out.trim_end(), ELLIPSIS)
 }
 
 fn sanitize_pdf_str(input: &str) -> String {
@@ -710,6 +794,8 @@ struct PdfEscritor {
     layer: PdfLayerReference,
     width: f32,
     height: f32,
+    /// Margen horizontal usado por las columnas de las tablas
+    margen_x: f32,
     y: f32,
     font_bold: IndirectFontRef,
     font_regular: IndirectFontRef,
@@ -718,6 +804,7 @@ struct PdfEscritor {
 impl PdfEscritor {
     fn nuevo(titulo: &str, landscape: bool) -> Result<Self, StatusCode> {
         let (w, h) = if landscape { (297.0, 210.0) } else { (210.0, 297.0) };
+        let margen_x = if landscape { 6.0 } else { 8.0 };
         let (doc, page, layer) = PdfDocument::new(titulo, Mm(w), Mm(h), "Capa 1");
         let layer_ref = doc.get_page(page).get_layer(layer);
         let font_bold = doc
@@ -731,6 +818,7 @@ impl PdfEscritor {
             layer: layer_ref,
             width: w,
             height: h,
+            margen_x,
             y: h - 15.0,
             font_bold,
             font_regular,
@@ -741,6 +829,20 @@ impl PdfEscritor {
         let (page, layer) = self.doc.add_page(Mm(self.width), Mm(self.height), "Capa 1");
         self.layer = self.doc.get_page(page).get_layer(layer);
         self.y = self.height - 15.0;
+    }
+
+    /// Ancho disponible (mm) de cada columna a partir de sus posiciones X:
+    /// cada columna llega hasta el inicio de la siguiente (con 1.5 mm de
+    /// separación); la última llega hasta el margen derecho de la página.
+    fn anchos_columnas(&self, columnas: &[(String, f32)]) -> Vec<f32> {
+        let x_ultima = self.width - self.margen_x;
+        (0..columnas.len())
+            .map(|i| {
+                let x = columnas[i].1;
+                let x_sig = columnas.get(i + 1).map(|c| c.1).unwrap_or(x_ultima);
+                (x_sig - x - 1.5).max(4.0)
+            })
+            .collect()
     }
 
     fn asegurar_espacio(&mut self, alto: f32) -> bool {
@@ -772,13 +874,16 @@ impl PdfEscritor {
 
 fn escribir_encabezados(pdf: &mut PdfEscritor, columnas: &[(String, f32)]) {
     pdf.asegurar_espacio(10.0);
-    for (texto, x) in columnas {
-        pdf.texto(texto, 8.5, *x, pdf.y, true);
+    let anchos = pdf.anchos_columnas(columnas);
+    for (i, (texto, x)) in columnas.iter().enumerate() {
+        let ajustado = truncar_a_ancho(texto, anchos[i], 8.5, true);
+        pdf.texto(&ajustado, 8.5, *x, pdf.y, true);
     }
     pdf.y -= 7.0;
 }
 
 fn escribir_filas(pdf: &mut PdfEscritor, columnas: &[(String, f32)], filas: &[Vec<String>]) {
+    let anchos = pdf.anchos_columnas(columnas);
     for fila in filas {
         let creo_nueva_pagina = pdf.asegurar_espacio(6.0);
         if creo_nueva_pagina {
@@ -786,7 +891,9 @@ fn escribir_filas(pdf: &mut PdfEscritor, columnas: &[(String, f32)], filas: &[Ve
         }
         for (i, celda) in fila.iter().enumerate() {
             let x = columnas.get(i).map(|c| c.1).unwrap_or(8.0);
-            pdf.texto(celda, 7.5, x, pdf.y, false);
+            let ancho = anchos.get(i).copied().unwrap_or(40.0);
+            let ajustado = truncar_a_ancho(celda, ancho, 7.5, false);
+            pdf.texto(&ajustado, 7.5, x, pdf.y, false);
         }
         pdf.y -= 5.0;
     }
@@ -838,21 +945,15 @@ fn generar_pdf_informe_franja(
             .iter()
             .map(|r| {
                 vec![
-                    truncar(&r.area_nombre, 15),
-                    truncar(
-                        &r.termometro_nombre
-                            .clone()
-                            .unwrap_or_else(|| format!("ID {}", r.termometro_id)),
-                        20,
-                    ),
+                    r.area_nombre.clone(),
+                    r.termometro_nombre
+                        .clone()
+                        .unwrap_or_else(|| format!("ID {}", r.termometro_id)),
                     format!("{:.1}°C", r.temp_maxima),
                     format!("{:.1}°C", r.temp_minima),
                     r.humedad.map(|h| format!("{:.1}%", h)).unwrap_or_else(|| "-".to_string()),
-                    truncar(
-                        &r.observaciones.clone().unwrap_or_else(|| "-".to_string()),
-                        24,
-                    ),
-                    truncar(&r.usuario_nombre, 12),
+                    r.observaciones.clone().unwrap_or_else(|| "-".to_string()),
+                    r.usuario_nombre.clone(),
                 ]
             })
             .collect();
@@ -887,19 +988,13 @@ fn generar_pdf_informe_franja(
             .iter()
             .map(|r| {
                 vec![
-                    truncar(&r.area_nombre, 15),
-                    truncar(
-                        &r.termometro_nombre
-                            .clone()
-                            .unwrap_or_else(|| format!("ID {}", r.termometro_id)),
-                        20,
-                    ),
-                    truncar(&r.tipo_nombre, 13),
-                    truncar(&r.motivo, 12),
-                    truncar(
-                        &r.comentarios_reporte.clone().unwrap_or_else(|| "-".to_string()),
-                        24,
-                    ),
+                    r.area_nombre.clone(),
+                    r.termometro_nombre
+                        .clone()
+                        .unwrap_or_else(|| format!("ID {}", r.termometro_id)),
+                    r.tipo_nombre.clone(),
+                    r.motivo.clone(),
+                    r.comentarios_reporte.clone().unwrap_or_else(|| "-".to_string()),
                     r.fecha_reporte.format("%Y-%m-%d").to_string(),
                 ]
             })
