@@ -772,12 +772,6 @@
                 </div>
             </div>
 
-            <!-- Cambiar cámara: solo aparece si el dispositivo tiene más de una trasera -->
-            <div id="scannerControls" class="d-none mt-2 d-flex justify-content-center align-items-center gap-2">
-                <button id="btnSwitchCam" class="btn btn-sm btn-outline-secondary rounded-pill px-3 d-none" onclick="cambiarCamaraScanner()" title="Cambiar Cámara">
-                    <i class="bi bi-camera-reverse me-1"></i> Cambiar cámara
-                </button>
-            </div>
             <div id="scannerStatus" class="scanner-status d-none"></div>
 
             <!-- Entrada Manual por ID o Búsqueda Rápida -->
@@ -1126,8 +1120,10 @@
         async function inicializarApp() {
             await cargarTodasLasAreas();
 
-            // Auto-iniciar el escáner directamente para que el usuario no tenga que presionar botones
-            inicializarScanner(true);
+            // Sin auto-inicio: la cámara arranca únicamente cuando el operador toca
+            // "Activar Cámara" (overlay de reposo). Pedir getUserMedia sin un gesto
+            // real del usuario es una causa conocida de video "vivo pero negro" en
+            // Safari/iOS (decodifica, no pinta). Regla primaria: evitar problemas.
 
             // Verificar si viene un ID por URL (cuando se abre escaneando con la cámara del celular)
             const urlParams = new URLSearchParams(window.location.search);
@@ -1140,8 +1136,6 @@
                 }
             }
         }
-
-        let currentFacingMode = "environment";
 
         function playScanSound(type = 'success') {
             try {
@@ -1173,69 +1167,14 @@
             } catch (e) {}
         }
 
-        // El escáner siempre está listo (sin botón "Pausar"): solo se muestra "Cambiar
-        // cámara" si el dispositivo realmente tiene más de una, para no sumar un botón
-        // que en el caso típico de terreno (una sola trasera) no hace nada.
-        let camarasDisponibles = null;
-        let listaCamaras = [];
-        let camaraActualId = null;
-
-        async function obtenerCamaras() {
-            try {
-                const camaras = await Html5Qrcode.getCameras();
-                if (Array.isArray(camaras) && camaras.length > 0) {
-                    listaCamaras = camaras;
-                    camarasDisponibles = camaras.length;
-                    return camaras;
-                }
-            } catch (e) {
-                // getCameras()/enumerateDevices() es poco confiable en iOS Safari:
-                // ante un falló de detección, asumimos más de una para no ocultar
-                // el botón de cambio de cámara que el operador pudiera necesitar.
-                console.warn('No se pudo detectar lista de cámaras:', e);
-            }
-            camarasDisponibles = 1;
-            listaCamaras = [];
-            return [];
-        }
-
-        async function detectarCamaras() {
-            await obtenerCamaras();
-            const btnSwitch = document.getElementById('btnSwitchCam');
-            if (btnSwitch) {
-                btnSwitch.classList.toggle('d-none', (listaCamaras.length || (camarasDisponibles || 1)) < 2);
-            }
-            return listaCamaras.length || (camarasDisponibles || 1);
-        }
-
-        async function cambiarCamaraScanner() {
-            if (!html5QrCode) return;
-
-            if (listaCamaras.length > 1) {
-                const currentIndex = listaCamaras.findIndex(c => c.id === camaraActualId);
-                const nextIndex = (currentIndex + 1) % listaCamaras.length;
-                camaraActualId = listaCamaras[nextIndex].id;
-            } else {
-                currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
-                camaraActualId = null;
-            }
-
-            try {
-                if (typeof html5QrCode.getState === 'function' && html5QrCode.getState() === Html5QrcodeScannerState.SCANNING) {
-                    await html5QrCode.stop();
-                }
-                inicializarScanner(false);
-            } catch (e) {
-                console.error("Error al cambiar cámara:", e);
-                inicializarScanner(false);
-            }
-        }
-
+        // Regla primaria: evitar problemas antes que conveniencia. El escáner solo
+        // usa la cámara trasera (facingMode "environment", fijo, sin selección de
+        // lente ni cambio de cámara): cada capa de detección de dispositivos que se
+        // probó (getCameras(), selección de lente, deviceId) fue una fuente real de
+        // pantalla negra en Safari/iOS. Menos ramas de cámara = menos formas de
+        // romperse.
         function reanudarScannerSiPausado() {
-            if (!html5QrCode) {
-                inicializarScanner(true);
-                return;
-            }
+            if (!html5QrCode) return;
             try {
                 if (typeof html5QrCode.getState === 'function') {
                     const state = html5QrCode.getState();
@@ -1283,10 +1222,10 @@
         }
 
         function verificarYReanimarScanner() {
-            if (!html5QrCode) {
-                inicializarScanner(true);
-                return;
-            }
+            // Si nunca se inició (el operador aún no toca "Activar Cámara"), no hacer
+            // nada: arrancar la cámara sola aquí sería el mismo auto-inicio sin gesto
+            // que se evita en inicializarApp().
+            if (!html5QrCode) return;
 
             const videoEl = document.querySelector('#qr-reader video');
             let streamMuerto = false;
@@ -1419,17 +1358,10 @@
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Iniciando...';
             }
 
-            // Sin selección de lente por deviceId en el primer arranque: hacerlo
-            // requiere Html5Qrcode.getCameras(), que pide y suelta la cámara ANTES
-            // de la petición real de .start(). Dos getUserMedia seguidos así es una
-            // causa conocida de video "vivo pero negro" en Safari/iOS (el escaneo
-            // decodifica pero no pinta). Se arranca directo con facingMode, igual
-            // que test_scanner.html, ya confirmado funcionando en el mismo iPhone.
-            // camaraActualId solo se usa para el cambio MANUAL de cámara (ver
-            // cambiarCamaraScanner), donde la cámara ya está viva y el usuario
-            // decidió el cambio explícitamente.
-            const cameraConfig = camaraActualId ? camaraActualId : { facingMode: currentFacingMode };
-
+            // Regla primaria: evitar problemas. Solo cámara trasera (facingMode fijo,
+            // sin deviceId ni selección de lente): menos ramas de cámara = menos
+            // formas de que Safari/iOS deje el video "vivo pero negro".
+            //
             // Configuración del escáner:
             // 1) fps optimizado (12 fps) para evitar saturación de CPU en decodificación JS.
             // 2) videoConstraints con resolución HD (ideal 1280x720): nitidez óptima para
@@ -1441,18 +1373,16 @@
             const scanConfig = {
                 fps: 12,
                 videoConstraints: {
-                    ...(camaraActualId ? { deviceId: { ideal: camaraActualId } } : { facingMode: { ideal: currentFacingMode } }),
+                    facingMode: { ideal: "environment" },
                     width: { min: 640, ideal: 1280, max: 1920 },
                     height: { min: 480, ideal: 720, max: 1080 }
                 }
             };
 
-            html5QrCode.start(cameraConfig, scanConfig, onScanSuccess, onScanError)
+            html5QrCode.start({ facingMode: "environment" }, scanConfig, onScanSuccess, onScanError)
                 .then(() => {
                     const overlay = document.getElementById('scannerOverlay');
                     if (overlay) overlay.style.display = 'none';
-                    const controls = document.getElementById('scannerControls');
-                    if (controls) controls.classList.remove('d-none');
 
                     // Asegurar reproducción fluida e inline en iOS Safari
                     const videoEl = document.querySelector('#qr-reader video');
@@ -1464,48 +1394,8 @@
                             videoEl.play().catch(() => {});
                         }
                     }
-
-                    detectarCamaras();
                 })
-                .catch(async err => {
-                    console.warn('Error iniciando scanner con cámara seleccionada:', err);
-
-                    // Fallback a facingMode genérico si falló con deviceId específico
-                    // (iOS puede invalidar IDs de dispositivo entre sesiones)
-                    if (camaraActualId) {
-                        camaraActualId = null;
-                        const fallbackScanConfig = {
-                            fps: 12,
-                            videoConstraints: {
-                                facingMode: { ideal: currentFacingMode },
-                                width: { min: 640, ideal: 1280, max: 1920 },
-                                height: { min: 480, ideal: 720, max: 1080 }
-                            }
-                        };
-                        try {
-                            await html5QrCode.start({ facingMode: currentFacingMode }, fallbackScanConfig, onScanSuccess, onScanError);
-                            const overlay = document.getElementById('scannerOverlay');
-                            if (overlay) overlay.style.display = 'none';
-                            const controls = document.getElementById('scannerControls');
-                            if (controls) controls.classList.remove('d-none');
-
-                            const videoEl = document.querySelector('#qr-reader video');
-                            if (videoEl) {
-                                videoEl.setAttribute('playsinline', 'true');
-                                videoEl.setAttribute('webkit-playsinline', 'true');
-                                videoEl.muted = true;
-                                if (videoEl.paused) {
-                                    videoEl.play().catch(() => {});
-                                }
-                            }
-
-                            detectarCamaras();
-                            return;
-                        } catch (e2) {
-                            console.error('Fallback scanner también falló:', e2);
-                        }
-                    }
-
+                .catch(err => {
                     console.error('Error scanner:', err);
                     if (btn) {
                         btn.disabled = false;

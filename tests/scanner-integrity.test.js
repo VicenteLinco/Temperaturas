@@ -132,6 +132,24 @@ assert.ok(!inicializarScannerBody.includes('obtenerCamaras('),
     'inicializarScanner no debe llamar a obtenerCamaras()/getCameras() antes del primer .start(): ' +
     'un getUserMedia previo al arranque real provoca pantalla negra en Safari/iOS');
 
+// H) CRÍTICO para Safari/iOS: inicializarApp (que corre en la carga de la página,
+// sin ningún gesto del usuario) no debe llamar a inicializarScanner directamente.
+// Pedir getUserMedia sin un gesto real es otra causa conocida de video "vivo pero
+// negro" en WebKit. El único arranque legítimo es el botón "Activar Cámara".
+const inicializarAppBody = extractFunction(inlineSource, 'inicializarApp');
+assert.ok(!inicializarAppBody.includes('inicializarScanner('),
+    'inicializarApp no debe auto-iniciar el escáner: el primer arranque de la cámara debe ' +
+    'ocurrir solo dentro de un gesto real del usuario (botón "Activar Cámara")');
+
+// I) Regla primaria "evitar problemas": el escáner solo debe usar la cámara trasera.
+// No debe existir selección/alternancia hacia la cámara frontal ni botón de cambio
+// de cámara: cada capa de selección de cámara probada fue una fuente real de
+// pantalla negra en Safari/iOS.
+assert.ok(!inlineSource.includes('cambiarCamaraScanner') && !inlineSource.includes('btnSwitchCam'),
+    'no debe existir cambio de cámara: el escáner usa únicamente facingMode "environment"');
+assert.ok(!inlineSource.includes('facingMode: "user"') && !inlineSource.includes("facingMode: 'user'"),
+    'el escáner no debe poder solicitar la cámara frontal');
+
 // C) Debe incluir wakeLock para evitar apagado de pantalla
 assert.ok(inlineSource.includes('solicitarWakeLock'), 'Debe existir función solicitarWakeLock');
 assert.ok(inlineSource.includes('liberarWakeLock'), 'Debe existir función liberarWakeLock');
