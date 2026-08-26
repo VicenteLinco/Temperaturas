@@ -1298,14 +1298,22 @@
 
             // Regla primaria: evitar problemas. Configuración mínima, la misma forma
             // que la última versión confirmada estable en producción: solo fps y
-            // cámara trasera fija, SIN forzar resolución (videoConstraints con
-            // width/height min-ideal-max). Forzar una resolución exacta es una
-            // restricción más que getUserMedia puede negociar mal en Safari/iOS;
-            // dejar que el navegador elija su propio modo de captura es más robusto.
+            // cámara trasera fija, SIN forzar resolución con min/max (exact). Forzar
+            // una resolución exacta es una restricción que getUserMedia puede negociar
+            // mal en Safari/iOS; dejar que el navegador elija su propio modo de
+            // captura es más robusto. Se pide solo 'ideal' (no exact/min): el
+            // navegador puede ignorarlo sin que falle la negociación. En cámaras más
+            // viejas (iPhone 11) Safari a veces cae a un stream de baja resolución,
+            // que deja muy pocos píxeles reales del QR para decodificar.
             // Sin 'qrbox': el visor ya es cuadrado y centrado por CSS (.scanner-wrap).
             const scanConfig = { fps: 12 };
+            const videoConstraints = {
+                facingMode: "environment",
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            };
 
-            html5QrCode.start({ facingMode: "environment" }, scanConfig, onScanSuccess, onScanError)
+            html5QrCode.start(videoConstraints, scanConfig, onScanSuccess, onScanError)
                 .then(() => {
                     const overlay = document.getElementById('scannerOverlay');
                     if (overlay) overlay.style.display = 'none';
@@ -1320,6 +1328,21 @@
                             videoEl.play().catch(() => {});
                         }
                     }
+
+                    // Intento best-effort de foco continuo: en cámaras más viejas
+                    // (iPhone 11) el autofocus no siempre se reajusta al acercar el
+                    // celular al QR. Si el navegador no soporta focusMode, este
+                    // applyConstraints falla en silencio y no afecta nada más.
+                    try {
+                        const stream = videoEl && videoEl.srcObject;
+                        const videoTrack = stream && stream.getVideoTracks && stream.getVideoTracks()[0];
+                        if (videoTrack && videoTrack.getCapabilities) {
+                            const caps = videoTrack.getCapabilities();
+                            if (caps.focusMode && caps.focusMode.includes('continuous')) {
+                                videoTrack.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {});
+                            }
+                        }
+                    } catch (e) {}
                 })
                 .catch(err => {
                     console.error('Error scanner:', err);
