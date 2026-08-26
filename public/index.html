@@ -96,6 +96,25 @@
             height: 100%;
             position: relative;
         }
+        /* Guía visual de encuadre: div HERMANO del #qr-reader (nunca ancestro
+           del <video>), así que no puede combinar border-radius + overflow
+           hidden con él ni disparar el bug de compositing de WebKit descrito
+           arriba. Cuadrado centrado con margen idéntico en los 4 lados
+           (top/left/right/bottom al mismo %), sin recortar nada: solo un
+           borde decorativo por encima del video. pointer-events:none para no
+           interferir con el enfoque táctil de la cámara. */
+        .scanner-guia {
+            position: absolute;
+            top: 12%;
+            left: 12%;
+            right: 12%;
+            bottom: 12%;
+            z-index: 5;
+            border: 3px solid rgba(255, 255, 255, 0.85);
+            border-radius: 16px;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
+            pointer-events: none;
+        }
         /* Overlay de reposo: tarjeta limpia con icono en pastilla blanda,
            título y una sola acción. */
         .scanner-overlay {
@@ -762,6 +781,7 @@
         <div class="scanner-section">
             <div class="scanner-wrap">
                 <div id="qr-reader"></div>
+                <div class="scanner-guia" aria-hidden="true"></div>
                 <div id="scannerOverlay" class="scanner-overlay">
                     <span class="scanner-overlay-icono"><i class="bi bi-qr-code-scan"></i></span>
                     <h6 class="scanner-overlay-titulo">Escáner de Código QR</h6>
