@@ -82,6 +82,9 @@
               ALFANUMÉRICO CLÁSICO del sistema (type="text", sin inputmode
               numérico): es el más nativo en iPhone y Android y tiene tecla
               "-" para negativos. */
+        /* overflow:hidden en .scanner-wrap (sin el radio de esquina prohibido
+           arriba) recorta el box-shadow gigante de .scanner-guia (9999px de
+           difusión) para que no oscurezca el resto de la página. */
         .scanner-wrap {
             position: relative;
             max-width: 340px;
@@ -90,6 +93,7 @@
             border: 2px solid var(--apple-border) !important;
             background-color: #000000;
             box-shadow: var(--shadow-card);
+            overflow: hidden;
         }
         #qr-reader {
             width: 100%;
