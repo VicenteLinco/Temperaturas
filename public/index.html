@@ -66,79 +66,24 @@
             background-color: #ffffff;
             text-align: center;
         }
-        /* REGLA DE DISEÑO DEL ESCÁNER QR (diseño mínimo, a prueba de WebKit):
-           1) Visor cuadrado (aspect-ratio 1/1) y centrado. TODO el frame
-              visible es la zona de escaneo: sin qrbox, sin esquinas, sin
-              overlay de recorte encima del video. Menos DOM = menos superficie
-              para bugs de render en iPhone/Android.
-           2) NINGÚN ancestro del <video> que crea html5-qrcode (.scanner-wrap,
-              #qr-reader, #qr-reader__scan_region) puede combinar border-radius
-              + overflow:hidden: esa combinación activa un bug de compositing
-              de WebKit donde el video decodifica frames (el escaneo sigue
-              funcionando) pero no se pinta en pantalla → pantalla negra en
-              Safari/iOS. Por eso el marco es cuadrado, con esquinas vivas, y
-              el único adorno permitido es border + box-shadow.
-           3) Toda entrada de datos del flujo operador usa el teclado
-              ALFANUMÉRICO CLÁSICO del sistema (type="text", sin inputmode
-              numérico): es el más nativo en iPhone y Android y tiene tecla
-              "-" para negativos. */
-        /* overflow:hidden en .scanner-wrap (sin el radio de esquina prohibido
-           arriba) recorta el box-shadow gigante de .scanner-guia (9999px de
-           difusión) para que no oscurezca el resto de la página. */
+        /* El visor conserva la geometría nativa de html5-qrcode usada en la
+           versión estable del 11-03-2026. No se fuerza un recorte cuadrado ni
+           estilos sobre el video generado por la biblioteca. */
         .scanner-wrap {
             position: relative;
-            max-width: 340px;
-            aspect-ratio: 1 / 1;
+            max-width: 400px;
             margin: 0 auto;
-            border: 2px solid var(--apple-border) !important;
-            background-color: #000000;
-            box-shadow: var(--shadow-card);
-            overflow: hidden;
         }
         #qr-reader {
             width: 100%;
-            height: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+            border: 3px solid var(--ink);
+            border-radius: 15px;
+            overflow: hidden;
+            min-height: 300px;
             position: relative;
-        }
-        /* Guía visual de encuadre: div HERMANO del #qr-reader (nunca ancestro
-           del <video>), así que no puede combinar border-radius + overflow
-           hidden con él ni disparar el bug de compositing de WebKit descrito
-           arriba. Cuadrado centrado con margen idéntico en los 4 lados
-           (top/left/right/bottom al mismo %), sin recortar nada: solo un
-           borde decorativo por encima del video. pointer-events:none para no
-           interferir con el enfoque táctil de la cámara. */
-        .scanner-guia {
-            position: absolute;
-            top: 12%;
-            left: 12%;
-            right: 12%;
-            bottom: 12%;
-            z-index: 5;
-            border: 3px solid rgba(255, 255, 255, 0.85);
-            border-radius: 16px;
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
-            pointer-events: none;
-        }
-        /* Instrucción de enfoque: mismo tipo de div hermano que .scanner-guia
-           (nunca ancestro del <video>). z-index 5, igual que la guía: queda
-           tapado por #scannerOverlay (z-index 10) mientras la cámara está en
-           reposo y aparece solo cuando el escaneo ya está activo. */
-        .scanner-hint {
-            position: absolute;
-            left: 50%;
-            bottom: 6%;
-            transform: translateX(-50%);
-            z-index: 5;
-            max-width: 82%;
-            padding: 6px 14px;
-            border-radius: 999px;
-            background: rgba(0, 0, 0, 0.55);
-            color: #ffffff;
-            font-size: 0.7rem;
-            font-weight: 600;
-            text-align: center;
-            line-height: 1.3;
-            pointer-events: none;
+            background-color: #000000;
         }
         /* Overlay de reposo: tarjeta limpia con icono en pastilla blanda,
            título y una sola acción. */
@@ -190,22 +135,6 @@
             padding-right: 1.75rem;
             box-shadow: 0 6px 16px rgba(29, 29, 31, 0.18);
         }
-        #qr-reader video {
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: cover;
-            display: block !important;
-        }
-        #qr-reader__scan_region {
-            width: 100% !important;
-            height: 100% !important;
-        }
-        #qr-reader__dashboard_section {
-            display: none !important;
-        }
-        #qr-reader img {
-            display: none !important;
-        }
         .scanner-status {
             margin-top: 15px;
             padding: 12px 16px;
@@ -213,6 +142,9 @@
             font-size: 0.92rem;
         }
 
+        /* Las entradas del flujo operador conservan el teclado alfanumérico del
+           sistema (type="text", sin inputmode numérico), incluida la búsqueda
+           manual por ID. */
         /* Búsqueda manual por ID: pastilla propia (sin input-group de Bootstrap)
            para controlar altura táctil, foco y radio. font-size 16px evita el
            zoom automático de iOS al abrir el teclado nativo. */
@@ -724,9 +656,6 @@
             .scanner-section {
                 padding: 10px 8px;
             }
-            .scanner-wrap {
-                max-width: 240px;
-            }
             .termometro-card {
                 padding: 12px;
                 margin-bottom: 8px;
@@ -806,8 +735,6 @@
         <div class="scanner-section">
             <div class="scanner-wrap">
                 <div id="qr-reader"></div>
-                <div class="scanner-guia" aria-hidden="true"></div>
-                <div class="scanner-hint" aria-hidden="true"><i class="bi bi-arrows-angle-expand"></i> ¿No enfoca? Alejá el celular unos 10-15 cm</div>
                 <div id="scannerOverlay" class="scanner-overlay">
                     <span class="scanner-overlay-icono"><i class="bi bi-qr-code-scan"></i></span>
                     <h6 class="scanner-overlay-titulo">Escáner de Código QR</h6>
@@ -1213,172 +1140,30 @@
             } catch (e) {}
         }
 
-        // Regla primaria: evitar problemas antes que conveniencia. El escáner solo
-        // usa la cámara trasera (facingMode "environment", fijo, sin selección de
-        // lente ni cambio de cámara): cada capa de detección de dispositivos que se
-        // probó (getCameras(), selección de lente, deviceId) fue una fuente real de
-        // pantalla negra en Safari/iOS. Menos ramas de cámara = menos formas de
-        // romperse.
-        function reanudarScannerSiPausado() {
-            if (!html5QrCode) return;
-            try {
-                if (typeof html5QrCode.getState === 'function') {
-                    const state = html5QrCode.getState();
-                    if (state === Html5QrcodeScannerState.PAUSED) {
-                        html5QrCode.resume();
-                        const overlay = document.getElementById('scannerOverlay');
-                        if (overlay) overlay.style.display = 'none';
-                        return;
-                    }
-                    if (state === Html5QrcodeScannerState.SCANNING) {
-                        const overlay = document.getElementById('scannerOverlay');
-                        if (overlay) overlay.style.display = 'none';
-                        return;
-                    }
-                }
-            } catch (e) {
-                console.warn('No se pudo reanudar scanner pausado:', e);
-            }
-            inicializarScanner(true);
-        }
-
-        // ===== SCREEN WAKE LOCK & KEEP-ALIVE (ANTIAUTODESCONEXIÓN) =====
-        // Evita que la pantalla se apague por inactividad durante la ronda de temperaturas (Android y iOS 16.4+)
-        // y reanima automáticamente la cámara si el sistema suspende el stream por segundo plano.
-        let wakeLockSentinel = null;
-
-        async function solicitarWakeLock() {
-            try {
-                if ('wakeLock' in navigator && !wakeLockSentinel) {
-                    wakeLockSentinel = await navigator.wakeLock.request('screen');
-                    wakeLockSentinel.addEventListener('release', () => {
-                        wakeLockSentinel = null;
-                    });
-                }
-            } catch (err) {
-                // Wake Lock no permitido o en ahorro de energía; continuar normalmente
-            }
-        }
-
-        function liberarWakeLock() {
-            if (wakeLockSentinel) {
-                wakeLockSentinel.release().catch(() => {});
-                wakeLockSentinel = null;
-            }
-        }
-
-        // La versión estable de antes de este fin de semana NO tenía watchdog ni
-        // reanimación automática de la cámara (setInterval, visibilitychange/focus/
-        // pageshow forzando stop()+start()) y funcionaba bien. Ese watchdog reiniciaba
-        // la cámara sola por falsos positivos de "stream congelado", multiplicando los
-        // getUserMedia y con ellos el riesgo de pantalla negra en Safari/iOS. Se quita:
-        // si el modal de registro pausa/reanuda el escáner (ver abajo, pause/resume
-        // sobre el MISMO stream) alcanza para el uso real, sin tocar getUserMedia.
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') solicitarWakeLock();
-        });
-
-        async function inicializarScanner(silent = false) {
-            solicitarWakeLock();
-            if (!html5QrCode) {
-                // Limitar a QR_CODE para que ZXing no ejecute 17 decodificadores de
-                // códigos 1D/2D por frame. Misma configuración mínima que
-                // test_scanner.html (probada y funcionando en iPhone/Android): sin
-                // experimentalFeatures, que agrega una variable no verificada.
-                const qrFormats = (typeof Html5QrcodeSupportedFormats !== 'undefined' && Html5QrcodeSupportedFormats.QR_CODE !== undefined)
-                    ? [ Html5QrcodeSupportedFormats.QR_CODE ]
-                    : [ 0 ];
-                html5QrCode = new Html5Qrcode("qr-reader", {
-                    formatsToSupport: qrFormats,
-                    verbose: false
-                });
-            }
-
-            if (typeof html5QrCode.getState === 'function') {
-                const state = html5QrCode.getState();
-                if (state === Html5QrcodeScannerState.SCANNING) {
-                    const overlay = document.getElementById('scannerOverlay');
-                    if (overlay) overlay.style.display = 'none';
-                    return;
-                }
-                if (state === Html5QrcodeScannerState.PAUSED) {
-                    try {
-                        html5QrCode.resume();
-                        const overlay = document.getElementById('scannerOverlay');
-                        if (overlay) overlay.style.display = 'none';
-                        return;
-                    } catch (e) {}
-                }
-            }
-
+        // Configuración restaurada desde f4a19c5 (11-03-2026), la versión
+        // confirmada estable en celulares. La biblioteca conserva el control del
+        // video, el encuadre y la negociación de la cámara.
+        function inicializarScanner() {
             const btn = document.querySelector('#scannerOverlay button');
-            const originalText = btn ? btn.innerHTML : '';
-            if (btn && !silent) {
-                btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Iniciando...';
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Iniciando...';
+
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("qr-reader");
             }
 
-            // Regla primaria: evitar problemas. Configuración mínima, la misma forma
-            // que la última versión confirmada estable en producción: solo fps y
-            // cámara trasera fija, SIN forzar resolución con min/max (exact). Forzar
-            // una resolución exacta es una restricción que getUserMedia puede negociar
-            // mal en Safari/iOS; dejar que el navegador elija su propio modo de
-            // captura es más robusto. Se pide solo 'ideal' (no exact/min): el
-            // navegador puede ignorarlo sin que falle la negociación. En cámaras más
-            // viejas (iPhone 11) Safari a veces cae a un stream de baja resolución,
-            // que deja muy pocos píxeles reales del QR para decodificar.
-            // Sin 'qrbox': el visor ya es cuadrado y centrado por CSS (.scanner-wrap).
-            const scanConfig = { fps: 12 };
-            const videoConstraints = {
-                facingMode: "environment",
-                width: { ideal: 1920 },
-                height: { ideal: 1080 }
-            };
+            const config = { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 1.0 };
 
-            html5QrCode.start(videoConstraints, scanConfig, onScanSuccess, onScanError)
+            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanError)
                 .then(() => {
-                    const overlay = document.getElementById('scannerOverlay');
-                    if (overlay) overlay.style.display = 'none';
-
-                    // Asegurar reproducción fluida e inline en iOS Safari
-                    const videoEl = document.querySelector('#qr-reader video');
-                    if (videoEl) {
-                        videoEl.setAttribute('playsinline', 'true');
-                        videoEl.setAttribute('webkit-playsinline', 'true');
-                        videoEl.muted = true;
-                        if (videoEl.paused) {
-                            videoEl.play().catch(() => {});
-                        }
-                    }
-
-                    // Intento best-effort de foco continuo: en cámaras más viejas
-                    // (iPhone 11) el autofocus no siempre se reajusta al acercar el
-                    // celular al QR. Si el navegador no soporta focusMode, este
-                    // applyConstraints falla en silencio y no afecta nada más.
-                    try {
-                        const stream = videoEl && videoEl.srcObject;
-                        const videoTrack = stream && stream.getVideoTracks && stream.getVideoTracks()[0];
-                        if (videoTrack && videoTrack.getCapabilities) {
-                            const caps = videoTrack.getCapabilities();
-                            if (caps.focusMode && caps.focusMode.includes('continuous')) {
-                                videoTrack.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {});
-                            }
-                        }
-                    } catch (e) {}
+                    document.getElementById('scannerOverlay').style.display = 'none';
                 })
                 .catch(err => {
                     console.error('Error scanner:', err);
-                    if (btn) {
-                        btn.disabled = false;
-                        btn.innerHTML = originalText;
-                    }
-                    const errStr = String(err);
-                    if (errStr.includes('is already scanning') || errStr.includes('already paused')) {
-                        const overlay = document.getElementById('scannerOverlay');
-                        if (overlay) overlay.style.display = 'none';
-                    } else if (!silent) {
-                        mostrarEstado('Error al acceder a la cámara. Verifique los permisos del navegador.', 'danger');
-                    }
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    mostrarEstado('Error al acceder a la cámara. Verifique permisos.', 'danger');
                 });
         }
 
@@ -1446,22 +1231,12 @@
             try {
                 console.log('QR detectado:', decodedText);
 
-                // Pausar escáner inmediatamente para evitar lecturas duplicadas mientras se abre el modal
-                if (html5QrCode && typeof html5QrCode.getState === 'function') {
-                    try {
-                        if (html5QrCode.getState() === Html5QrcodeScannerState.SCANNING) {
-                            html5QrCode.pause(true);
-                        }
-                    } catch (e) {}
-                }
-
                 const termometroId = extraerTermometroId(decodedText);
 
                 if (isNaN(termometroId)) {
                     playScanSound('error');
                     if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
                     mostrarEstado(`Código QR no válido: ${decodedText.substring(0, 25)}`, 'warning');
-                    setTimeout(reanudarScannerSiPausado, 2000);
                     return;
                 }
 
@@ -1474,7 +1249,6 @@
             } catch (error) {
                 console.error('Error al escanear termómetro:', error);
                 mostrarEstado('Error procesando termómetro', 'danger');
-                setTimeout(reanudarScannerSiPausado, 2000);
             } finally {
                 escaneoEnProceso = false;
             }
@@ -1493,7 +1267,6 @@
                 if (!response.ok) {
                     playScanSound('error');
                     mostrarEstado(`Termómetro #${termometroId} no registrado en el sistema`, 'warning');
-                    setTimeout(reanudarScannerSiPausado, 2000);
                     return;
                 }
                 const termometro = await response.json();
@@ -1523,7 +1296,6 @@
             } catch (error) {
                 console.error('Error procesando termómetro:', error);
                 mostrarEstado('Error al consultar termómetro', 'danger');
-                setTimeout(reanudarScannerSiPausado, 1500);
             }
         }
 
@@ -2482,7 +2254,7 @@
         })}
         function mostrarEstado(m,t){ const s=document.getElementById('scannerStatus');s.className=`scanner-status alert alert-${t}`;s.textContent=m;s.classList.remove('d-none');setTimeout(()=>s.classList.add('d-none'),3000)}
         function mostrarToast(m,t,ms){const d=document.createElement('div');d.className=`alert alert-${t} toast-msg`;d.textContent=m;d.onclick=()=>d.remove();document.body.appendChild(d);setTimeout(()=>d.remove(),ms||3000)}
-        async function logout(){ liberarWakeLock(); await fetch('/api/logout',{method:'POST'}); window.location.href='/login.html';}
+        async function logout(){ await fetch('/api/logout',{method:'POST'}); window.location.href='/login.html';}
 
         // ===== ESTADO DE CONEXIÓN =====
         // El registro depende del backend: si no hay red conviene saberlo antes de teclear.
@@ -2507,18 +2279,18 @@
         });
         
         // ===== EVENTOS DEL SCANNER =====
-        // Pausar escáner al abrir el modal para no consumir recursos ni leer de fondo,
-        // y reanudarlo instantáneamente al cerrar sin reiniciar la cámara ni provocar demoras.
+        // Estrategia restaurada desde la versión estable del 11-03-2026: detener
+        // completamente el escáner al abrir un modal y crear un stream nuevo al
+        // cerrarlo. No se conserva un stream pausado entre transiciones.
         
         document.getElementById('registroModal').addEventListener('show.bs.modal', () => {
-            if (html5QrCode && typeof html5QrCode.getState === 'function') {
-                try {
-                    if (html5QrCode.getState() === Html5QrcodeScannerState.SCANNING) {
-                        html5QrCode.pause(true);
-                    }
-                } catch (e) {
-                    console.log('Error al pausar scanner en modal:', e);
-                }
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    console.log('Scanner detenido correctamente');
+                    document.getElementById('scannerOverlay').style.display = 'flex';
+                }).catch(err => {
+                    console.log('El scanner ya estaba detenido o error:', err);
+                });
             }
         });
 
@@ -2549,20 +2321,24 @@
 
         document.getElementById('registroModal').addEventListener('hidden.bs.modal', () => {
             if (sanearBackdrops()) return;
-            // Al cerrar el modal, reiniciamos el scanner automáticamente
+            // Dar tiempo a Bootstrap para completar la transición antes de pedir
+            // nuevamente la cámara, igual que en la versión estable.
             setTimeout(() => {
-                reanudarScannerSiPausado();
-            }, 120);
+                inicializarScanner();
+            }, 300);
         });
 
         const modalConfirm = document.getElementById('confirmacionModal');
         if (modalConfirm) {
+            modalConfirm.addEventListener('show.bs.modal', () => {
+                if (html5QrCode) html5QrCode.stop().catch(() => {});
+            });
             modalConfirm.addEventListener('hidden.bs.modal', () => {
                 // Con otro modal todavía abierto la cámara no debe encenderse detrás de él
                 if (sanearBackdrops()) return;
                 setTimeout(() => {
-                    reanudarScannerSiPausado();
-                }, 200);
+                    inicializarScanner();
+                }, 300);
             });
         }
 
@@ -2610,16 +2386,18 @@
             setTimeout(() => { cerrandoPorHistorial = false; }, 400);
         });
 
-        // El modal de "Termómetro Fuera de Servicio" también pausa la cámara al abrirse
-        // (ver show.bs.modal de registroModal, que se cierra antes de abrir este) pero no
-        // tenía su propio reanudador: cerrarlo con la X dejaba la cámara colgada para siempre.
+        // Los modales agregados después de marzo usan la misma frontera stop/start
+        // para no reintroducir el ciclo pause/resume descartado.
         const modalTermoFS = document.getElementById('termoFueraServicioModal');
         if (modalTermoFS) {
+            modalTermoFS.addEventListener('show.bs.modal', () => {
+                if (html5QrCode) html5QrCode.stop().catch(() => {});
+            });
             modalTermoFS.addEventListener('hidden.bs.modal', () => {
                 if (sanearBackdrops()) return;
                 setTimeout(() => {
-                    reanudarScannerSiPausado();
-                }, 120);
+                    inicializarScanner();
+                }, 300);
             });
         }
 

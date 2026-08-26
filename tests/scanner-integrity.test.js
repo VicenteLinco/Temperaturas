@@ -77,107 +77,76 @@ assert.ok(isNaN(extraer('https://google.com')));
 
 console.log('✓ 15 aserciones de extracción QR pasadas');
 
-console.log('--- 2. Pruebas de Invariantes CSS para WebKit (iOS/Safari) ---');
+console.log('--- 2. Regresión visual del escáner estable del 11-03-2026 ---');
 
-// Extraer bloque de estilos
 const cssMatch = indexSource.match(/<style>([\s\S]*?)<\/style>/i);
 assert.ok(cssMatch, 'Debe existir bloque <style>');
 const css = cssMatch[1];
 
-// A) No debe tener translateZ(0) en #qr-reader video (provoca pantalla negra en Safari WebKit)
-assert.ok(!css.includes('transform: translateZ(0)'),
-    'CSS no debe forzar translateZ(0) en video porque desacopla el render de WebKit');
-
-// C) #qr-reader debe tener posición definida
-assert.ok(css.includes('#qr-reader'), 'CSS debe definir #qr-reader');
-assert.ok(!css.match(/#qr-reader\s*\{[^}]*aspect-ratio:\s*1\s*\/\s*1/i),
-    '#qr-reader no debe forzar aspect-ratio 1/1 que causa colapso de altura en video WebKit');
-
-// D) CRÍTICO para WebKit/iOS: el <video> que crea html5-qrcode vive dentro de
-//    #qr-reader (con #qr-reader__scan_region de por medio). NINGÚN ancestro del
-//    video puede combinar overflow:hidden + border-radius: ese combo provoca
-//    pantalla negra en Safari/iOS (bug de compositing documentado), sin importar
-//    en qué nivel de la cadena de ancestros aparezca.
-for (const selector of ['.scanner-wrap', '#qr-reader', '#qr-reader__scan_region']) {
-    const escaped = selector.replace(/[.#]/g, '\\$&');
-    const pattern = new RegExp(`${escaped}\\s*\\{([^}]*)?\\}`, 'i');
-    const block = (css.match(pattern) || [, ''])[1];
-    assert.ok(block !== undefined, `Debe existir regla CSS para ${selector}`);
-    assert.ok(!(block.includes('overflow') && block.includes('border-radius')),
-        `${selector} no debe combinar overflow + border-radius: es ancestro del <video> de ` +
-        'html5-qrcode y ese combo provoca pantalla negra en Safari/iOS (bug de compositing de WebKit)');
+function cssRule(selector) {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return (css.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`, 'i')) || [, ''])[1];
 }
 
-console.log('✓ Invariantes CSS de renderizado móvil pasadas');
+const scannerWrapCss = cssRule('.scanner-wrap');
+const qrReaderCss = cssRule('#qr-reader');
+assert.match(scannerWrapCss, /max-width:\s*400px/i,
+    'el contenedor debe conservar el ancho estable de 400px');
+assert.doesNotMatch(scannerWrapCss, /aspect-ratio|overflow/i,
+    'el contenedor no debe recortar ni forzar un visor cuadrado');
+assert.match(qrReaderCss, /max-width:\s*400px/i);
+assert.match(qrReaderCss, /min-height:\s*300px/i);
+assert.match(qrReaderCss, /border-radius:\s*15px/i);
+assert.match(qrReaderCss, /overflow:\s*hidden/i,
+    '#qr-reader debe conservar la geometría que funcionaba en marzo');
+assert.doesNotMatch(css, /#qr-reader\s+video\s*\{/i,
+    'la aplicación no debe forzar tamaño, object-fit ni reproducción del video de la biblioteca');
+assert.doesNotMatch(css, /#qr-reader__scan_region\s*\{/i,
+    'la aplicación no debe alterar la región de escaneo generada por la biblioteca');
+assert.doesNotMatch(indexSource, /scanner-guia|scanner-hint/i,
+    'no deben reaparecer overlays añadidos después de la versión estable');
 
-console.log('--- 3. Pruebas de Configuración Mínima del Escáner ---');
+console.log('✓ Geometría nativa del visor estable restaurada');
 
-// A) Diseño mínimo: el escáner NO debe usar qrbox. El visor ya es cuadrado y
-//    centrado por CSS, así que todo el frame es la zona de escaneo; agregar
-//    qrbox solo reintroduce el overlay/recorte de html5-qrcode sobre el video
-//    (una capa de DOM más, ya asociada al bug de pantalla negra en iOS).
-assert.ok(!inlineSource.includes('qrbox:'), 'scanConfig no debe incluir qrbox: el visor cuadrado ya es la zona de escaneo');
+console.log('--- 3. Regresión de configuración y ciclo de vida de marzo ---');
 
-// B) No debe incluir aspectRatio en config de start (provoca pantalla congelada en iOS Safari)
-assert.ok(!inlineSource.includes('aspectRatio: 1.0') && !inlineSource.includes('aspectRatio: 1,'),
-    'scanConfig no debe incluir aspectRatio como restricción de hardware');
-
-// G) CRÍTICO para Safari/iOS: el primer arranque de la cámara (inicializarScanner)
-// no debe pedir la lista de cámaras (Html5Qrcode.getCameras()/obtenerCamaras) antes
-// de su .start() real. Hacerlo dispara un getUserMedia que se pide y se suelta,
-// seguido de un segundo getUserMedia real: dos peticiones de cámara seguidas así es
-// una causa conocida de video "vivo pero negro" en WebKit (decodifica, no pinta).
 const inicializarScannerBody = extractFunction(inlineSource, 'inicializarScanner');
-assert.ok(!inicializarScannerBody.includes('obtenerCamaras('),
-    'inicializarScanner no debe llamar a obtenerCamaras()/getCameras() antes del primer .start(): ' +
-    'un getUserMedia previo al arranque real provoca pantalla negra en Safari/iOS');
+assert.match(inicializarScannerBody, /new Html5Qrcode\("qr-reader"\)\s*;/,
+    'Html5Qrcode debe construirse sin opciones experimentales ni filtros posteriores');
+assert.match(inicializarScannerBody,
+    /const config = \{ fps: 10, qrbox: \{ width: 220, height: 220 \}, aspectRatio: 1\.0 \};/,
+    'debe conservar exactamente fps, qrbox y aspectRatio de f4a19c5');
+assert.match(inicializarScannerBody,
+    /\.start\(\{ facingMode: "environment" \}, config, onScanSuccess, onScanError\)/,
+    'debe solicitar la cámara trasera con la misma llamada estable');
+assert.doesNotMatch(inicializarScannerBody,
+    /videoConstraints|width:\s*\{\s*ideal|height:\s*\{\s*ideal|applyConstraints|focusMode|playsinline|webkit-playsinline/,
+    'no debe negociar resolución, foco ni reproducción del video fuera de html5-qrcode');
+assert.doesNotMatch(inicializarScannerBody,
+    /getState|\.pause\(|\.resume\(|formatsToSupport|experimentalFeatures|getCameras/,
+    'el arranque no debe añadir estados, formatos ni sondeos posteriores a marzo');
 
-// H) CRÍTICO para Safari/iOS: inicializarApp (que corre en la carga de la página,
-// sin ningún gesto del usuario) no debe llamar a inicializarScanner directamente.
-// Pedir getUserMedia sin un gesto real es otra causa conocida de video "vivo pero
-// negro" en WebKit. El único arranque legítimo es el botón "Activar Cámara".
 const inicializarAppBody = extractFunction(inlineSource, 'inicializarApp');
-assert.ok(!inicializarAppBody.includes('inicializarScanner('),
-    'inicializarApp no debe auto-iniciar el escáner: el primer arranque de la cámara debe ' +
-    'ocurrir solo dentro de un gesto real del usuario (botón "Activar Cámara")');
+assert.doesNotMatch(inicializarAppBody, /inicializarScanner\(/,
+    'el primer arranque debe seguir ocurriendo desde el botón Activar Cámara');
 
-// I) Regla primaria "evitar problemas": el escáner solo debe usar la cámara trasera.
-// No debe existir selección/alternancia hacia la cámara frontal ni botón de cambio
-// de cámara: cada capa de selección de cámara probada fue una fuente real de
-// pantalla negra en Safari/iOS.
-assert.ok(!inlineSource.includes('cambiarCamaraScanner') && !inlineSource.includes('btnSwitchCam'),
-    'no debe existir cambio de cámara: el escáner usa únicamente facingMode "environment"');
-assert.ok(!inlineSource.includes('facingMode: "user"') && !inlineSource.includes("facingMode: 'user'"),
-    'el escáner no debe poder solicitar la cámara frontal');
+const onScanSuccessBody = extractFunction(inlineSource, 'onScanSuccess');
+assert.doesNotMatch(onScanSuccessBody, /\.pause\(|\.resume\(|getState|Html5QrcodeScannerState/,
+    'la lectura no debe pausar el stream antes de que el modal lo detenga');
 
-// C) Debe incluir wakeLock para evitar apagado de pantalla
-assert.ok(inlineSource.includes('solicitarWakeLock'), 'Debe existir función solicitarWakeLock');
-assert.ok(inlineSource.includes('liberarWakeLock'), 'Debe existir función liberarWakeLock');
+const lifecycleStart = inlineSource.indexOf('// ===== EVENTOS DEL SCANNER =====');
+const lifecycleEnd = inlineSource.indexOf('// ===== BOTÓN ATRÁS DEL SISTEMA =====', lifecycleStart);
+assert.ok(lifecycleStart !== -1 && lifecycleEnd > lifecycleStart, 'Debe existir el bloque de ciclo de vida del escáner');
+const lifecycle = inlineSource.slice(lifecycleStart, lifecycleEnd);
+assert.match(lifecycle, /html5QrCode\.stop\(\)/,
+    'los modales deben destruir el stream con stop, como en marzo');
+assert.doesNotMatch(lifecycle, /\.pause\(|\.resume\(|reanudarScannerSiPausado/,
+    'no debe persistir el ciclo pause/resume agregado después');
+assert.match(lifecycle, /setTimeout\(\(\) => \{\s*inicializarScanner\(\);\s*\}, 300\);/,
+    'el escáner debe reiniciarse 300ms después de cerrar el modal');
+assert.doesNotMatch(inlineSource,
+    /solicitarWakeLock|liberarWakeLock|verificarYReanimarScanner|ultimoTiempoVideo|Html5QrcodeScannerState/,
+    'no debe quedar maquinaria de keep-alive, watchdog o estados de cámara posterior a marzo');
 
-// D) CRÍTICO para Safari/iOS: la versión estable previa no tenía watchdog ni
-// reanimación automática de cámara (setInterval + visibilitychange/focus/pageshow
-// forzando stop()+start()). Ese watchdog multiplicaba los getUserMedia por falsos
-// positivos de "stream congelado" y coincide con cuando empezó a fallar. No debe
-// reaparecer: solo debe quedar el visibilitychange que renueva el WakeLock.
-assert.ok(!inlineSource.includes("addEventListener('focus'", ) && !inlineSource.includes("addEventListener('pageshow'"),
-    'no debe existir reanimación de cámara en focus/pageshow: fuente conocida de pantalla negra en Safari/iOS');
-assert.ok(!inlineSource.includes('verificarYReanimarScanner') && !inlineSource.includes('ultimoTiempoVideo'),
-    'no debe existir el watchdog periódico que reinicia la cámara sola');
-
-// E) Modal debe pausar (pause) y no destruir (stop) en show.bs.modal para reanudación instantánea
-const modalShowMatch = inlineSource.match(/document\.getElementById\('registroModal'\)\.addEventListener\('show\.bs\.modal',\s*\(\)\s*=>\s*\{([\s\S]*?)\}\);/);
-assert.ok(modalShowMatch, 'Debe existir listener show.bs.modal');
-assert.ok(modalShowMatch[1].includes('html5QrCode.pause(true)'),
-    'show.bs.modal debe pausar el escáner (pause) y no destruirlo (stop)');
-
-// F) CRÍTICO para Safari/iOS: la última versión confirmada estable en producción
-// NUNCA forzó resolución de cámara (videoConstraints con width/height min-ideal-max).
-// Ese bloque se agregó como "optimización" y coincide exactamente con cuando
-// empezaron los reportes de pantalla negra: forzar una resolución exacta es una
-// restricción más que getUserMedia puede negociar mal en Safari/iOS.
-assert.ok(!inlineSource.includes('videoConstraints:'),
-    'scanConfig no debe forzar videoConstraints (resolución): dejar que el navegador ' +
-    'elija su propio modo de captura es más robusto en Safari/iOS');
-
-console.log('✓ Invariantes de configuración mínima del escáner pasadas');
+console.log('✓ Configuración y ciclo stop/start de f4a19c5 restaurados');
 console.log('\nTODOS LOS TESTS DE INTEGRIDAD DEL ESCÁNER PASARON EXITOSAMENTE.');
