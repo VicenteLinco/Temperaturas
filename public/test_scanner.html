@@ -21,27 +21,17 @@
             padding: 20px;
             margin-bottom: 16px;
         }
-        /* Wrapper del visor: ningún ancestro del <video> (ni .scanner-wrap-diag
-           ni #qr-reader-diag) puede combinar border-radius + overflow:hidden,
-           eso provoca pantalla negra en Safari/iOS (bug de compositing de
-           WebKit). El visor queda cuadrado y con esquinas vivas. */
+        /* Diagnóstico mínimo: la biblioteca controla por completo el video y
+           su geometría; la página solo aporta ancho, borde y fondo. */
         .scanner-wrap-diag {
             max-width: 320px;
-            aspect-ratio: 1 / 1;
             margin: 0 auto;
             border: 2px solid #0071e3 !important;
             background: #000;
         }
         #qr-reader-diag {
             width: 100%;
-            height: 100%;
             position: relative;
-        }
-        #qr-reader-diag video {
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: cover;
-            display: block !important;
         }
         .check-item {
             display: flex;
@@ -76,10 +66,6 @@
             <div class="check-item">
                 <span>BarcodeDetector Nativo (Hardware)</span>
                 <span id="chkBarcode" class="badge bg-secondary">Comprobando...</span>
-            </div>
-            <div class="check-item">
-                <span>Screen Wake Lock (Anti-apagado)</span>
-                <span id="chkWakeLock" class="badge bg-secondary">Comprobando...</span>
             </div>
             <div class="check-item">
                 <span>Motor de Renderizado</span>
@@ -135,12 +121,6 @@
             elBarcode.className = hasBarcode ? 'badge bg-success' : 'badge bg-warning text-dark';
             elBarcode.textContent = hasBarcode ? 'Nativo (Vision/Play Services)' : 'Software (ZXing JS)';
 
-            // WakeLock
-            const hasWakeLock = 'wakeLock' in navigator;
-            const elWake = document.getElementById('chkWakeLock');
-            elWake.className = hasWakeLock ? 'badge bg-success' : 'badge bg-warning text-dark';
-            elWake.textContent = hasWakeLock ? 'Soportado' : 'No soportado';
-
             // Engine
             const ua = navigator.userAgent;
             let engine = 'Estándar';
@@ -155,23 +135,23 @@
             status.className = 'alert alert-info mt-3 py-2 small';
             status.textContent = 'Iniciando cámara...';
 
-            if (!html5QrCodeDiag) {
-                html5QrCodeDiag = new Html5Qrcode("qr-reader-diag", {
-                    formatsToSupport: [ 0 ],
-                    verbose: false
-                });
+            if (typeof window.Html5Qrcode !== 'function') {
+                status.className = 'alert alert-danger mt-3 py-2 small';
+                status.textContent = 'No se cargó el lector QR. Recargue la página.';
+                return;
+            }
+            if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+                status.className = 'alert alert-danger mt-3 py-2 small';
+                status.textContent = 'La prueba necesita HTTPS y acceso compatible a la cámara.';
+                return;
             }
 
-            const scanConfig = {
-                fps: 12,
-                videoConstraints: {
-                    facingMode: { ideal: "environment" },
-                    width: { min: 640, ideal: 1280, max: 1920 },
-                    height: { min: 480, ideal: 720, max: 1080 }
-                }
-            };
-
             try {
+                if (!html5QrCodeDiag) {
+                    html5QrCodeDiag = new window.Html5Qrcode("qr-reader-diag");
+                }
+
+                const scanConfig = { fps: 10 };
                 await html5QrCodeDiag.start(
                     { facingMode: "environment" },
                     scanConfig,
@@ -181,25 +161,39 @@
                             <strong><i class="bi bi-check-circle-fill me-1"></i> QR Detectado:</strong> <code>${decodedText}</code>
                         </div>` + log.innerHTML;
                         status.className = 'alert alert-success mt-3 py-2 small';
-                        status.textContent = '¡Video y escaneo funcionando al 100%!';
+                        status.textContent = 'Código QR detectado; el stream está entregando datos.';
                     },
                     (err) => {}
                 );
 
-                const videoEl = document.querySelector('#qr-reader-diag video');
-                if (videoEl) {
-                    videoEl.setAttribute('playsinline', 'true');
-                    videoEl.setAttribute('webkit-playsinline', 'true');
-                    videoEl.muted = true;
-                    videoEl.play().catch(() => {});
+                const estadoVideo = await observarVideoDiagnostico();
+                if (estadoVideo.ok) {
+                    status.className = 'alert alert-success mt-3 py-2 small';
+                    status.textContent = 'Stream activo: dimensiones válidas y reproducción avanzando.';
+                } else {
+                    status.className = 'alert alert-warning mt-3 py-2 small';
+                    status.textContent = `La cámara inició, pero el estado del video no muestra avance verificable (${estadoVideo.detalle}).`;
                 }
-
-                status.className = 'alert alert-success mt-3 py-2 small';
-                status.textContent = 'Cámara activa y transmitiendo video sin pantalla negra.';
             } catch (e) {
                 status.className = 'alert alert-danger mt-3 py-2 small';
-                status.textContent = 'Error al activar cámara: ' + e;
+                const nombre = e?.name || String(e).match(/(?:NotAllowedError|NotFoundError|NotReadableError|OverconstrainedError)/)?.[0] || 'sin detalle';
+                status.textContent = `Error al activar la cámara (${nombre}).`;
             }
+        }
+
+        async function observarVideoDiagnostico() {
+            const video = document.querySelector('#qr-reader-diag video');
+            if (!video) return { ok: false, detalle: 'video ausente' };
+
+            await new Promise(resolve => setTimeout(resolve, 350));
+            const tiempoInicial = video.currentTime;
+            await new Promise(resolve => setTimeout(resolve, 450));
+
+            const dimensiones = video.videoWidth > 0 && video.videoHeight > 0;
+            const visible = video.getClientRects().length > 0 && video.offsetWidth > 0 && video.offsetHeight > 0;
+            const avanzando = !video.paused && video.readyState >= 2 && video.currentTime > tiempoInicial;
+            const detalle = `${video.videoWidth}x${video.videoHeight}, readyState ${video.readyState}, ${video.paused ? 'pausado' : 'reproduciendo'}`;
+            return { ok: dimensiones && visible && avanzando, detalle };
         }
 
         async function detenerDiagnostico() {

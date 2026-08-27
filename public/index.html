@@ -79,8 +79,6 @@
             max-width: 400px;
             margin: 0 auto;
             border: 3px solid var(--ink);
-            border-radius: 15px;
-            overflow: hidden;
             min-height: 300px;
             position: relative;
             background-color: #000000;
@@ -1051,6 +1049,8 @@
     <script>
         let currentUser = null;
         let html5QrCode = null;
+        let scannerAttemptGeneration = 0;
+        let scannerPendingOperation = null;
         let areasData = {};
         let escaneoEnProceso = false;
         let areaActualId = null;
@@ -1140,31 +1140,162 @@
             } catch (e) {}
         }
 
-        // Configuración restaurada desde f4a19c5 (11-03-2026), la versión
-        // confirmada estable en celulares. La biblioteca conserva el control del
-        // video, el encuadre y la negociación de la cámara.
-        function inicializarScanner() {
-            const btn = document.querySelector('#scannerOverlay button');
-            const originalText = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Iniciando...';
+        async function detenerInstanciaScanner(scanner) {
+            if (!scanner) return;
+            try {
+                await Promise.resolve(scanner.stop());
+            } catch (_) {}
+        }
 
-            if (!html5QrCode) {
-                html5QrCode = new Html5Qrcode("qr-reader");
+        function mostrarOverlayScanner(disponible) {
+            const overlay = document.getElementById('scannerOverlay');
+            const btn = overlay?.querySelector('button');
+            if (overlay) overlay.style.display = 'flex';
+            if (btn) {
+                btn.disabled = !disponible;
+                btn.innerHTML = disponible
+                    ? '<i class="bi bi-power me-1"></i> Activar Cámara'
+                    : '<span class="spinner-border spinner-border-sm"></span> Cerrando...';
+            }
+        }
+
+        function dejarScannerEnReposo(detener = false) {
+            if (!detener) {
+                mostrarOverlayScanner(true);
+                return Promise.resolve();
             }
 
-            const config = { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 1.0 };
+            scannerAttemptGeneration++;
+            mostrarOverlayScanner(false);
+            const operacionAnterior = scannerPendingOperation;
+            const cierre = (async () => {
+                if (operacionAnterior) {
+                    await operacionAnterior.catch(() => {});
+                }
+                await detenerInstanciaScanner(html5QrCode);
+            })();
+            let fronteraCierre;
+            fronteraCierre = cierre.finally(() => {
+                if (scannerPendingOperation !== fronteraCierre) return;
+                scannerPendingOperation = null;
+                mostrarOverlayScanner(true);
+            });
+            scannerPendingOperation = fronteraCierre;
+            return fronteraCierre;
+        }
 
-            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanError)
-                .then(() => {
+        async function confirmarReproduccionScanner() {
+            const video = document.querySelector('#qr-reader video');
+            const errorVideo = mensaje => {
+                const error = new Error(mensaje);
+                error.name = 'VideoPlaybackError';
+                return error;
+            };
+            if (!video) throw errorVideo('No se creó el video de la cámara');
+
+            let timeoutId;
+            const observacion = (async () => {
+                if (video.paused) {
+                    await Promise.resolve(video.play());
+                }
+                await new Promise(resolve => setTimeout(resolve, 250));
+                const tiempoInicial = video.currentTime;
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                const dimensiones = video.videoWidth > 0 && video.videoHeight > 0;
+                const visible = video.getClientRects().length > 0 && video.offsetWidth > 0 && video.offsetHeight > 0;
+                const avanzando = !video.paused && video.readyState >= 2 && video.currentTime > tiempoInicial;
+                if (!dimensiones || !visible || !avanzando) {
+                    throw errorVideo('El video no comenzó a reproducirse');
+                }
+            })();
+            const timeout = new Promise((_, reject) => {
+                timeoutId = setTimeout(() => reject(errorVideo('Tiempo de espera agotado')), 1800);
+            });
+
+            try {
+                await Promise.race([observacion, timeout]);
+            } catch (error) {
+                if (error?.name === 'VideoPlaybackError') throw error;
+                throw errorVideo(error?.message || 'No se pudo reproducir el video');
+            } finally {
+                clearTimeout(timeoutId);
+            }
+        }
+
+        function mensajeErrorCamara(error) {
+            const texto = String(error?.message || error || '');
+            const nombreDetectado = error?.name || texto.match(/(NotAllowedError|NotFoundError|NotReadableError|OverconstrainedError|AbortError|SecurityError)/)?.[1] || '';
+            const mensajes = {
+                NotAllowedError: 'Permiso de cámara denegado',
+                NotFoundError: 'No se encontró una cámara disponible',
+                NotReadableError: 'La cámara está ocupada por otra aplicación',
+                OverconstrainedError: 'La cámara no admite la configuración solicitada',
+                AbortError: 'El navegador interrumpió el acceso a la cámara',
+                SecurityError: 'El navegador bloqueó el acceso seguro a la cámara',
+                VideoPlaybackError: 'La cámara se abrió, pero el video no comenzó. Cierre otras aplicaciones que usen la cámara e inténtelo nuevamente'
+            };
+            const nombre = Object.prototype.hasOwnProperty.call(mensajes, nombreDetectado) ? nombreDetectado : '';
+            const base = mensajes[nombre] || 'No se pudo iniciar la cámara';
+            return nombre && nombre !== 'VideoPlaybackError' ? `${base} (${nombre}).` : `${base}.`;
+        }
+
+        async function inicializarScanner() {
+            const btn = document.querySelector('#scannerOverlay button');
+            if (scannerPendingOperation) return scannerPendingOperation;
+            if (typeof window.Html5Qrcode !== 'function') {
+                dejarScannerEnReposo();
+                mostrarEstado('No se cargó el lector QR. Recargue la página e inténtelo nuevamente.', 'danger');
+                return;
+            }
+            if (!window.isSecureContext) {
+                dejarScannerEnReposo();
+                mostrarEstado('La cámara requiere abrir el sistema mediante HTTPS.', 'danger');
+                return;
+            }
+            if (!navigator.mediaDevices?.getUserMedia) {
+                dejarScannerEnReposo();
+                mostrarEstado('Este navegador no ofrece acceso compatible a la cámara.', 'danger');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Iniciando...';
+            const generacion = ++scannerAttemptGeneration;
+            let scanner = html5QrCode;
+            let mostrarReposoAlFinal = false;
+
+            const arranque = (async () => {
+                try {
+                    if (!scanner) {
+                        scanner = new window.Html5Qrcode("qr-reader");
+                        html5QrCode = scanner;
+                    }
+
+                    const config = { fps: 10 };
+                    await scanner.start({ facingMode: "environment" }, config, onScanSuccess, onScanError);
+                    if (generacion !== scannerAttemptGeneration) return;
+
+                    await confirmarReproduccionScanner();
+                    if (generacion !== scannerAttemptGeneration) return;
                     document.getElementById('scannerOverlay').style.display = 'none';
-                })
-                .catch(err => {
-                    console.error('Error scanner:', err);
-                    btn.disabled = false;
-                    btn.innerHTML = originalText;
-                    mostrarEstado('Error al acceder a la cámara. Verifique permisos.', 'danger');
-                });
+                } catch (error) {
+                    if (generacion !== scannerAttemptGeneration) return;
+                    console.error('Error scanner:', error);
+                    scannerAttemptGeneration++;
+                    await detenerInstanciaScanner(scanner);
+                    mostrarReposoAlFinal = true;
+                    mostrarEstado(mensajeErrorCamara(error), 'danger');
+                }
+            })();
+            let fronteraArranque;
+            fronteraArranque = arranque.finally(() => {
+                if (scannerPendingOperation !== fronteraArranque) return;
+                scannerPendingOperation = null;
+                if (mostrarReposoAlFinal) mostrarOverlayScanner(true);
+            });
+            scannerPendingOperation = fronteraArranque;
+            return fronteraArranque;
         }
 
         function extraerTermometroId(decodedText) {
@@ -2279,21 +2410,9 @@
         });
         
         // ===== EVENTOS DEL SCANNER =====
-        // Estrategia restaurada desde la versión estable del 11-03-2026: detener
-        // completamente el escáner al abrir un modal y crear un stream nuevo al
-        // cerrarlo. No se conserva un stream pausado entre transiciones.
+        // La cámara se destruye al abrir un modal y solo vuelve a solicitarse con
+        // el siguiente toque explícito en "Activar Cámara".
         
-        document.getElementById('registroModal').addEventListener('show.bs.modal', () => {
-            if (html5QrCode) {
-                html5QrCode.stop().then(() => {
-                    console.log('Scanner detenido correctamente');
-                    document.getElementById('scannerOverlay').style.display = 'flex';
-                }).catch(err => {
-                    console.log('El scanner ya estaba detenido o error:', err);
-                });
-            }
-        });
-
         // Limpieza de backdrops fantasma SIN romper los modales apilados: si al cerrar
         // uno sigue habiendo otro abierto (confirmación sobre registro, o el cierre de
         // ronda que se abre justo después de confirmar), se conserva su fondo y el body
@@ -2320,25 +2439,13 @@
         }
 
         document.getElementById('registroModal').addEventListener('hidden.bs.modal', () => {
-            if (sanearBackdrops()) return;
-            // Dar tiempo a Bootstrap para completar la transición antes de pedir
-            // nuevamente la cámara, igual que en la versión estable.
-            setTimeout(() => {
-                inicializarScanner();
-            }, 300);
+            sanearBackdrops();
         });
 
         const modalConfirm = document.getElementById('confirmacionModal');
         if (modalConfirm) {
-            modalConfirm.addEventListener('show.bs.modal', () => {
-                if (html5QrCode) html5QrCode.stop().catch(() => {});
-            });
             modalConfirm.addEventListener('hidden.bs.modal', () => {
-                // Con otro modal todavía abierto la cámara no debe encenderse detrás de él
-                if (sanearBackdrops()) return;
-                setTimeout(() => {
-                    inicializarScanner();
-                }, 300);
+                sanearBackdrops();
             });
         }
 
@@ -2351,6 +2458,10 @@
         let retrocesoPropio = false;
 
         document.querySelectorAll('.modal').forEach(modalEl => {
+            modalEl.addEventListener('show.bs.modal', () => {
+                dejarScannerEnReposo(true);
+            });
+
             modalEl.addEventListener('shown.bs.modal', () => {
                 pilaModales.push(modalEl);
                 modalEl.dataset.histApilado = '1';
@@ -2386,18 +2497,11 @@
             setTimeout(() => { cerrandoPorHistorial = false; }, 400);
         });
 
-        // Los modales agregados después de marzo usan la misma frontera stop/start
-        // para no reintroducir el ciclo pause/resume descartado.
+        // El modal de fuera de servicio usa la misma salida manual del escáner.
         const modalTermoFS = document.getElementById('termoFueraServicioModal');
         if (modalTermoFS) {
-            modalTermoFS.addEventListener('show.bs.modal', () => {
-                if (html5QrCode) html5QrCode.stop().catch(() => {});
-            });
             modalTermoFS.addEventListener('hidden.bs.modal', () => {
-                if (sanearBackdrops()) return;
-                setTimeout(() => {
-                    inicializarScanner();
-                }, 300);
+                sanearBackdrops();
             });
         }
 
