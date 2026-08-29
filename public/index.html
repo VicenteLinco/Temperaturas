@@ -1053,6 +1053,11 @@
         let scannerPendingOperation = null;
         let areasData = {};
         let escaneoEnProceso = false;
+        // Evita reabrir el mismo modal en bucle: al reanudar la cámara tras cerrar el
+        // modal, el QR recién registrado suele seguir en cuadro y se detecta de nuevo
+        // en el siguiente frame. Se ignora mientras el operador no cambie de equipo.
+        let ultimoEscaneoProcesado = { id: null, ts: 0 };
+        const REESCANEO_MISMO_QR_MS = 4000;
         let areaActualId = null;
         let termometroSeleccionado = null;
         // LOW/ERROR se elige con un toque y nunca abre confirmaciones.
@@ -1370,6 +1375,12 @@
                     mostrarEstado(`Código QR no válido: ${decodedText.substring(0, 25)}`, 'warning');
                     return;
                 }
+
+                const ahora = Date.now();
+                if (termometroId === ultimoEscaneoProcesado.id && (ahora - ultimoEscaneoProcesado.ts) < REESCANEO_MISMO_QR_MS) {
+                    return;
+                }
+                ultimoEscaneoProcesado = { id: termometroId, ts: ahora };
 
                 // Éxito al leer código: feedback sensorial y abrir directamente
                 playScanSound('success');
@@ -2459,7 +2470,11 @@
         document.querySelectorAll('.modal').forEach(modalEl => {
             modalEl.addEventListener('show.bs.modal', () => {
                 if (html5QrCode && typeof html5QrCode.getState === 'function' && html5QrCode.getState() === 2 /* SCANNING */) {
-                    html5QrCode.pause(true);
+                    // Solo se pausa el bucle de decodificación, NUNCA el <video>: si el
+                    // video se pausa (pause(true)), resume() depende de un callback async
+                    // de reproducción que en iOS/Safari puede no dispararse nunca, dejando
+                    // el escáner congelado en PAUSED para siempre tras cada registro.
+                    html5QrCode.pause();
                     scannerPausadoPorModal = true;
                 } else if (!scannerPausadoPorModal) {
                     dejarScannerEnReposo(true);
