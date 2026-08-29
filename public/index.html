@@ -2457,9 +2457,16 @@
         let cerrandoPorHistorial = false;
         let retrocesoPropio = false;
 
+        let scannerPausadoPorModal = false;
+
         document.querySelectorAll('.modal').forEach(modalEl => {
             modalEl.addEventListener('show.bs.modal', () => {
-                dejarScannerEnReposo(true);
+                if (html5QrCode && typeof html5QrCode.getState === 'function' && html5QrCode.getState() === 2 /* SCANNING */) {
+                    html5QrCode.pause(true);
+                    scannerPausadoPorModal = true;
+                } else if (!scannerPausadoPorModal) {
+                    dejarScannerEnReposo(true);
+                }
             });
 
             modalEl.addEventListener('shown.bs.modal', () => {
@@ -2471,6 +2478,13 @@
             modalEl.addEventListener('hidden.bs.modal', () => {
                 const i = pilaModales.indexOf(modalEl);
                 if (i !== -1) pilaModales.splice(i, 1);
+
+                if (pilaModales.length === 0 && scannerPausadoPorModal) {
+                    scannerPausadoPorModal = false;
+                    if (html5QrCode && typeof html5QrCode.getState === 'function' && html5QrCode.getState() === 3 /* PAUSED */) {
+                        html5QrCode.resume();
+                    }
+                }
 
                 if (modalEl.dataset.histApilado !== '1') return;
                 delete modalEl.dataset.histApilado;
