@@ -64,6 +64,7 @@ pub struct TendenciasItem {
     pub promedio_min: Option<f32>,
     pub promedio_actual: Option<f32>,
     pub alertas: i64,
+    pub total_registros: i64,
     pub temp_min_operativa: Option<f32>,
     pub temp_max_operativa: Option<f32>,
 }
@@ -215,6 +216,7 @@ pub async fn obtener_graficos(
             ROUND(AVG(r.temp_minima)::numeric, 1)::real AS promedio_min,
             ROUND(AVG(r.temp_actual)::numeric, 1)::real AS promedio_actual,
             COUNT(*) FILTER (WHERE r.fuera_rango_operativo)::bigint AS alertas,
+            COUNT(*)::bigint AS total_registros,
             MIN(tt.temp_min_operativa) AS temp_min_operativa,
             MAX(tt.temp_max_operativa) AS temp_max_operativa
         FROM registros r
@@ -244,6 +246,7 @@ pub async fn obtener_graficos(
             promedio_min: row.get("promedio_min"),
             promedio_actual: row.get("promedio_actual"),
             alertas: row.get("alertas"),
+            total_registros: row.get("total_registros"),
             temp_min_operativa: row.get("temp_min_operativa"),
             temp_max_operativa: row.get("temp_max_operativa"),
         })

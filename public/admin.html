@@ -898,10 +898,10 @@
                                         </div>
                                     </div>
                                     <div class="mt-3 pt-2 border-top d-flex justify-content-end gap-2">
-                                        <button type="button" class="btn btn-sm btn-outline-primary px-3 fw-bold" onclick="generarReporteDiario('csv')">
+                                        <button type="button" class="btn btn-sm btn-outline-primary px-3 fw-bold" onclick="generarReporteDiario('csv', this)">
                                             <i class="bi bi-file-earmark-spreadsheet me-1"></i> Excel / CSV
                                         </button>
-                                        <button type="button" class="btn btn-sm btn-primary px-3 fw-bold" onclick="generarReporteDiario('pdf')">
+                                        <button type="button" class="btn btn-sm btn-primary px-3 fw-bold" onclick="generarReporteDiario('pdf', this)">
                                             <i class="bi bi-file-earmark-pdf me-1"></i> Exportar PDF
                                         </button>
                                     </div>
@@ -946,10 +946,10 @@
                                         </div>
                                     </div>
                                     <div class="mt-3 pt-2 border-top d-flex justify-content-end gap-2">
-                                        <button type="button" class="btn btn-sm btn-outline-success px-3 fw-bold" onclick="generarReporteMensual('csv')">
+                                        <button type="button" class="btn btn-sm btn-outline-success px-3 fw-bold" onclick="generarReporteMensual('csv', this)">
                                             <i class="bi bi-file-earmark-spreadsheet me-1"></i> Excel / CSV
                                         </button>
-                                        <button type="button" class="btn btn-sm btn-success px-3 fw-bold" onclick="generarReporteMensual('pdf')">
+                                        <button type="button" class="btn btn-sm btn-success px-3 fw-bold" onclick="generarReporteMensual('pdf', this)">
                                             <i class="bi bi-file-earmark-pdf me-1"></i> Exportar PDF
                                         </button>
                                     </div>
@@ -983,10 +983,10 @@
                                         </div>
                                     </div>
                                     <div class="mt-3 pt-2 border-top d-flex justify-content-end gap-2">
-                                        <button type="button" class="btn btn-sm btn-outline-danger px-3 fw-bold" onclick="generarReporteIncidencias('csv')">
+                                        <button type="button" class="btn btn-sm btn-outline-danger px-3 fw-bold" onclick="generarReporteIncidencias('csv', this)">
                                             <i class="bi bi-file-earmark-spreadsheet me-1"></i> Exportar CSV
                                         </button>
-                                        <button type="button" class="btn btn-sm btn-danger px-3 fw-bold" onclick="generarReporteIncidencias('pdf')">
+                                        <button type="button" class="btn btn-sm btn-danger px-3 fw-bold" onclick="generarReporteIncidencias('pdf', this)">
                                             <i class="bi bi-file-earmark-pdf me-1"></i> Exportar PDF Auditoría
                                         </button>
                                     </div>
@@ -1020,10 +1020,10 @@
                                         </div>
                                     </div>
                                     <div class="mt-3 pt-2 border-top d-flex justify-content-end gap-2">
-                                        <button type="button" class="btn btn-sm btn-outline-dark px-3 fw-bold" onclick="generarReporteEstabilidad('csv')">
+                                        <button type="button" class="btn btn-sm btn-outline-dark px-3 fw-bold" onclick="generarReporteEstabilidad('csv', this)">
                                             <i class="bi bi-file-earmark-spreadsheet me-1"></i> Exportar CSV Análisis
                                         </button>
-                                        <button type="button" class="btn btn-sm btn-dark px-3 fw-bold" onclick="generarReporteEstabilidad('pdf')">
+                                        <button type="button" class="btn btn-sm btn-dark px-3 fw-bold" onclick="generarReporteEstabilidad('pdf', this)">
                                             <i class="bi bi-file-earmark-pdf me-1"></i> Exportar PDF Ejecutivo
                                         </button>
                                     </div>
@@ -2851,7 +2851,25 @@
             }
         }
 
-        async function generarReporteDiario(formato) {
+        // Deshabilita el botón y muestra un spinner mientras `tarea` está en
+        // vuelo, evitando doble-clic (descargas duplicadas) en los reportes.
+        async function conBotonCargando(btn, tarea) {
+            if (!btn) {
+                await tarea();
+                return;
+            }
+            const htmlOriginal = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generando...';
+            try {
+                await tarea();
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = htmlOriginal;
+            }
+        }
+
+        async function generarReporteDiario(formato, btn) {
             const fecha = document.getElementById('reporte_diario_fecha').value;
             const areaId = document.getElementById('reporte_diario_area').value;
 
@@ -2860,35 +2878,37 @@
                 return;
             }
 
-            try {
-                const params = new URLSearchParams({
-                    fecha: fecha,
-                    formato: formato
-                });
-                if (areaId) params.append('area_id', areaId);
+            await conBotonCargando(btn, async () => {
+                try {
+                    const params = new URLSearchParams({
+                        fecha: fecha,
+                        formato: formato
+                    });
+                    if (areaId) params.append('area_id', areaId);
 
-                const response = await fetch(`/api/admin/reportes/diario?${params}`);
+                    const response = await fetch(`/api/admin/reportes/diario?${params}`);
 
-                if (!response.ok) {
-                    throw new Error('Error al generar reporte');
+                    if (!response.ok) {
+                        throw new Error(`Error al generar reporte (HTTP ${response.status})`);
+                    }
+
+                    // Descargar archivo
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `reporte_diario_${fecha}.${formato}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } catch (error) {
+                    alert('Error al generar reporte: ' + error.message);
                 }
-
-                // Descargar archivo
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `reporte_diario_${fecha}.${formato}`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-            } catch (error) {
-                alert('Error al generar reporte: ' + error.message);
-            }
+            });
         }
 
-        async function generarReporteMensual(formato) {
+        async function generarReporteMensual(formato, btn) {
             const mes = document.getElementById('reporte_mensual_mes').value;
             const anio = document.getElementById('reporte_mensual_anio').value;
             const areaId = document.getElementById('reporte_mensual_area').value;
@@ -2898,85 +2918,91 @@
                 return;
             }
 
-            try {
-                const params = new URLSearchParams({
-                    mes: mes,
-                    anio: anio,
-                    formato: formato
-                });
-                if (areaId) params.append('area_id', areaId);
+            await conBotonCargando(btn, async () => {
+                try {
+                    const params = new URLSearchParams({
+                        mes: mes,
+                        anio: anio,
+                        formato: formato
+                    });
+                    if (areaId) params.append('area_id', areaId);
 
-                const response = await fetch(`/api/admin/reportes/mensual?${params}`);
+                    const response = await fetch(`/api/admin/reportes/mensual?${params}`);
 
-                if (!response.ok) {
-                    throw new Error('Error al generar reporte');
+                    if (!response.ok) {
+                        throw new Error(`Error al generar reporte (HTTP ${response.status})`);
+                    }
+
+                    // Descargar archivo
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `reporte_mensual_${anio}_${mes}.${formato}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } catch (error) {
+                    alert('Error al generar reporte: ' + error.message);
                 }
-
-                // Descargar archivo
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `reporte_mensual_${anio}_${mes}.${formato}`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-            } catch (error) {
-                alert('Error al generar reporte: ' + error.message);
-            }
+            });
         }
 
-        async function generarReporteIncidencias(formato) {
+        async function generarReporteIncidencias(formato, btn) {
             const tipo = document.getElementById('reporte_incidencias_tipo').value;
             const obs = document.getElementById('reporte_incidencias_obs').value;
-            try {
-                const params = new URLSearchParams({
-                    tipo: tipo,
-                    incluir_observaciones: obs,
-                    formato: formato
-                });
-                const response = await fetch(`/api/admin/reportes/incidencias?${params}`);
-                if (!response.ok) throw new Error('No se pudo generar el reporte de incidencias');
+            await conBotonCargando(btn, async () => {
+                try {
+                    const params = new URLSearchParams({
+                        tipo: tipo,
+                        incluir_observaciones: obs,
+                        formato: formato
+                    });
+                    const response = await fetch(`/api/admin/reportes/incidencias?${params}`);
+                    if (!response.ok) throw new Error(`No se pudo generar el reporte de incidencias (HTTP ${response.status})`);
 
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `auditoria_incidencias_haccp_${new Date().toISOString().slice(0,10)}.${formato}`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-            } catch (error) {
-                alert('Error al generar reporte de incidencias: ' + error.message);
-            }
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `auditoria_incidencias_haccp_${new Date().toISOString().slice(0,10)}.${formato}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } catch (error) {
+                    alert('Error al generar reporte de incidencias: ' + error.message);
+                }
+            });
         }
 
-        async function generarReporteEstabilidad(formato) {
+        async function generarReporteEstabilidad(formato, btn) {
             const dias = document.getElementById('reporte_estabilidad_periodo').value;
             const agrupacion = document.getElementById('reporte_estabilidad_agrupacion').value;
-            try {
-                const params = new URLSearchParams({
-                    dias: dias,
-                    agrupar_por: agrupacion,
-                    formato: formato
-                });
-                const response = await fetch(`/api/admin/reportes/estabilidad?${params}`);
-                if (!response.ok) throw new Error('No se pudo generar el reporte de estabilidad');
+            await conBotonCargando(btn, async () => {
+                try {
+                    const params = new URLSearchParams({
+                        dias: dias,
+                        agrupar_por: agrupacion,
+                        formato: formato
+                    });
+                    const response = await fetch(`/api/admin/reportes/estabilidad?${params}`);
+                    if (!response.ok) throw new Error(`No se pudo generar el reporte de estabilidad (HTTP ${response.status})`);
 
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `analisis_estabilidad_termica_${dias}dias.${formato}`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-            } catch (error) {
-                alert('Error al generar reporte de estabilidad: ' + error.message);
-            }
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `analisis_estabilidad_termica_${dias}dias.${formato}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } catch (error) {
+                    alert('Error al generar reporte de estabilidad: ' + error.message);
+                }
+            });
         }
 
         // === GRÁFICOS Y ANÁLISIS DE TEMPERATURAS ===
@@ -4014,7 +4040,10 @@
                                     if (!items.length) return '';
                                     const index = items[0].dataIndex;
                                     const item = lecturas[index];
-                                    return item ? `📅 ${item.fecha_registro}` : items[0].label;
+                                    if (!item) return items[0].label;
+                                    return item.ventana_horaria
+                                        ? `📅 ${item.fecha_registro} · Ventana ${item.ventana_horaria}`
+                                        : `📅 ${item.fecha_registro}`;
                                 },
                                 label: (context) => {
                                     const index = context.dataIndex;

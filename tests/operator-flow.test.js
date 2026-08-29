@@ -84,11 +84,4 @@ assert.ok(incidencias.some(i => i.tipo === 'Humedad ERROR'));
 assert.ok(incidencias.some(i => i.tipo === 'Temperatura fuera de rango'));
 assert.ok(incidencias.some(i => i.tipo === 'Fuera de servicio'));
 
-const mensaje = flow.textoWhatsApp({
-    fecha: '08/08/2026', ventana: '14:00', completados: 2, total: 2, incidencias
-});
-assert.match(mensaje, /completadas correctamente/);
-assert.match(mensaje, /Humedad ERROR/);
-assert.match(mensaje, /Fuera de servicio/);
-
 console.log('operator-flow: 28 assertions passed');

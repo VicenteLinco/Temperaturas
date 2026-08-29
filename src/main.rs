@@ -2,7 +2,6 @@ mod auth;
 mod db;
 mod handlers;
 mod logic;
-mod mail;
 mod models;
 
 use axum::{
@@ -92,7 +91,6 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/termometros/:id/reparar", post(handlers::reparar_termometro))
         .route("/api/registros/informe-dia", get(handlers::generar_informe_dia))
         .route("/api/registros/informe-franja", get(handlers::generar_informe_franja))
-        .route("/api/registros/enviar-informe-franja", post(handlers::enviar_informe_franja))
         .route_layer(middleware::from_fn(auth::require_registrador));
 
     // Rutas de Administración

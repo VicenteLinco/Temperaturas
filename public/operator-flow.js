@@ -97,20 +97,6 @@
         return incidencias;
     }
 
-    function textoWhatsApp({ fecha, ventana, completados, total, incidencias }) {
-        const lineas = [
-            `Lecturas de laboratorio completadas correctamente · ${fecha}${ventana ? ` · ${ventana}` : ''}`,
-            `Equipos registrados: ${completados}/${total}`
-        ];
-        if (!incidencias.length) {
-            lineas.push('', 'Sin incidencias: todas las lecturas quedaron dentro de rango.');
-        } else {
-            lineas.push('', `Incidencias para revisar: ${incidencias.length}`);
-            incidencias.forEach(i => lineas.push(`• ${i.area} · ${i.equipo} — ${i.tipo}: ${i.detalle}`));
-        }
-        return lineas.join('\n');
-    }
-
     return {
         HUMEDAD_PREFIX,
         HUMEDAD_OBSERVACIONES,
@@ -120,7 +106,6 @@
         construirPayloadLectura,
         totalesRonda,
         rondaCompleta,
-        recopilarIncidencias,
-        textoWhatsApp
+        recopilarIncidencias
     };
 });

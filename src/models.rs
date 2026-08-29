@@ -328,6 +328,7 @@ pub struct RegistrosPaginados {
 
 #[derive(Debug, Clone, Serialize, FromRow)]
 pub struct FueraDeRangoItem {
+    pub id: i32,
     pub termometro_id: i32,
     pub termometro_nombre: Option<String>,
     pub area_nombre: String,
@@ -340,6 +341,7 @@ pub struct FueraDeRangoItem {
 
 #[derive(Debug, Clone, Serialize, FromRow)]
 pub struct FueraDeServicioItem {
+    pub id: i32,
     pub termometro_id: i32,
     pub termometro_nombre: Option<String>,
     pub area_nombre: String,
@@ -358,13 +360,6 @@ pub struct InformeFranjaResponse {
     pub total_mediciones: i64,
     pub fuera_de_rango: Vec<FueraDeRangoItem>,
     pub fuera_de_servicio: Vec<FueraDeServicioItem>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct EnviarInformeRequest {
-    pub email: String,
-    #[serde(default)]
-    pub ventana_horaria: Option<String>,
 }
 
 impl From<Usuario> for UsuarioResponse {

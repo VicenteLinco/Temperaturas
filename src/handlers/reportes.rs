@@ -11,7 +11,6 @@ use printpdf::*;
 
 use crate::{
     auth::CurrentUser,
-    db::log_auditoria,
     models::*,
 };
 
@@ -67,7 +66,9 @@ async fn construir_registros_diario(
         query.push_str(" AND t.area_id = $2");
     }
 
-    query.push_str(" ORDER BY a.nombre, t.nombre, r.ventana_horaria");
+    // Ordenado por ventana horaria primero para que el PDF pueda agrupar
+    // visualmente cada franja en su propia sección (ver generar_pdf_diario).
+    query.push_str(" ORDER BY r.ventana_horaria, a.nombre, t.nombre");
 
     let mut q = sqlx::query(&query).bind(fecha);
 
@@ -93,7 +94,7 @@ pub async fn generar_reporte_diario(
     if filtros.formato == "csv" {
         generar_csv_diario(rows, &filtros.fecha)
     } else if filtros.formato == "pdf" {
-        generar_pdf_diario(rows, &filtros.fecha)
+        generar_pdf_diario(rows, &filtros.fecha, true)
     } else {
         Err(StatusCode::BAD_REQUEST)
     }
@@ -117,7 +118,7 @@ pub async fn generar_informe_dia(
     if filtros.formato == "csv" {
         generar_csv_diario(rows, &fecha)
     } else if filtros.formato == "pdf" {
-        generar_pdf_diario(rows, &fecha)
+        generar_pdf_diario(rows, &fecha, true)
     } else {
         Err(StatusCode::BAD_REQUEST)
     }
@@ -250,7 +251,9 @@ pub async fn generar_reporte_incidencias(
     if filtros.formato == "csv" {
         generar_csv_diario(rows, &fecha_tag)
     } else {
-        generar_pdf_diario(rows, &format!("Auditoría de Incidencias HACCP ({})", fecha_tag))
+        // Ordenado por fecha (no por ventana horaria): agrupar por ventana no
+        // aporta claridad aquí, así que se muestra como tabla plana.
+        generar_pdf_diario(rows, &format!("Auditoría de Incidencias HACCP ({})", fecha_tag), false)
     }
 }
 
@@ -275,6 +278,21 @@ mod tests_ajuste_ancho_pdf {
     }
 
     #[test]
+    fn nombre_de_area_realista_cabe_en_columna_area_del_informe_de_franja() {
+        // Columna "Área" del informe de franja tras agregar "ID" como primera
+        // columna: x=16 hasta Termómetro x=40, o sea 40-16-1.5 = 22.5 mm.
+        let area_ancho_mm = 22.5;
+        let nombre = "Cámara de Congelación Principal";
+        let ajustado = truncar_a_ancho(nombre, area_ancho_mm, 7.5, false);
+        assert!(ancho_texto_mm(&ajustado, 7.5, false) <= area_ancho_mm);
+        assert!(!ajustado.is_empty());
+
+        // Nombres de área típicos (más cortos) no deberían truncarse.
+        let nombre_corto = "Bodega Fría";
+        assert_eq!(truncar_a_ancho(nombre_corto, area_ancho_mm, 7.5, false), nombre_corto);
+    }
+
+    #[test]
     fn texto_vacio_y_ancho_minimo_no_panic() {
         assert_eq!(truncar_a_ancho("", 4.0, 7.5, false), "");
         let ajustado = truncar_a_ancho("MMMMM", 1.0, 7.5, true);
@@ -288,6 +306,29 @@ mod tests_ajuste_ancho_pdf {
         let punto = ancho_texto_mm(".", 7.5, false);
         let esperado = 278.0 / 1000.0 * 7.5 * 0.352778;
         assert!((punto - esperado).abs() < 1e-6);
+    }
+
+    #[test]
+    fn celda_con_simbolo_no_supera_ancho_tras_sanear() {
+        // Antes del fix, escribir_filas medía el ancho sobre el texto CRUDO
+        // ("⚠ Alerta") y recién al dibujar lo saneaba a "[!] Alerta", un
+        // string más largo que podía invadir la columna siguiente. El orden
+        // correcto es sanear primero y truncar/medir sobre ese resultado.
+        let max_mm = 12.0;
+        let crudo = "⚠ Alerta";
+        let saneado = sanitize_pdf_str(crudo);
+        assert!(saneado.chars().count() > crudo.chars().count());
+        let ajustado = truncar_a_ancho(&saneado, max_mm, 7.5, false);
+        assert!(ancho_texto_mm(&ajustado, 7.5, false) <= max_mm);
+        assert!(!ajustado.contains('⚠'));
+    }
+
+    #[test]
+    fn saneo_es_idempotente() {
+        let texto = "Cámara Fría ⚠ ✓ Ñoño";
+        let una_vez = sanitize_pdf_str(texto);
+        let dos_veces = sanitize_pdf_str(&una_vez);
+        assert_eq!(una_vez, dos_veces);
     }
 }
 
@@ -360,7 +401,9 @@ pub async fn generar_reporte_estabilidad(
     if filtros.formato == "csv" {
         generar_csv_diario(rows, &etiqueta)
     } else {
-        generar_pdf_diario(rows, &etiqueta)
+        // Ya agrupado por área/termómetro (su eje relevante): no forzar
+        // agrupación por ventana horaria.
+        generar_pdf_diario(rows, &etiqueta, false)
     }
 }
 
@@ -426,7 +469,20 @@ fn periodo_mensual(mes: u32, anio: i32) -> String {
     format!("{} {}", nombre, anio)
 }
 
-fn generar_pdf_diario(rows: Vec<PgRow>, fecha: &str) -> Result<(StatusCode, Vec<u8>), StatusCode> {
+/// Fila ya formateada para el PDF, con la ventana horaria a mano para decidir
+/// dónde cortar en secciones cuando `agrupar_por_ventana` está activo.
+struct FilaConVentana {
+    ventana: String,
+    celdas: Vec<String>,
+}
+
+/// `agrupar_por_ventana`: cuando es `true`, las filas (ya vienen ordenadas por
+/// ventana horaria desde la consulta) se separan en secciones con un
+/// subtítulo en negrita por cada franja, para que la agrupación sea visible
+/// y no dependa solo de leer la columna "Ventana". Se desactiva en reportes
+/// cuyo orden natural es otro (incidencias por fecha, estabilidad por
+/// área/termómetro), donde forzar el corte por ventana no aportaría claridad.
+fn generar_pdf_diario(rows: Vec<PgRow>, fecha: &str, agrupar_por_ventana: bool) -> Result<(StatusCode, Vec<u8>), StatusCode> {
     let mut pdf = PdfEscritor::nuevo("Reporte de Control de Temperaturas", true)?;
 
     pdf.escribir_linea("REPORTE DE CONTROL DE TEMPERATURAS", 14.0, 6.0, 10.0, true);
@@ -448,9 +504,7 @@ fn generar_pdf_diario(rows: Vec<PgRow>, fecha: &str) -> Result<(StatusCode, Vec<
         ("Obs.".to_string(), 250.0),
     ];
 
-    escribir_encabezados(&mut pdf, &columnas);
-
-    let filas: Vec<Vec<String>> = rows
+    let filas: Vec<FilaConVentana> = rows
         .iter()
         .map(|row| {
             let id: i32 = row.get("id");
@@ -472,31 +526,40 @@ fn generar_pdf_diario(rows: Vec<PgRow>, fecha: &str) -> Result<(StatusCode, Vec<
             let usuario: String = row.get("usuario_nombre");
             let observaciones: Option<String> = row.try_get::<Option<String>, _>("observaciones").unwrap_or(None);
 
-            vec![
-                id.to_string(),
-                fecha_registro.format("%Y-%m-%d").to_string(),
-                ventana,
-                area,
-                termo_full,
-                tipo,
-                format!("{:.1}°C", temp_max),
-                format!("{:.1}°C", temp_min),
-                humedad.map(|h| format!("{:.1}%", h)).unwrap_or_else(|| "-".to_string()),
-                if fuera_rango { "⚠ Alerta".to_string() } else { "✓ OK".to_string() },
-                usuario,
-                observaciones.unwrap_or_else(|| "-".to_string()),
-            ]
+            FilaConVentana {
+                ventana: ventana.clone(),
+                celdas: vec![
+                    id.to_string(),
+                    fecha_registro.format("%Y-%m-%d").to_string(),
+                    ventana,
+                    area,
+                    termo_full,
+                    tipo,
+                    format!("{:.1}°C", temp_max),
+                    format!("{:.1}°C", temp_min),
+                    humedad.map(|h| format!("{:.1}%", h)).unwrap_or_else(|| "-".to_string()),
+                    if fuera_rango { "⚠ Alerta".to_string() } else { "✓ OK".to_string() },
+                    usuario,
+                    observaciones.unwrap_or_else(|| "-".to_string()),
+                ],
+            }
         })
         .collect();
 
-    escribir_filas(&mut pdf, &columnas, &filas);
+    if agrupar_por_ventana {
+        escribir_filas_agrupadas_por_ventana(&mut pdf, &columnas, &filas);
+    } else {
+        escribir_encabezados(&mut pdf, &columnas);
+        let solo_celdas: Vec<Vec<String>> = filas.into_iter().map(|f| f.celdas).collect();
+        escribir_filas(&mut pdf, &columnas, &solo_celdas);
+    }
 
     let bytes = pdf.guardar()?;
     Ok((StatusCode::OK, bytes))
 }
 
 fn generar_pdf_mensual(rows: Vec<PgRow>, mes: u32, anio: i32) -> Result<(StatusCode, Vec<u8>), StatusCode> {
-    generar_pdf_diario(rows, &periodo_mensual(mes, anio))
+    generar_pdf_diario(rows, &periodo_mensual(mes, anio), true)
 }
 
 // ===== INFORME DE FRANJA HORARIA =====
@@ -567,6 +630,7 @@ async fn consultar_informe_franja(
     let fuera_de_rango: Vec<FueraDeRangoItem> = sqlx::query_as(
         r#"
         SELECT
+            r.id,
             t.id as termometro_id, t.nombre as termometro_nombre,
             a.nombre as area_nombre,
             r.temp_maxima, r.temp_minima, r.humedad,
@@ -594,6 +658,7 @@ async fn consultar_informe_franja(
     let fuera_de_servicio: Vec<FueraDeServicioItem> = sqlx::query_as(
         r#"
         SELECT
+            m.id,
             t.id as termometro_id, t.nombre as termometro_nombre,
             a.nombre as area_nombre,
             ti.nombre as tipo_nombre, t.ubicacion,
@@ -602,7 +667,7 @@ async fn consultar_informe_franja(
         JOIN areas a ON t.area_id = a.id
         JOIN tipos_termometro ti ON t.tipo_id = ti.id
         JOIN LATERAL (
-            SELECT mt.motivo, mt.comentarios_reporte, mt.fecha_reporte
+            SELECT mt.id, mt.motivo, mt.comentarios_reporte, mt.fecha_reporte
             FROM mantenimiento_termometros mt
             WHERE mt.termometro_id = t.id AND mt.estado = 'PENDIENTE'
             ORDER BY mt.fecha_reporte DESC
@@ -651,66 +716,6 @@ pub async fn generar_informe_franja(
     } else {
         Ok(Json(informe).into_response())
     }
-}
-
-/// POST /api/registros/enviar-informe-franja
-/// Genera el informe PDF y lo envía por correo como adjunto.
-pub async fn enviar_informe_franja(
-    current_user: CurrentUser,
-    State(pool): State<PgPool>,
-    Json(payload): Json<EnviarInformeRequest>,
-) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let email = payload.email.trim().to_string();
-    if email.is_empty() {
-        return Err((StatusCode::BAD_REQUEST, "Debe indicar un correo destinatario.".to_string()));
-    }
-
-    let fecha = fecha_hoy_santiago();
-    let informe = consultar_informe_franja(&pool, &fecha, payload.ventana_horaria.as_deref())
-        .await
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Error al generar el informe".to_string()))?;
-
-    let (_, pdf) = generar_pdf_informe_franja(&informe)
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Error al generar el PDF".to_string()))?;
-
-    let asunto = format!(
-        "Informe de franja horaria {} - Ventana {}",
-        fecha, informe.ventana_horaria
-    );
-    let cuerpo = format!(
-        "Se adjunta el informe de la franja horaria {fecha} (ventana {ventana}).\n\n\
-         Total de mediciones: {total}\n\
-         Registros fuera de rango operativo: {fr}\n\
-         Termómetros sin funcionamiento: {fs}\n\n\
-         Este mensaje fue generado automáticamente por el Sistema de Control de Temperaturas.",
-        fecha = fecha,
-        ventana = informe.ventana_horaria,
-        total = informe.total_mediciones,
-        fr = informe.fuera_de_rango.len(),
-        fs = informe.fuera_de_servicio.len(),
-    );
-    let nombre_pdf = format!("informe_franja_{}.pdf", fecha);
-
-    crate::mail::enviar_correo_con_pdf(&email, &asunto, &cuerpo, pdf, &nombre_pdf)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("No se pudo enviar el correo: {}", e)))?;
-
-    log_auditoria(
-        &pool,
-        current_user.0.id.try_into().unwrap_or(0),
-        "EMAIL",
-        "informes",
-        None,
-        None,
-        Some(&format!("Informe franja {} enviado a {}", fecha, email)),
-    )
-    .await
-    .ok();
-
-    Ok(Json(serde_json::json!({
-        "success": true,
-        "message": format!("Informe enviado a {}", email)
-    })))
 }
 
 // ===== GENERACIÓN DE PDF DEL INFORME DE FRANJA =====
@@ -854,16 +859,21 @@ impl PdfEscritor {
         }
     }
 
+    /// Dibuja texto que YA debe venir saneado (ver `sanitize_pdf_str`). No
+    /// vuelve a sanear aquí para que el ancho medido antes de truncar
+    /// (sobre el mismo texto ya saneado) coincida exactamente con lo que
+    /// se dibuja; sanear después de truncar podía alargar el texto
+    /// (ej. "⚠" -> "[!]") y hacerlo invadir la columna siguiente.
     fn texto(&self, texto: &str, size: f32, x: f32, y: f32, bold: bool) {
-        let clean_text = sanitize_pdf_str(texto);
         let font = if bold { &self.font_bold } else { &self.font_regular };
-        self.layer.use_text(&clean_text, size, Mm(x), Mm(y), font);
+        self.layer.use_text(texto, size, Mm(x), Mm(y), font);
     }
 
     /// Escribe una línea en la posición actual y baja la coordenada vertical
     fn escribir_linea(&mut self, texto: &str, size: f32, x: f32, alto: f32, bold: bool) {
         self.asegurar_espacio(alto);
-        self.texto(texto, size, x, self.y, bold);
+        let saneado = sanitize_pdf_str(texto);
+        self.texto(&saneado, size, x, self.y, bold);
         self.y -= alto;
     }
 
@@ -876,7 +886,10 @@ fn escribir_encabezados(pdf: &mut PdfEscritor, columnas: &[(String, f32)]) {
     pdf.asegurar_espacio(10.0);
     let anchos = pdf.anchos_columnas(columnas);
     for (i, (texto, x)) in columnas.iter().enumerate() {
-        let ajustado = truncar_a_ancho(texto, anchos[i], 8.5, true);
+        // Sanear ANTES de truncar: el ancho se mide sobre el texto exacto
+        // que se va a dibujar, así truncar_a_ancho no subestima su ancho.
+        let saneado = sanitize_pdf_str(texto);
+        let ajustado = truncar_a_ancho(&saneado, anchos[i], 8.5, true);
         pdf.texto(&ajustado, 8.5, *x, pdf.y, true);
     }
     pdf.y -= 7.0;
@@ -892,7 +905,56 @@ fn escribir_filas(pdf: &mut PdfEscritor, columnas: &[(String, f32)], filas: &[Ve
         for (i, celda) in fila.iter().enumerate() {
             let x = columnas.get(i).map(|c| c.1).unwrap_or(8.0);
             let ancho = anchos.get(i).copied().unwrap_or(40.0);
-            let ajustado = truncar_a_ancho(celda, ancho, 7.5, false);
+            // Mismo motivo que en escribir_encabezados: sanear antes de medir/truncar.
+            let saneado = sanitize_pdf_str(celda);
+            let ajustado = truncar_a_ancho(&saneado, ancho, 7.5, false);
+            pdf.texto(&ajustado, 7.5, x, pdf.y, false);
+        }
+        pdf.y -= 5.0;
+    }
+    pdf.y -= 3.0;
+}
+
+/// Como `escribir_filas`, pero agrupa visualmente por `FilaConVentana.ventana`:
+/// imprime un subtítulo en negrita cada vez que cambia la ventana horaria.
+/// A diferencia de acumular cada grupo y llamar a `escribir_filas` por bloque,
+/// procesa fila por fila para poder reimprimir el subtítulo de la ventana
+/// vigente cuando `asegurar_espacio` fuerza un salto de página a mitad de un
+/// grupo: sin esto, el lector llegaba a la página siguiente y veía solo los
+/// encabezados de columna, sin saber a qué ventana horaria pertenecían.
+fn escribir_filas_agrupadas_por_ventana(
+    pdf: &mut PdfEscritor,
+    columnas: &[(String, f32)],
+    filas: &[FilaConVentana],
+) {
+    let anchos = pdf.anchos_columnas(columnas);
+    let mut ventana_actual: Option<&str> = None;
+
+    for fila in filas {
+        let cambio_de_ventana = ventana_actual != Some(fila.ventana.as_str());
+        if cambio_de_ventana {
+            pdf.escribir_linea(&format!("Ventana horaria: {}", fila.ventana), 10.0, 6.0, 7.0, true);
+            escribir_encabezados(pdf, columnas);
+            ventana_actual = Some(fila.ventana.as_str());
+        }
+
+        let salto_de_pagina = pdf.asegurar_espacio(6.0);
+        if salto_de_pagina {
+            escribir_encabezados(pdf, columnas);
+            if !cambio_de_ventana {
+                pdf.escribir_linea(
+                    &format!("Ventana horaria: {} (continuación)", fila.ventana),
+                    9.0, 6.0, 6.0, true,
+                );
+                escribir_encabezados(pdf, columnas);
+            }
+        }
+
+        for (i, celda) in fila.celdas.iter().enumerate() {
+            let x = columnas.get(i).map(|c| c.1).unwrap_or(8.0);
+            let ancho = anchos.get(i).copied().unwrap_or(40.0);
+            let saneado = sanitize_pdf_str(celda);
+            let ajustado = truncar_a_ancho(&saneado, ancho, 7.5, false);
             pdf.texto(&ajustado, 7.5, x, pdf.y, false);
         }
         pdf.y -= 5.0;
@@ -932,7 +994,8 @@ fn generar_pdf_informe_franja(
         pdf.escribir_linea("No hay registros fuera de rango operativo.", 9.0, 8.0, 6.0, false);
     } else {
         let columnas = vec![
-            ("Área".to_string(), 8.0),
+            ("ID".to_string(), 8.0),
+            ("Área".to_string(), 16.0),
             ("Termómetro".to_string(), 40.0),
             ("T.Máx".to_string(), 82.0),
             ("T.Mín".to_string(), 98.0),
@@ -945,6 +1008,7 @@ fn generar_pdf_informe_franja(
             .iter()
             .map(|r| {
                 vec![
+                    r.id.to_string(),
                     r.area_nombre.clone(),
                     r.termometro_nombre
                         .clone()
@@ -976,7 +1040,8 @@ fn generar_pdf_informe_franja(
         pdf.escribir_linea("No hay termómetros sin funcionamiento.", 9.0, 8.0, 6.0, false);
     } else {
         let columnas = vec![
-            ("Área".to_string(), 8.0),
+            ("ID".to_string(), 8.0),
+            ("Área".to_string(), 16.0),
             ("Termómetro".to_string(), 40.0),
             ("Tipo".to_string(), 82.0),
             ("Motivo".to_string(), 110.0),
@@ -988,6 +1053,7 @@ fn generar_pdf_informe_franja(
             .iter()
             .map(|r| {
                 vec![
+                    r.id.to_string(),
                     r.area_nombre.clone(),
                     r.termometro_nombre
                         .clone()
