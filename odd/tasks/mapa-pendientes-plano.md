@@ -67,6 +67,11 @@ Spatial view reduces missed points in large plants and speeds up rounds. Instanc
 - Route: direct inline (single mechanical move inside `src/db.rs`).
 - The T1 `ALTER TABLE termometros ADD COLUMN pos_x/pos_y` block sat BEFORE `CREATE TABLE termometros`, so fresh-DB boot died with `relation "termometros" does not exist` (`IF NOT EXISTS` guards the column, not the table; existing DBs were unaffected). Moved the ALTER to run right AFTER the CREATE. `cargo check` + unit tests cannot catch this class — always smoke-boot against an empty database after schema changes.
 
+### Fix — gráficos con un solo id (reportado en pruebas)
+
+- Route: direct inline (single file `src/handlers/graficos.rs`, pre-existing bug, not caused by the map).
+- `GET /api/admin/graficos?termometro_id=101` (single) failed with `Failed to deserialize query string: expected a sequence`: serde_urlencoded delivers one value as a string, so `Option<Vec<FragmentoId>>` rejected it; only absent (None) and repeated (?a=1&a=2) worked. The handler now takes a second `Query<Vec<(String,String)>>` extractor and builds the ids by hand with the existing `parsear_fragmento_id` + `normalizar_filtro_ids` (same absent-vs-empty semantics, invalid still 422). Verified single/repeated/commas/invalid live; `cargo test` 55/55 intact.
+
 ### T2 — Backend photo + positions API
 
 - Route: delegated direct (touches `src/handlers/mapa.rs` new, `src/main.rs`, `src/handlers/mod.rs`, `src/models.rs`, `Cargo.toml`/`Cargo.lock`, `public/uploads/.gitkeep`).
@@ -117,6 +122,8 @@ Spatial view reduces missed points in large plants and speeds up rounds. Instanc
 | T5 | manual: mobile 360px, upload 5MB reject, percent round-trip | pending (manual, not run headless) |
 | Hotfix boot | `cargo build` + fresh-DB boot (parent) | ok after fix; before fix boot died on `relation termometros does not exist` |
 | E2E mapa | curl: config on, area+tipo+termometro CRUD, posiciones, foto upload, mapa GET, cross-area move 409 then confirmed | ok: `estado pendiente`, `imagen_url /uploads/mapa.png`, 409 preview `{cambios:[...]}` with zero writes, confirmed move flips `area_id` 1→2 |
+| Fix graficos | curl single/repeated/commas/invalid + `cargo test` | ok: single now 200 with limites, repeated/commas deduped, invalid 422; 55 passed, 0 failed |
+| E2E registrador | created `registrador1` on TEST db, login, pendientes + mapa as that role | ok: pendientes list + mapa snapshot visible with correct estado |
 
 ## Delivery strategy
 
@@ -131,7 +138,8 @@ Spatial view reduces missed points in large plants and speeds up rounds. Instanc
 | T3 | 117abd7 | +411/-0 |
 | T4 | 1f8d833 | +173/-0 |
 | T5 docs | 8295fed | docs only |
-| Hotfix boot | pending (hash en el reporte final) | +8/-8 en src/db.rs |
+| Hotfix boot | c079000 | +8/-8 en src/db.rs |
+| Fix graficos | pending (hash en el reporte final) | solo src/handlers/graficos.rs |
 | T3 | pending | — |
 | T4 | pending | — |
 | T5 | pending | — |
