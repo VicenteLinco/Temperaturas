@@ -105,6 +105,11 @@ Spatial view reduces missed points in large plants and speeds up rounds. Instanc
 | T3 | structural readback (parent spot check) | ok, +411/-0 in public/admin.html, markers present |
 | T4 vista | `node --check public/mapa.js` (writer) | ok, SYNTAX_OK (149 lines) |
 | T4 | `node --check public/mapa.js` (parent spot check) | ok, SYNTAX_OK; +24/-0 in public/index.html |
+| T5 full | `cargo build` (parent) | ok, `Finished dev profile in 7.03s` (same pre-existing warning) |
+| T5 full | `cargo test` (parent) | ok, 55 passed, 0 failed |
+| T5 full | `node tests/operator-flow.test.js` + `node tests/graficos-multi-series.test.js` (parent) | ok, 28 + 14 assertions passed |
+| T5 full | `git diff --check` on branch range (parent) | ok, clean |
+| T5 | manual: mobile 360px, upload 5MB reject, percent round-trip | pending (manual, not run headless) |
 
 ## Delivery strategy
 
@@ -117,11 +122,12 @@ Spatial view reduces missed points in large plants and speeds up rounds. Instanc
 | T1+T1b | 748b744 | ~60 |
 | T2 | 5d7ceed | ~200 |
 | T3 | 117abd7 | +411/-0 |
-| T4 | pending (hash filled in final update) | +173/-0 |
+| T4 | 1f8d833 | +173/-0 |
+| T5 docs | pending (final close-out commit) | docs only |
 | T3 | pending | — |
 | T4 | pending | — |
 | T5 | pending | — |
 
 ## Next step
 
-T4 implemented (new mapa.js 149 lines + 24 additive lines in index.html, capture flow untouched) and spot-checked, awaiting work-unit commit. Next: T5 full verification.
+Done. T1–T5 implemented, verified and pushed as `feature/mapa-pendientes-plano` (no PR created — human decision). Manual pending: mobile 360px check, 5MB upload reject, percent round-trip in a real browser; plus re-upload note after each Render deploy (no persistent disk). To enable: run `sql/MAPA_PLANO.sql` on existing DBs, set `mapa_habilitado=1`, upload photo in admin Mapas section.
