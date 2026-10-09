@@ -427,6 +427,46 @@ pub fn normalizar_lecturas(
     (temp_actual, temp_maxima, temp_minima)
 }
 
+/// Regla única de normalización de lecturas según el tipo de termómetro.
+///
+/// - Tipo de tres puntos (`solo_un_punto = false`): exige máxima y mínima
+///   explícitas y solo las ordena; `temp_actual` conserva siempre su rol.
+/// - Tipo de un solo punto (`solo_un_punto = true`): `temp_actual` es el valor
+///   medido y se deriva `temp_maxima = temp_minima = temp_actual`. Un payload
+///   con máxima/mínima explícitas se rechaza en vez de elegir en silencio.
+/// La validación de rangos físicos y la regla de humedad siguen en
+/// `validar_registro`, que se aplica después sobre los valores normalizados.
+pub fn normalizar_lecturas_por_tipo(
+    temp_actual: Option<f32>,
+    temp_maxima: Option<f32>,
+    temp_minima: Option<f32>,
+    tipo: &TipoTermometro,
+) -> Result<(Option<f32>, f32, f32)> {
+    if tipo.solo_un_punto {
+        if temp_maxima.is_some() || temp_minima.is_some() {
+            return Err(anyhow!(
+                "El tipo '{}' es de un solo punto: envíe solo temp_actual, sin temp_maxima/temp_minima",
+                tipo.nombre
+            ));
+        }
+        match temp_actual {
+            Some(actual) => Ok((Some(actual), actual, actual)),
+            None => Err(anyhow!(
+                "El tipo '{}' es de un solo punto y requiere temp_actual",
+                tipo.nombre
+            )),
+        }
+    } else {
+        match (temp_maxima, temp_minima) {
+            (Some(a), Some(b)) => Ok(normalizar_lecturas(temp_actual, a, b)),
+            _ => Err(anyhow!(
+                "El tipo '{}' requiere temp_maxima y temp_minima",
+                tipo.nombre
+            )),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -652,6 +692,49 @@ mod tests {
         assert_eq!(actual, None);
         assert_eq!(maxima, -12.0);
         assert_eq!(minima, -18.0);
+    }
+
+    fn tipo_un_punto() -> TipoTermometro {
+        let mut t = tipo_base();
+        t.solo_un_punto = true;
+        t
+    }
+
+    #[test]
+    fn punto_unico_deriva_max_min_igual_actual() {
+        let tipo = tipo_un_punto();
+        let (actual, maxima, minima) =
+            normalizar_lecturas_por_tipo(Some(5.0), None, None, &tipo).unwrap();
+        assert_eq!(actual, Some(5.0));
+        assert_eq!(maxima, 5.0);
+        assert_eq!(minima, 5.0);
+    }
+
+    #[test]
+    fn punto_unico_rechaza_payload_tres_puntos() {
+        let tipo = tipo_un_punto();
+        let err =
+            normalizar_lecturas_por_tipo(Some(5.0), Some(7.0), Some(3.0), &tipo).unwrap_err();
+        assert!(err.to_string().contains("un solo punto"));
+    }
+
+    #[test]
+    fn punto_unico_exige_actual() {
+        let tipo = tipo_un_punto();
+        assert!(normalizar_lecturas_por_tipo(None, None, None, &tipo).is_err());
+    }
+
+    #[test]
+    fn tres_puntos_intacto_por_tipo() {
+        let tipo = tipo_base();
+        // Orden invertido: la regla de un solo lugar lo corrige igual que antes.
+        let (actual, maxima, minima) =
+            normalizar_lecturas_por_tipo(Some(-15.0), Some(-18.0), Some(-12.0), &tipo).unwrap();
+        assert_eq!(actual, Some(-15.0));
+        assert_eq!(maxima, -12.0);
+        assert_eq!(minima, -18.0);
+        // El camino de tres puntos sigue exigiendo máxima y mínima.
+        assert!(normalizar_lecturas_por_tipo(Some(5.0), None, None, &tipo).is_err());
     }
 
     // ===== VENTANAS HORARIAS =====

@@ -10,8 +10,8 @@ use crate::{
     auth::CurrentUser,
     db::{get_config, log_auditoria},
     logic::{
-        estado_ventana_actual, normalizar_lecturas, observacion_reporta_humedad_no_disponible,
-        resolver_campo_nullable, validar_registro,
+        estado_ventana_actual, normalizar_lecturas, normalizar_lecturas_por_tipo,
+        observacion_reporta_humedad_no_disponible, resolver_campo_nullable, validar_registro,
     },
     models::*,
 };
@@ -357,12 +357,21 @@ pub async fn crear_registro(
             )
         })?;
 
-    // Corregir solo máxima/mínima si vienen invertidas; actual conserva su rol.
-    let (temp_actual, temp_max, temp_min) = normalizar_lecturas(
+    // Regla única T2: según el flag del tipo se deriva (max=min=actual) o se
+    // ordena; un payload de tres puntos para un tipo de un solo punto se
+    // rechaza con 400 en vez de elegir un valor en silencio.
+    let (temp_actual, temp_max, temp_min) = normalizar_lecturas_por_tipo(
         payload.temp_actual,
         payload.temp_maxima,
         payload.temp_minima,
-    );
+        &tipo,
+    )
+    .map_err(|e| {
+        (
+            StatusCode::BAD_REQUEST,
+            format!("Error de validación: {}", e),
+        )
+    })?;
 
     // Validar
     let (fuera_rango_operativo, _advertencias) = validar_registro(
@@ -480,17 +489,36 @@ pub async fn actualizar_registro(
         })?;
 
     // Usar valores actuales si no se proporcionan nuevos
-    let temp_actual = payload.temp_actual.or(registro.temp_actual);
-    let lectura_a = payload.temp_maxima.unwrap_or(registro.temp_maxima);
-    let lectura_b = payload.temp_minima.unwrap_or(registro.temp_minima);
+    let temp_actual_efectivo = payload.temp_actual.or(registro.temp_actual);
+    // En actualización, un campo omitido conserva el valor persistido y uno
+    // explícito llega como Some: la regla de un solo lugar decide. Para un
+    // tipo de un solo punto se pasan los campos tal cual (omitido = None, que
+    // se deriva; explícito = Some, que se rechaza); para tres puntos se
+    // conserva el fallback al valor persistido.
+    let (temp_actual, temp_max, temp_min) = if tipo.solo_un_punto {
+        normalizar_lecturas_por_tipo(
+            temp_actual_efectivo,
+            payload.temp_maxima,
+            payload.temp_minima,
+            &tipo,
+        )
+        .map_err(|e| {
+            (
+                StatusCode::BAD_REQUEST,
+                format!("Error de validación: {}", e),
+            )
+        })?
+    } else {
+        let lectura_a = payload.temp_maxima.unwrap_or(registro.temp_maxima);
+        let lectura_b = payload.temp_minima.unwrap_or(registro.temp_minima);
+        // Corregir solo máxima/mínima si vienen invertidas; actual conserva su rol.
+        normalizar_lecturas(temp_actual_efectivo, lectura_a, lectura_b)
+    };
     let humedad = resolver_campo_nullable(payload.humedad, registro.humedad);
     let observaciones = resolver_campo_nullable(
         payload.observaciones.clone(),
         registro.observaciones.clone(),
     );
-
-    // Corregir solo máxima/mínima si vienen invertidas; actual conserva su rol.
-    let (temp_actual, temp_max, temp_min) = normalizar_lecturas(temp_actual, lectura_a, lectura_b);
 
     // Validar
     let humedad_no_disponible_reportada =

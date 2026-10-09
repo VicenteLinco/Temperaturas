@@ -223,8 +223,13 @@ pub struct RepararTermometroRequest {
 pub struct CrearRegistroRequest {
     pub termometro_id: i32,
     pub temp_actual: Option<f32>,
-    pub temp_maxima: f32,
-    pub temp_minima: f32,
+    // Opcionales para admitir tipos de un solo punto (solo temp_actual);
+    // el camino de tres puntos sigue exigiendo las tres lecturas y la regla
+    // de un solo lugar (`normalizar_lecturas_por_tipo`) lo valida.
+    #[serde(default)]
+    pub temp_maxima: Option<f32>,
+    #[serde(default)]
+    pub temp_minima: Option<f32>,
     pub humedad: Option<f32>,
     pub observaciones: Option<String>,
 }

@@ -112,6 +112,8 @@ F1 removes forced fake data entry and makes the app usable for single-value inst
 | --- | --- | --- |
 | T1 | `cargo build` | ok, `Finished dev profile` (solo warning preexistente sqlx-postgres future-incompat) |
 | T1 | `cargo test` | ok, 37 passed, 0 failed |
+| T2 | `cargo build` | ok, `Finished dev profile` (mismo warning preexistente) |
+| T2 | `cargo test` | ok, 41 passed (37 previos + 4 nuevos single-point), RED previo observado (E0425 función inexistente) |
 
 ## Delivery strategy
 
@@ -121,8 +123,9 @@ F1 removes forced fake data entry and makes the app usable for single-value inst
 
 | Task | Commit | Authored lines |
 | --- | --- | --- |
-| T1 | pending (schema + `solo_un_punto` en lectura) | ~35 |
+| T1 | 12e5dbc | ~35 |
+| T2 | pending (validación backend un punto + tests) | ~129 |
 
 ## Next step
 
-T1 done (incluye `TermometroConDetalles` + 3 SELECTs). Start T2.
+T1 done (incluye `TermometroConDetalles` + 3 SELECTs). T2 done (regla central + rechazo 400 + `Option` backward-compatible). Start T3.
