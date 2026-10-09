@@ -32,18 +32,19 @@ pub async fn crear_tipo_termometro(
     let tipo: TipoTermometro = sqlx::query_as(
         r#"
         INSERT INTO tipos_termometro (
-            nombre, descripcion, tiene_humedad,
+            nombre, descripcion, tiene_humedad, solo_un_punto,
             temp_min_operativa, temp_max_operativa,
             temp_min_fisica, temp_max_fisica,
             hum_min_operativa, hum_max_operativa,
             hum_min_fisica, hum_max_fisica
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING *
         "#
     )
     .bind(&payload.nombre)
     .bind(&payload.descripcion)
     .bind(payload.tiene_humedad)
+    .bind(payload.solo_un_punto.unwrap_or(false))
     .bind(payload.temp_min_operativa)
     .bind(payload.temp_max_operativa)
     .bind(payload.temp_min_fisica)
@@ -85,6 +86,7 @@ pub async fn actualizar_tipo_termometro(
     if payload.nombre.is_some() { i += 1; query.push_str(&format!(", nombre = ${}", i)); }
     if payload.descripcion.is_some() { i += 1; query.push_str(&format!(", descripcion = ${}", i)); }
     if payload.tiene_humedad.is_some() { i += 1; query.push_str(&format!(", tiene_humedad = ${}", i)); }
+    if payload.solo_un_punto.is_some() { i += 1; query.push_str(&format!(", solo_un_punto = ${}", i)); }
     if payload.temp_min_operativa.is_some() { i += 1; query.push_str(&format!(", temp_min_operativa = ${}", i)); }
     if payload.temp_max_operativa.is_some() { i += 1; query.push_str(&format!(", temp_max_operativa = ${}", i)); }
     if payload.temp_min_fisica.is_some() { i += 1; query.push_str(&format!(", temp_min_fisica = ${}", i)); }
@@ -102,6 +104,7 @@ pub async fn actualizar_tipo_termometro(
     if let Some(v) = &payload.nombre { q = q.bind(v); }
     if let Some(v) = &payload.descripcion { q = q.bind(v); }
     if let Some(v) = payload.tiene_humedad { q = q.bind(v); }
+    if let Some(v) = payload.solo_un_punto { q = q.bind(v); }
     if let Some(v) = payload.temp_min_operativa { q = q.bind(v); }
     if let Some(v) = payload.temp_max_operativa { q = q.bind(v); }
     if let Some(v) = payload.temp_min_fisica { q = q.bind(v); }

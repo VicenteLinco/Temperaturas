@@ -438,6 +438,7 @@ mod tests {
             nombre: "Refrigerador".to_string(),
             descripcion: None,
             tiene_humedad: false,
+            solo_un_punto: false,
             temp_min_operativa: 2.0,
             temp_max_operativa: 8.0,
             temp_min_fisica: -10.0,

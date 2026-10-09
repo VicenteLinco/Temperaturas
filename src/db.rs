@@ -60,6 +60,7 @@ async fn create_tables(pool: &PgPool) -> Result<()> {
             nombre TEXT NOT NULL UNIQUE,
             descripcion TEXT,
             tiene_humedad BOOLEAN NOT NULL DEFAULT FALSE,
+            solo_un_punto BOOLEAN NOT NULL DEFAULT FALSE,
             temp_min_operativa REAL NOT NULL,
             temp_max_operativa REAL NOT NULL,
             temp_min_fisica REAL NOT NULL,
@@ -72,6 +73,20 @@ async fn create_tables(pool: &PgPool) -> Result<()> {
             created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    // `CREATE TABLE IF NOT EXISTS` NO añade columnas a una tabla que ya existe. Las
+    // bases creadas antes de `solo_un_punto` se quedarían sin la columna y romperían
+    // el CRUD de tipos (el `RETURNING *` no la encontraría). Este ALTER es idempotente:
+    // no hace nada si la columna ya está, así que puede correr en cada arranque tanto
+    // en una base nueva como en una antigua.
+    sqlx::query(
+        r#"
+        ALTER TABLE tipos_termometro
+            ADD COLUMN IF NOT EXISTS solo_un_punto BOOLEAN NOT NULL DEFAULT FALSE
         "#,
     )
     .execute(pool)

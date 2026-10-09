@@ -32,6 +32,9 @@ pub struct TipoTermometro {
     pub nombre: String,
     pub descripcion: Option<String>,
     pub tiene_humedad: bool,
+    /// true = el equipo entrega UNA sola temperatura por captura
+    /// (temp_actual); temp_maxima y temp_minima se derivan de ella.
+    pub solo_un_punto: bool,
 
     // Rangos de temperatura
     pub temp_min_operativa: f32,
@@ -155,6 +158,9 @@ pub struct CrearTipoTermometroRequest {
     pub nombre: String,
     pub descripcion: Option<String>,
     pub tiene_humedad: bool,
+    // Opcional a propósito: el cliente que no lo manda obtiene false (tres lecturas por
+    // captura), igual que las filas anteriores a esta columna.
+    pub solo_un_punto: Option<bool>,
     pub temp_min_operativa: f32,
     pub temp_max_operativa: f32,
     pub temp_min_fisica: f32,
@@ -170,6 +176,7 @@ pub struct ActualizarTipoTermometroRequest {
     pub nombre: Option<String>,
     pub descripcion: Option<String>,
     pub tiene_humedad: Option<bool>,
+    pub solo_un_punto: Option<bool>,
     pub temp_min_operativa: Option<f32>,
     pub temp_max_operativa: Option<f32>,
     pub temp_min_fisica: Option<f32>,
@@ -278,6 +285,8 @@ pub struct TermometroConDetalles {
     pub tipo_id: i32,
     pub tipo_nombre: String,
     pub tiene_humedad: bool,
+    /// true = la captura pide UNA sola temperatura (ver `TipoTermometro::solo_un_punto`)
+    pub solo_un_punto: bool,
     pub temp_min_operativa: f32,
     pub temp_max_operativa: f32,
     pub nombre: Option<String>,

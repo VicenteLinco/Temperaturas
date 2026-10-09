@@ -20,7 +20,7 @@ pub async fn listar_termometros(
         r#"
         SELECT
             t.id, t.area_id, a.nombre as area_nombre,
-            t.tipo_id, ti.nombre as tipo_nombre, ti.tiene_humedad,
+            t.tipo_id, ti.nombre as tipo_nombre, ti.tiene_humedad, ti.solo_un_punto,
             ti.temp_min_operativa, ti.temp_max_operativa,
             t.nombre, t.ubicacion, t.activo, t.fuera_de_servicio
         FROM termometros t
@@ -44,7 +44,7 @@ pub async fn obtener_termometro(
         r#"
         SELECT
             t.id, t.area_id, a.nombre as area_nombre,
-            t.tipo_id, ti.nombre as tipo_nombre, ti.tiene_humedad,
+            t.tipo_id, ti.nombre as tipo_nombre, ti.tiene_humedad, ti.solo_un_punto,
             ti.temp_min_operativa, ti.temp_max_operativa,
             t.nombre, t.ubicacion, t.activo, t.fuera_de_servicio
         FROM termometros t
