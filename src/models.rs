@@ -22,6 +22,12 @@ pub struct Area {
     pub nombre: String,
     pub descripcion: Option<String>,
     pub activa: bool,
+    /// Zona del área sobre el plano, en porcentaje 0-100.
+    /// NULL (None) = sin delimitar: el área no se dibuja en el mapa.
+    pub zona_x: Option<f32>,
+    pub zona_y: Option<f32>,
+    pub zona_w: Option<f32>,
+    pub zona_h: Option<f32>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -62,6 +68,10 @@ pub struct Termometro {
     pub ubicacion: Option<String>,
     pub activo: bool,
     pub fuera_de_servicio: bool,
+    /// Posición del punto sobre el plano, en porcentaje 0-100.
+    /// NULL (None) = pendiente de ubicar (sale en la lista de T3).
+    pub pos_x: Option<f32>,
+    pub pos_y: Option<f32>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -151,6 +161,11 @@ pub struct ActualizarAreaRequest {
     pub nombre: Option<String>,
     pub descripcion: Option<String>,
     pub activa: Option<bool>,
+    // Zona en porcentaje 0-100; opcionales para no romper clientes actuales.
+    pub zona_x: Option<f32>,
+    pub zona_y: Option<f32>,
+    pub zona_w: Option<f32>,
+    pub zona_h: Option<f32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -205,6 +220,9 @@ pub struct ActualizarTermometroRequest {
     pub ubicacion: Option<String>,
     pub activo: Option<bool>,
     pub fuera_de_servicio: Option<bool>,
+    // Posición en porcentaje 0-100; opcionales para no romper clientes actuales.
+    pub pos_x: Option<f32>,
+    pub pos_y: Option<f32>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -298,6 +316,9 @@ pub struct TermometroConDetalles {
     pub ubicacion: Option<String>,
     pub activo: bool,
     pub fuera_de_servicio: bool,
+    /// Posición del punto sobre el plano, en porcentaje 0-100 (NULL = pendiente).
+    pub pos_x: Option<f32>,
+    pub pos_y: Option<f32>,
 }
 
 #[derive(Debug, Clone, Serialize, FromRow)]
