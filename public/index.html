@@ -774,6 +774,29 @@
             <!-- ... contenido tabs ... -->
             <div class="tab-pane fade show active" id="area-actual" role="tabpanel">
                 <div class="container">
+                    <!-- Vista mapa/lista (T4): el boton Mapa aparece solo si el plano esta habilitado -->
+                    <div id="mapaToggle" class="btn-group w-100 mt-2" role="group" style="display:none;">
+                        <button id="btnVistaLista" class="btn btn-outline-dark btn-sm active" onclick="MapaVista.mostrar('lista')">Lista</button>
+                        <button id="btnVistaMapa" class="btn btn-outline-dark btn-sm" onclick="MapaVista.mostrar('mapa')">Mapa</button>
+                    </div>
+                    <div id="mapaVista" style="display:none;">
+                        <div class="d-flex gap-2 my-2">
+                            <button id="mapaVolver" class="btn btn-outline-dark btn-sm" style="display:none;" onclick="MapaVista.general()">← General</button>
+                            <div class="btn-group ms-auto" role="group" aria-label="Zoom">
+                                <button class="btn btn-outline-dark btn-sm" onclick="MapaVista.zoom(1.25)" aria-label="Acercar">+</button>
+                                <button class="btn btn-outline-dark btn-sm" onclick="MapaVista.zoom(0.8)" aria-label="Alejar">−</button>
+                                <button class="btn btn-outline-dark btn-sm" onclick="MapaVista.reset()">Reset</button>
+                            </div>
+                        </div>
+                        <div id="mapaMarco" style="position:relative;overflow:hidden;border-radius:14px;background:#e9e9ec;touch-action:none;">
+                            <div id="mapaInterior" style="position:relative;width:100%;transform-origin:0 0;">
+                                <img id="mapaImg" style="display:block;width:100%;height:auto;user-select:none;" draggable="false" alt="Plano de la planta">
+                                <div id="mapaZonas" style="position:absolute;inset:0;"></div>
+                                <div id="mapaPuntos" style="position:absolute;inset:0;"></div>
+                            </div>
+                            <div id="mapaPopup" class="card" style="display:none;position:absolute;left:8px;right:8px;bottom:8px;z-index:5;"></div>
+                        </div>
+                    </div>
                     <div id="areaActualContent">
                         <div class="text-center text-muted py-5">
                             <i class="bi bi-qr-code-scan" style="font-size: 3rem;"></i>
@@ -1046,6 +1069,7 @@
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="lecturas.js"></script>
     <script src="operator-flow.js"></script>
+    <script src="mapa.js"></script>
     <script>
         let currentUser = null;
         let html5QrCode = null;
