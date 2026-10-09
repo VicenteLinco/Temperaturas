@@ -67,6 +67,11 @@ Spatial view reduces missed points in large plants and speeds up rounds. Instanc
 - Route: direct inline (single mechanical move inside `src/db.rs`).
 - The T1 `ALTER TABLE termometros ADD COLUMN pos_x/pos_y` block sat BEFORE `CREATE TABLE termometros`, so fresh-DB boot died with `relation "termometros" does not exist` (`IF NOT EXISTS` guards the column, not the table; existing DBs were unaffected). Moved the ALTER to run right AFTER the CREATE. `cargo check` + unit tests cannot catch this class — always smoke-boot against an empty database after schema changes.
 
+### Fix — botón Registrar muerto en el popup del mapa (reportado en pruebas)
+
+- Route: direct inline (solo `public/mapa.js`, +16/-1).
+- Causa: `enlazar()` hacía `setPointerCapture` en cada pointerdown dentro del marco, lo que reenruta el click al contenedor y los botones nativos del popup (Registrar, X) nunca lo recibían. Ahora los gestos que nacen en `#mapaPopup` no capturan ni panean (click nativo intacto) y `fin()` los ignora. Extra: al cerrarse `#registroModal` se releen los estados para que el punto cambie de color sin salir del mapa. Sin reinicio del servidor (estáticos).
+
 ### Fix — gráficos con un solo id (reportado en pruebas)
 
 - Route: direct inline (single file `src/handlers/graficos.rs`, pre-existing bug, not caused by the map).
@@ -123,6 +128,7 @@ Spatial view reduces missed points in large plants and speeds up rounds. Instanc
 | Hotfix boot | `cargo build` + fresh-DB boot (parent) | ok after fix; before fix boot died on `relation termometros does not exist` |
 | E2E mapa | curl: config on, area+tipo+termometro CRUD, posiciones, foto upload, mapa GET, cross-area move 409 then confirmed | ok: `estado pendiente`, `imagen_url /uploads/mapa.png`, 409 preview `{cambios:[...]}` with zero writes, confirmed move flips `area_id` 1→2 |
 | Fix graficos | curl single/repeated/commas/invalid + `cargo test` | ok: single now 200 with limites, repeated/commas deduped, invalid 422; 55 passed, 0 failed |
+| Fix popup Registrar | `node --check public/mapa.js` | ok, SYNTAX_OK; gestos en popup sin captura, refresh al cerrar modal |
 | E2E registrador | created `registrador1` on TEST db, login, pendientes + mapa as that role | ok: pendientes list + mapa snapshot visible with correct estado |
 
 ## Delivery strategy
@@ -139,7 +145,8 @@ Spatial view reduces missed points in large plants and speeds up rounds. Instanc
 | T4 | 1f8d833 | +173/-0 |
 | T5 docs | 8295fed | docs only |
 | Hotfix boot | c079000 | +8/-8 en src/db.rs |
-| Fix graficos | pending (hash en el reporte final) | solo src/handlers/graficos.rs |
+| Fix graficos | 2af8815 | solo src/handlers/graficos.rs |
+| Fix popup Registrar | pending (hash en el reporte final) | solo public/mapa.js |
 | T3 | pending | — |
 | T4 | pending | — |
 | T5 | pending | — |

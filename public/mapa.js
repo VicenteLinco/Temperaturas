@@ -76,6 +76,8 @@
     function enlazar() {
         var m = $('mapaMarco');
         m.addEventListener('pointerdown', function (e) {
+            // El popup lleva botones nativos: sin captura ni pan para que el click llegue.
+            if (e.target && e.target.closest && e.target.closest('#mapaPopup')) return;
             try { m.setPointerCapture(e.pointerId); } catch (_) {}
             ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
             if (ptrs.size === 2) {
@@ -100,6 +102,7 @@
             aplicar();
         });
         function fin(e) {
+            if (!ptrs.has(e.pointerId)) return; // gesto sobre el popup: lo maneja el click nativo
             ptrs.delete(e.pointerId);
             if (movido < 10 && ptrs.size === 0) {
                 var t = document.elementFromPoint(e.clientX, e.clientY);
@@ -121,6 +124,18 @@
         if (!lista) { try { await cargar(); } catch (e) {} render(); } // relee estados
     }
 
+    // Tras guardar desde el mapa, el punto quedaría con el color viejo:
+    // al cerrarse el modal de registro se releen los estados.
+    function refrescarAlCerrarModal() {
+        var rm = $('registroModal');
+        if (!rm || rm.dataset.mapaHook) return;
+        rm.dataset.mapaHook = '1';
+        rm.addEventListener('hidden.bs.modal', function () {
+            if ($('mapaVista').style.display === 'none') return;
+            cargar().then(render, render);
+        });
+    }
+
     // Sin foto o deshabilitado: el mapa se oculta (solo lista, sin errores).
     async function init() {
         try {
@@ -128,7 +143,7 @@
             if (!S.d.habilitado || !S.d.imagen_url) return;
             $('mapaImg').src = S.d.imagen_url;
             $('mapaToggle').style.display = '';
-            enlazar(); render();
+            enlazar(); refrescarAlCerrarModal(); render();
         } catch (e) { /* fallback: la lista sigue intacta */ }
     }
     document.addEventListener('DOMContentLoaded', init);
