@@ -125,6 +125,8 @@ F1 removes forced fake data entry and makes the app usable for single-value inst
 | T6 | `cargo clippy --all-targets` | ok, 0 errores, 20 warnings preexistentes (p.ej. doc_lazy_continuation en logic.rs:438) |
 | T6 | `node tests/graficos-multi-series.test.js` | ok, 14 assertions passed |
 | T6 | `node tests/operator-flow.test.js` | ok, 28 assertions passed, sin regresión |
+| CSV-multi | `node --check` inline admin.html | ok (1 bloque inline) |
+| CSV-multi | `node tests/graficos-multi-series.test.js` + `operator-flow.test.js` | ok, 14 + 28 passed, sin regresión |
 
 ## Delivery strategy
 
@@ -140,7 +142,8 @@ F1 removes forced fake data entry and makes the app usable for single-value inst
 | T4 | 97e4c17 | ~349 |
 | T5 | 86af9e9 | ~327 |
 | T6 | pending (test JS multi-serie + verificación full) | ~14 tests |
+| CSV-multi | pending (export CSV por termómetro en promedios-multi) | ~18 |
 
 ## Next step
 
-T1-T6 done. Pendiente: revisar diff final y decidir entrega (push/PR) bajo política ordinaria.
+T1-T6 done + punto 1 cerrado (CSV multi exporta fila por termómetro/fecha). Pendiente: push del fix y PR bajo política ordinaria.

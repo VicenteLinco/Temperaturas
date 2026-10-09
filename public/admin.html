@@ -4599,10 +4599,24 @@
                     csvContent += `"${l.fecha_registro}","${l.termometro_nombre}","${l.area_nombre}","${l.ventana_horaria}",${l.temp_actual ?? ''},${l.temp_maxima},${l.temp_minima},"${l.fuera_rango_operativo ? 'SI' : 'NO'}",${l.temp_min_operativa},${l.temp_max_operativa},"${(l.observaciones || '').replace(/"/g, '""')}"\n`;
                 });
             } else if (ultimaDataGraficos.tendencias) {
-                csvContent += 'Fecha,Promedio Actual,Promedio Max,Promedio Min,Alertas\n';
-                ultimaDataGraficos.tendencias.forEach(t => {
-                    csvContent += `"${t.fecha}",${t.promedio_actual ?? ''},${t.promedio_max ?? ''},${t.promedio_min ?? ''},${t.alertas}\n`;
-                });
+                // Promedios: si hay varios termómetros seleccionados y el
+                // backend envió el desglose (contrato T4), se exporta una fila
+                // por (termómetro, fecha). Si no, se mantiene el agregado
+                // global de siempre (comportamiento legacy intacto).
+                const desgloseMulti = ultimaDataGraficos.tendencias_por_termometro;
+                const esMulti = typeof termometrosSeleccionadosGraficos !== 'undefined'
+                    && termometrosSeleccionadosGraficos.size > 1;
+                if (esMulti && desgloseMulti && desgloseMulti.length > 0) {
+                    csvContent += 'Fecha,Termometro ID,Termometro,Promedio Actual,Promedio Max,Promedio Min,Alertas\n';
+                    desgloseMulti.forEach(t => {
+                        csvContent += `"${t.fecha}",${t.termometro_id},"${(t.termometro_nombre || '').replace(/"/g, '""')}",${t.promedio_actual ?? ''},${t.promedio_max ?? ''},${t.promedio_min ?? ''},${t.alertas}\n`;
+                    });
+                } else {
+                    csvContent += 'Fecha,Promedio Actual,Promedio Max,Promedio Min,Alertas\n';
+                    ultimaDataGraficos.tendencias.forEach(t => {
+                        csvContent += `"${t.fecha}",${t.promedio_actual ?? ''},${t.promedio_max ?? ''},${t.promedio_min ?? ''},${t.alertas}\n`;
+                    });
+                }
             }
 
             const encodedUri = encodeURI(csvContent);
