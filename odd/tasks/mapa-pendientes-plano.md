@@ -101,6 +101,8 @@ Spatial view reduces missed points in large plants and speeds up rounds. Instanc
 | T2 backend | `cargo check` (writer) | ok, `Finished dev profile` (same pre-existing warning); 4 endpoints wired |
 | T2 | `cargo check` (parent spot check) | ok, `Finished dev profile`, same pre-existing warning |
 | T2 | `cargo test` | pending (deferred to T5) |
+| T3 editor | `node --check /tmp/mapa-admin-check.js` (writer) | ok, syntax valid (extracted new block only) |
+| T3 | structural readback (parent spot check) | ok, +411/-0 in public/admin.html, markers present |
 
 ## Delivery strategy
 
@@ -111,11 +113,12 @@ Spatial view reduces missed points in large plants and speeds up rounds. Instanc
 | Task | Commit | Authored lines |
 | --- | --- | --- |
 | T1+T1b | 748b744 | ~60 |
-| T2 | pending (hash filled in T3 update) | ~200 |
+| T2 | 5d7ceed | ~200 |
+| T3 | pending (hash filled in T4 update) | +411/-0 |
 | T3 | pending | — |
 | T4 | pending | — |
 | T5 | pending | — |
 
 ## Next step
 
-T2 implemented and spot-checked, awaiting work-unit commit. Next: T3 admin editor UI.
+T3 implemented (purely additive) and spot-checked, awaiting work-unit commit. Next: T4 registrador map view.
