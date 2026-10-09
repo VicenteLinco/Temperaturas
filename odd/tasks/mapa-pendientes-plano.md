@@ -34,8 +34,8 @@ Spatial view reduces missed points in large plants and speeds up rounds. Instanc
 
 - No migration framework. `create_tables` in `src/db.rs:19` uses `CREATE TABLE IF NOT EXISTS`; new columns need `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` at boot + hand-run script under `sql/` (pattern in `sql/CORREGIR_INDICE_UNICO.sql`, noted at `src/db.rs:81-93`).
 - Stack is Rust Axum 0.7 + vanilla JS + Bootstrap 5 (`Cargo.toml:9`, `README.md:77-80`). No new heavy frontend dep.
-- Axum has no multipart feature enabled (`Cargo.toml:9`). Prefer base64 JSON upload to avoid new crate, or justify adding one.
-- Static serving via `tower-http fs` (`Cargo.toml:12`); uploads must live under `public/` and survive Docker via volume + `.dockerignore` exception.
+- Axum has no multipart feature enabled (`Cargo.toml:9`). Base64 JSON upload used instead (`base64 = "0.22"`); no new web-framework surface.
+- Static serving via `tower-http fs` (`Cargo.toml:12`); uploads live under `public/uploads/` (served by existing `ServeDir`). DEPLOY NOTE (T2 finding): `Dockerfile` bakes `public/` into the image with no volume and `render.yaml` defines no disk, so an uploaded `mapa.*` is wiped on every redeploy (Render free has no persistent disks). Options: persistent disk at `/app/public/uploads` (paid plan), external object storage, or simply re-upload after each deploy. Documented, not yet implemented.
 - Frontend and backend already disagree on max/min ordering in places (`public/index.html:2302-2303` vs `public/lecturas.js:81-87`); map must only read `pendientes/completados`, never recompute state.
 - Mobile-first verified viewports (`README.md:41`); map must not break narrow layouts or QR scanner (`html5-qrcode`).
 - `Area` in `src/models.rs:20-27` has no zone fields; `Termometro` in `:57-67` has no position fields; `Configuracion` is key-value (`src/db.rs:178-189`).
@@ -64,12 +64,12 @@ Spatial view reduces missed points in large plants and speeds up rounds. Instanc
 
 ### T2 — Backend photo + positions API
 
-- Route: delegated direct (touches `src/handlers/mapa.rs` new, `src/main.rs` routes, `src/handlers/configuracion.rs`).
-- `GET /api/mapa` (public auth): `{ habilitado, imagen_url, areas:[{id,nombre,zona}], termometros:[{id,area_id,pos_x,pos_y,estado}] }` reusing `pendientes` logic, no new state computation.
-- `PUT /api/admin/mapa/config` (admin): toggle `mapa_habilitado`.
-- `POST /api/admin/mapa/foto` (admin, base64 JSON): validate PNG/JPG <=5MB, write to `public/uploads/mapa.{png,jpg}`, update `mapa_imagen_path`, audit log.
-- `PUT /api/admin/mapa/posiciones` (admin, batch): `[{termometro_id,pos_x,pos_y}]` 0-100 + `[{area_id,zona}]`; zone hit-test may reassign `area_id` per locked decision, with explicit confirm + audit; transactional.
-- Serve `/uploads/*` as static; Dockerfile volume note.
+- Route: delegated direct (touches `src/handlers/mapa.rs` new, `src/main.rs`, `src/handlers/mod.rs`, `src/models.rs`, `Cargo.toml`/`Cargo.lock`, `public/uploads/.gitkeep`).
+- `GET /api/mapa` (any authenticated role): `{ habilitado, imagen_url, areas:[{id,nombre,zona}], termometros:[{id,area_id,nombre,pos_x,pos_y,estado}] }` reusing the exact window/state classification from `obtener_pendientes_area`, no new time math.
+- `PUT /api/admin/mapa/config` (admin): toggle `mapa_habilitado` via `set_config` + audit.
+- `POST /api/admin/mapa/foto` (admin, base64 JSON, data-URL tolerant): PNG/JPG magic bytes, ≤5MB decoded, writes `public/uploads/mapa.{png,jpg}` removing stale other extension, sets `mapa_imagen_path`, audit.
+- `PUT /api/admin/mapa/posiciones` (admin, batch): 0-100 validation, point-in-rect hit-test (first zone by id wins) may reassign `area_id`; 409 `{cambios:[...]}` preview with zero writes unless `confirmar_cambio_area:true`, else single transaction + audit.
+- Done, verified `cargo check` ok. Deploy caveat recorded under Constraints (uploads wiped on redeploy without a disk).
 
 ### T3 — Admin editor UI
 
@@ -98,6 +98,9 @@ Spatial view reduces missed points in large plants and speeds up rounds. Instanc
 | T1b SELECTs | `cargo check` (writer) | ok, `Finished dev profile` (same pre-existing warning) |
 | T1+T1b | `cargo check` (parent spot check) | ok, `Finished dev profile in 0.16s`, same pre-existing warning |
 | T1 | `cargo test` | pending (deferred to T5; schema-only change) |
+| T2 backend | `cargo check` (writer) | ok, `Finished dev profile` (same pre-existing warning); 4 endpoints wired |
+| T2 | `cargo check` (parent spot check) | ok, `Finished dev profile`, same pre-existing warning |
+| T2 | `cargo test` | pending (deferred to T5) |
 
 ## Delivery strategy
 
@@ -108,11 +111,11 @@ Spatial view reduces missed points in large plants and speeds up rounds. Instanc
 | Task | Commit | Authored lines |
 | --- | --- | --- |
 | T1+T1b | 748b744 | ~60 |
-| T2 | pending | — |
+| T2 | pending (hash filled in T3 update) | ~200 |
 | T3 | pending | — |
 | T4 | pending | — |
 | T5 | pending | — |
 
 ## Next step
 
-T1+T1b implemented and spot-checked, awaiting work-unit commit on new feature branch (on `main`, must branch first). Next: T2 backend photo + positions API.
+T2 implemented and spot-checked, awaiting work-unit commit. Next: T3 admin editor UI.

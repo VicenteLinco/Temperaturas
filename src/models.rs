@@ -477,3 +477,75 @@ pub struct ResolverAlertaRequest {
     pub accion_correctiva: String,
     pub responsable: String,
 }
+
+// ===== MAPA DE PENDIENTES SOBRE PLANO (T2) =====
+// Coordenadas en porcentaje 0-100 sobre la imagen del plano.
+// snake_case en JSON, igual que el resto de DTOs.
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ZonaRect {
+    pub x: f32,
+    pub y: f32,
+    pub w: f32,
+    pub h: f32,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MapaArea {
+    pub id: i32,
+    pub nombre: String,
+    pub zona: Option<ZonaRect>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MapaTermometro {
+    pub id: i32,
+    pub area_id: i32,
+    pub nombre: Option<String>,
+    pub pos_x: Option<f32>,
+    pub pos_y: Option<f32>,
+    /// pendiente | completado | fuera_de_servicio
+    pub estado: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MapaResponse {
+    pub habilitado: bool,
+    pub imagen_url: Option<String>,
+    pub areas: Vec<MapaArea>,
+    pub termometros: Vec<MapaTermometro>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TermometroPosRequest {
+    pub id: i32,
+    pub pos_x: f32,
+    pub pos_y: f32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AreaZonaRequest {
+    pub id: i32,
+    pub zona: Option<ZonaRect>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GuardarPosicionesRequest {
+    #[serde(default)]
+    pub termometros: Vec<TermometroPosRequest>,
+    #[serde(default)]
+    pub areas: Vec<AreaZonaRequest>,
+    #[serde(default)]
+    pub confirmar_cambio_area: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FotoRequest {
+    pub filename: String,
+    pub content_base64: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MapaConfigRequest {
+    pub mapa_habilitado: bool,
+}
