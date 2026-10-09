@@ -127,6 +127,9 @@ F1 removes forced fake data entry and makes the app usable for single-value inst
 | T6 | `node tests/operator-flow.test.js` | ok, 28 assertions passed, sin regresión |
 | CSV-multi | `node --check` inline admin.html | ok (1 bloque inline) |
 | CSV-multi | `node tests/graficos-multi-series.test.js` + `operator-flow.test.js` | ok, 14 + 28 passed, sin regresión |
+| Bordes-2y3 | `cargo test` | ok, 55 passed (50 previos + 5 nuevos), RED previo E0425 |
+| Bordes-2y3 | `cargo build` + `cargo clippy` | ok, 0 errores (mismo warning preexistente) |
+| Bordes-2y3 | JS + `git diff --check` | ok, 14 + 28 passed, limpio |
 
 ## Delivery strategy
 
@@ -143,7 +146,8 @@ F1 removes forced fake data entry and makes the app usable for single-value inst
 | T5 | 86af9e9 | ~327 |
 | T6 | pending (test JS multi-serie + verificación full) | ~14 tests |
 | CSV-multi | pending (export CSV por termómetro en promedios-multi) | ~18 |
+| Bordes-2y3 | pending (filtro vacío + precisión segundo) | ~40 |
 
 ## Next step
 
-T1-T6 done + punto 1 cerrado (CSV multi exporta fila por termómetro/fecha). Pendiente: push del fix y PR bajo política ordinaria.
+T1-T6 + punto 1 + bordes 2 y 3 cerrados. Pendiente: push de 2 commits y PR bajo política ordinaria.

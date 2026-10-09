@@ -82,6 +82,13 @@ impl<'de> Deserialize<'de> for FragmentoId {
     }
 }
 
+/// Distingue "parámetro ausente" (None = sin filtro) de "parámetro
+/// presente pero vacío" (Some([]) = selección explícita vacía, que no
+/// debe colapsar a sin filtro: no devuelve filas).
+fn normalizar_filtro_ids(fragmentos: Option<Vec<FragmentoId>>) -> Option<Vec<i32>> {
+    fragmentos.map(|fs| normalizar_ids_termometros(fs.into_iter().flat_map(|f| f.0).collect()))
+}
+
 fn deserializar_ids_termometros<'de, D>(
     deserializador: D,
 ) -> Result<Option<Vec<i32>>, D::Error>
@@ -89,11 +96,7 @@ where
     D: serde::Deserializer<'de>,
 {
     let fragmentos: Option<Vec<FragmentoId>> = Option::deserialize(deserializador)?;
-    Ok(fragmentos
-        .map(|fs| {
-            normalizar_ids_termometros(fs.into_iter().flat_map(|f| f.0).collect())
-        })
-        .filter(|v| !v.is_empty()))
+    Ok(normalizar_filtro_ids(fragmentos))
 }
 
 #[derive(Serialize, FromRow)]
@@ -190,7 +193,7 @@ pub struct GraficosResponse {
 // o últimas globales) para no duplicar el SELECT.
 const COLUMNAS_LECTURAS_GRAFICO: &str = r#"
     r.id,
-    to_char(r.fecha_registro AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI') AS fecha_registro,
+    to_char(r.fecha_registro AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_registro,
     r.termometro_id,
     COALESCE(t.nombre, 'Termómetro #' || t.id) AS termometro_nombre,
     a.nombre AS area_nombre,
@@ -607,7 +610,12 @@ fn aplicar_filtros_where<'a>(
     // Predicado array-safe: sin concatenar SQL crudo (mismo patrón ANY
     // que ya usa el repo en registros.rs).
     if let Some(ids) = termometro_ids {
-        if !ids.is_empty() {
+        if ids.is_empty() {
+            // Selección explícita vacía (?termometro_id=): no puede
+            // colapsar a "sin filtro" porque expondría todos los
+            // termómetros. No hay filas que coincidan.
+            builder.push(" AND FALSE ");
+        } else {
             builder.push(" AND r.termometro_id = ANY(");
             builder.push_bind(ids.to_vec());
             builder.push(") ");
@@ -633,6 +641,50 @@ mod pruebas_graficos_multi {
     fn texto_vacio_da_lista_vacia() {
         assert!(parsear_fragmento_id("").unwrap().is_empty());
         assert!(parsear_fragmento_id(" , ").unwrap().is_empty());
+    }
+
+    #[test]
+    fn filtro_ausente_sigue_sin_filtro() {
+        assert_eq!(normalizar_filtro_ids(None), None);
+    }
+
+    #[test]
+    fn filtro_vacio_explicito_no_colapsa_a_sin_filtro() {
+        // ?termometro_id= presente pero vacío: debe seguir siendo Some
+        // para que el WHERE no devuelva todos los termómetros.
+        assert_eq!(
+            normalizar_filtro_ids(Some(vec![FragmentoId(vec![])])),
+            Some(vec![])
+        );
+    }
+
+    #[test]
+    fn filtro_con_ids_deduplica_manteniendo_orden() {
+        assert_eq!(
+            normalizar_filtro_ids(Some(vec![
+                FragmentoId(vec![2, 1]),
+                FragmentoId(vec![1, 3])
+            ])),
+            Some(vec![2, 1, 3])
+        );
+    }
+
+    #[test]
+    fn filtro_vacio_explicito_no_devuelve_filas() {
+        let mut b = sqlx::QueryBuilder::new("SELECT 1 WHERE 1=1");
+        aplicar_filtros_where(&mut b, &None, &None, 30, None, Some(&[]));
+        assert!(b.sql().contains("FALSE"), "sql fue: {}", b.sql());
+    }
+
+    #[test]
+    fn sin_filtro_no_agrega_predicado_de_termometro() {
+        let mut b = sqlx::QueryBuilder::new("SELECT 1 WHERE 1=1");
+        aplicar_filtros_where(&mut b, &None, &None, 30, None, None);
+        assert!(
+            !b.sql().contains("termometro_id"),
+            "sql fue: {}",
+            b.sql()
+        );
     }
 
     #[test]
