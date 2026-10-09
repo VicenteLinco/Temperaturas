@@ -828,23 +828,23 @@
                         <!-- FORMULARIO DE LECTURAS (3 Lecturas Obligatorias) -->
                         <div id="formLecturas">
                             <div class="lecturas-encabezado">
-                                <span class="lecturas-titulo">Ingresa las 3 temperaturas (°C)</span>
+                                <span class="lecturas-titulo" id="lecturasTitulo">Ingresa las 3 temperaturas (°C)</span>
                             </div>
 
                             <div class="lecturas-grid mb-2">
                                 <div class="lectura-campo">
-                                    <label for="tempActual" class="lectura-label">Temperatura actual</label>
+                                    <label for="tempActual" class="lectura-label" id="labelTempActual">Temperatura actual</label>
                                     <input type="text" class="lectura-input" id="tempActual"
                                            autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
                                            enterkeyhint="next" aria-label="Temperatura actual en grados Celsius">
                                 </div>
-                                <div class="lectura-campo">
+                                <div class="lectura-campo" id="campoLectura2">
                                     <label for="lectura2" class="lectura-label">Temperatura máxima</label>
                                     <input type="text" class="lectura-input" id="lectura2"
                                            autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
                                            enterkeyhint="next" aria-label="Temperatura máxima en grados Celsius">
                                 </div>
-                                <div class="lectura-campo">
+                                <div class="lectura-campo" id="campoLectura3">
                                     <label for="lectura3" class="lectura-label">Temperatura mínima</label>
                                     <input type="text" class="lectura-input" id="lectura3"
                                            autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
@@ -1060,6 +1060,10 @@
         const REESCANEO_MISMO_QR_MS = 4000;
         let areaActualId = null;
         let termometroSeleccionado = null;
+        // Modo de captura: true cuando el tipo del equipo es de un solo punto
+        // (termometro.solo_un_punto). Se fija al abrir el modal y lo leen
+        // leerLecturas/guardarRegistro. Nunca se infiere de los inputs.
+        let capturaUnSoloPunto = false;
         // LOW/ERROR se elige con un toque y nunca abre confirmaciones.
         let humedadIncidencia = null;
         let equiposFueraServicio = [];
@@ -1914,6 +1918,9 @@
             // Los hidden se rellenan siempre después del reset (reset() los vacía)
             document.getElementById('termometroId').value = termometro.id;
 
+            // Formulario adaptativo (T3): un tipo de un solo punto muestra 1 campo.
+            aplicarModoCaptura(termometro);
+
             // Dejar el botón principal en su estado inicial
             resetBotonRegistrar(!!registro);
 
@@ -1921,8 +1928,12 @@
                 document.getElementById('registroId').value = registro.id;
                 document.getElementById('esEdicion').value = 'true';
                 if (registro.temp_actual != null) document.getElementById('tempActual').value = registro.temp_actual;
-                document.getElementById('lectura2').value = registro.temp_maxima;
-                document.getElementById('lectura3').value = registro.temp_minima;
+                // En modo de un solo punto no hay max/min que precargar: el backend
+                // ya guarda max = min = actual (regla T2).
+                if (!capturaUnSoloPunto) {
+                    document.getElementById('lectura2').value = registro.temp_maxima;
+                    document.getElementById('lectura3').value = registro.temp_minima;
+                }
                 if (registro.humedad != null) document.getElementById('humedad').value = registro.humedad;
                 if(registro.observaciones) document.getElementById('observaciones').value = registro.observaciones;
             } else {
@@ -1975,11 +1986,33 @@
             new bootstrap.Modal(document.getElementById('registroModal')).show();
         }
 
+        // ===== FORMULARIO ADAPTATIVO (T3) =====
+        // Un tipo con solo_un_punto muestra 1 campo; el resto del flujo
+        // (leerLecturas, guardarRegistro) se rige por capturaUnSoloPunto, que
+        // viene del termómetro (TermometroConDetalles, sin llamada extra).
+        function aplicarModoCaptura(termometro) {
+            capturaUnSoloPunto = termometro && termometro.solo_un_punto === true;
+            const mostrarExtras = !capturaUnSoloPunto;
+            document.getElementById('campoLectura2').style.display = mostrarExtras ? '' : 'none';
+            document.getElementById('campoLectura3').style.display = mostrarExtras ? '' : 'none';
+            document.getElementById('lecturasTitulo').textContent = capturaUnSoloPunto
+                ? 'Ingresa la temperatura (°C)'
+                : 'Ingresa las 3 temperaturas (°C)';
+            document.getElementById('labelTempActual').textContent = capturaUnSoloPunto
+                ? 'Temperatura'
+                : 'Temperatura actual';
+        }
+
         // ===== FLUJO DE LECTURAS CON ROLES EXPLÍCITOS =====
         // Actual conserva su rol; solo máxima y mínima se corrigen si están invertidas.
 
         function leerLecturas() {
             const actual = parseFloat(document.getElementById('tempActual').value);
+            // Modo de un solo punto (regla T2): la medida es temp_actual y
+            // max/min se derivan (max = min = actual). No se exigen los otros campos.
+            if (capturaUnSoloPunto) {
+                return { actual, l2: actual, l3: actual, ok: !isNaN(actual), soloUnPunto: true };
+            }
             const l2 = parseFloat(document.getElementById('lectura2').value);
             const l3 = parseFloat(document.getElementById('lectura3').value);
             return {
@@ -2271,20 +2304,24 @@
 
         async function guardarRegistro() {
             const l = leerLecturas();
+            // En modo de un solo punto solo se valida el campo visible.
+            const idsLectura = capturaUnSoloPunto ? ['tempActual'] : ['tempActual', 'lectura2', 'lectura3'];
             if (!l.ok) {
                 // Marcar los campos que faltan y llevar el foco al primero
                 let primerVacio = null;
-                ['tempActual', 'lectura2', 'lectura3'].forEach(id => {
+                idsLectura.forEach(id => {
                     const el = document.getElementById(id);
                     const vacio = isNaN(parseFloat(el.value));
                     el.classList.toggle('is-invalid-temp', vacio);
                     if (vacio && !primerVacio) primerVacio = el;
                 });
                 if (primerVacio) primerVacio.focus();
-                mostrarToast('Faltan lecturas: las 3 temperaturas son obligatorias', 'warning');
+                mostrarToast(capturaUnSoloPunto
+                    ? 'Falta la temperatura: este equipo registra un solo valor'
+                    : 'Faltan lecturas: las 3 temperaturas son obligatorias', 'warning');
                 return;
             }
-            ['tempActual', 'lectura2', 'lectura3'].forEach(id =>
+            idsLectura.forEach(id =>
                 document.getElementById(id).classList.remove('is-invalid-temp'));
 
             // Humedad obligatoria solo en equipos que la miden
@@ -2311,7 +2348,9 @@
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Registrando...';
 
-            // Recolectar datos (máxima = la mayor, mínima = la menor, ya ordenado)
+            // Recolectar datos (máxima = la mayor, mínima = la menor, ya ordenado).
+            // En modo de un solo punto maxima = minima = actual y el payload omite
+            // ambas claves (el backend las deriva; explícitas => 400).
             const payload = OperatorFlow.construirPayloadLectura({
                 termometroId: document.getElementById('termometroId').value,
                 actual,
@@ -2319,7 +2358,8 @@
                 minima,
                 humedad: humEl.value,
                 humedadEstado: humedadIncidencia,
-                observaciones: document.getElementById('observaciones').value
+                observaciones: document.getElementById('observaciones').value,
+                soloUnPunto: capturaUnSoloPunto
             });
 
             const esEdicion = document.getElementById('esEdicion').value === 'true';

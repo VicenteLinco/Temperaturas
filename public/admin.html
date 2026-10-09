@@ -1574,13 +1574,13 @@
                     </div>
 
                     <div id="formLecturasAdmin">
-                        <div class="alert alert-info py-2 small mb-3">
+                        <div class="alert alert-info py-2 small mb-3" id="admLecturasAviso">
                             <i class="bi bi-info-circle-fill me-1"></i> Las 3 lecturas son <strong>obligatorias</strong>. Ingrésalas en cualquier orden: el sistema las clasifica automáticamente (menor = mínima, mayor = máxima).
                         </div>
 
                         <div class="mb-3">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <label for="admTempActual" class="form-label fw-semibold mb-0">1ª Lectura: Temp. Actual (°C)</label>
+                                <label for="admTempActual" class="form-label fw-semibold mb-0" id="admLabelTempActual">1ª Lectura: Temp. Actual (°C)</label>
                                 <span class="badge bg-primary">Obligatoria</span>
                             </div>
                             <div class="temp-stepper">
@@ -1593,7 +1593,7 @@
                             </div>
                         </div>
 
-                        <div class="mb-3">
+                        <div class="mb-3" id="admCampoLectura2">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <label for="admLectura2" class="form-label fw-semibold mb-0">2ª Lectura de Temperatura (°C)</label>
                                 <span class="badge bg-secondary">Obligatoria</span>
@@ -1608,7 +1608,7 @@
                             </div>
                         </div>
 
-                        <div class="mb-3">
+                        <div class="mb-3" id="admCampoLectura3">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <label for="admLectura3" class="form-label fw-semibold mb-0">3ª Lectura de Temperatura (°C)</label>
                                 <span class="badge bg-secondary">Obligatoria</span>
@@ -2588,6 +2588,23 @@
         // ===== EDICIÓN DE REGISTROS (flujo de lecturas ordenadas) =====
         let registroAdminSeleccionado = null;
         let termometroAdminSeleccionado = null;
+        // Modo de captura admin: true cuando el tipo del equipo es de un solo punto.
+        // Se fija al abrir el modal desde termometroAdminSeleccionado (sin llamada extra).
+        let capturaAdminUnSoloPunto = false;
+
+        // Formulario adaptativo (T3): 1 campo cuando el tipo es de un solo punto.
+        function aplicarModoCapturaAdmin(termometro) {
+            capturaAdminUnSoloPunto = termometro && termometro.solo_un_punto === true;
+            const mostrarExtras = !capturaAdminUnSoloPunto;
+            document.getElementById('admCampoLectura2').style.display = mostrarExtras ? '' : 'none';
+            document.getElementById('admCampoLectura3').style.display = mostrarExtras ? '' : 'none';
+            document.getElementById('admLecturasAviso').innerHTML = capturaAdminUnSoloPunto
+                ? '<i class="bi bi-info-circle-fill me-1"></i> Este equipo registra <strong>un solo valor</strong> de temperatura.'
+                : '<i class="bi bi-info-circle-fill me-1"></i> Las 3 lecturas son <strong>obligatorias</strong>. Ingrésalas en cualquier orden: el sistema las clasifica automáticamente (menor = mínima, mayor = máxima).';
+            document.getElementById('admLabelTempActual').textContent = capturaAdminUnSoloPunto
+                ? 'Temperatura (°C)'
+                : '1ª Lectura: Temp. Actual (°C)';
+        }
 
         async function abrirEdicionRegistro(id) {
             const registro = registrosActuales.find(r => r.id === id);
@@ -2605,9 +2622,18 @@
             document.getElementById('admRegistroNombre').textContent = registro.termometro_nombre || ('ID: ' + registro.termometro_id);
             document.getElementById('admRegistroMeta').textContent = [registro.area_nombre, registro.usuario_nombre, registro.ventana_horaria].filter(Boolean).join(' · ');
 
+            aplicarModoCapturaAdmin(termometroAdminSeleccionado);
+
             document.getElementById('admTempActual').value = registro.temp_actual != null ? registro.temp_actual : '';
-            document.getElementById('admLectura2').value = registro.temp_maxima;
-            document.getElementById('admLectura3').value = registro.temp_minima;
+            // En modo de un solo punto no hay max/min que precargar: el backend
+            // ya guarda max = min = actual (regla T2).
+            if (!capturaAdminUnSoloPunto) {
+                document.getElementById('admLectura2').value = registro.temp_maxima;
+                document.getElementById('admLectura3').value = registro.temp_minima;
+            } else {
+                document.getElementById('admLectura2').value = '';
+                document.getElementById('admLectura3').value = '';
+            }
             document.getElementById('admHumedad').value = registro.humedad != null ? registro.humedad : '';
             document.getElementById('admObservaciones').value = registro.observaciones || '';
 
@@ -2620,6 +2646,11 @@
 
         function leerLecturasAdmin() {
             const actual = parseFloat(document.getElementById('admTempActual').value);
+            // Modo de un solo punto (regla T2): la medida es temp_actual y max/min
+            // se derivan (max = min = actual). No se exigen los otros campos.
+            if (capturaAdminUnSoloPunto) {
+                return { actual, l2: actual, l3: actual, ok: !isNaN(actual), soloUnPunto: true };
+            }
             const l2 = parseFloat(document.getElementById('admLectura2').value);
             const l3 = parseFloat(document.getElementById('admLectura3').value);
             return { actual, l2, l3, ok: !isNaN(actual) && !isNaN(l2) && !isNaN(l3) };
@@ -2642,8 +2673,13 @@
 
         function revisarLecturasAdmin() {
             const l = leerLecturasAdmin();
-            if (!l.ok) { alert('Ingresa las 3 temperaturas para revisar'); return; }
-            const { actual, minima, maxima } = ordenarValores(l.actual, l.l2, l.l3);
+            if (!l.ok) {
+                alert(capturaAdminUnSoloPunto
+                    ? 'Ingresa la temperatura para revisar'
+                    : 'Ingresa las 3 temperaturas para revisar');
+                return;
+            }
+            const { actual, minima, maxima } = ordenarValores(l.actual, l.l2, l.l3, capturaAdminUnSoloPunto);
             renderConfirmacionLecturas(
                 'tarjetasLecturasAdmin', 'barraTermometroAdmin', 'confirmacionWarningsAdmin',
                 'admConfMinText', 'admConfActualText', 'admConfMaxText',
@@ -2658,20 +2694,29 @@
 
         async function guardarRegistroAdmin() {
             const l = leerLecturasAdmin();
-            if (!l.ok) { alert('Ingresa las 3 temperaturas'); return; }
-            const { actual, minima, maxima } = ordenarValores(l.actual, l.l2, l.l3);
+            if (!l.ok) {
+                alert(capturaAdminUnSoloPunto
+                    ? 'Ingresa la temperatura'
+                    : 'Ingresa las 3 temperaturas');
+                return;
+            }
+            const { actual, minima, maxima } = ordenarValores(l.actual, l.l2, l.l3, capturaAdminUnSoloPunto);
 
             const btn = document.getElementById('admBtnGuardar');
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...';
 
+            // En modo de un solo punto se omiten max/min: el backend las deriva
+            // (max = min = actual); explícitas => 400 (regla T2).
             const payload = {
                 temp_actual: actual,
-                temp_maxima: maxima,
-                temp_minima: minima,
                 humedad: document.getElementById('admHumedad').value ? parseFloat(document.getElementById('admHumedad').value) : null,
                 observaciones: document.getElementById('admObservaciones').value || null
             };
+            if (!capturaAdminUnSoloPunto) {
+                payload.temp_maxima = maxima;
+                payload.temp_minima = minima;
+            }
 
             try {
                 const res = await fetch(`/api/registros/${registroAdminSeleccionado.id}`, {

@@ -35,15 +35,21 @@
         return null;
     }
 
-    function construirPayloadLectura({ termometroId, actual, maxima, minima, humedad, humedadEstado, observaciones }) {
-        return {
+    // Regla T2 (normalizar_lecturas_por_tipo, src/logic.rs): un tipo de un solo
+    // punto solo admite temp_actual; max/min explícitos => 400. Por eso el
+    // payload de un solo punto OMITE las claves en vez de enviar null.
+    function construirPayloadLectura({ termometroId, actual, maxima, minima, humedad, humedadEstado, observaciones, soloUnPunto }) {
+        const payload = {
             termometro_id: Number(termometroId),
             temp_actual: actual,
-            temp_maxima: maxima,
-            temp_minima: minima,
             humedad: humedadEstado ? null : (String(humedad || '').trim() ? Number(humedad) : null),
             observaciones: observacionHumedad(observaciones, humedadEstado) || null
         };
+        if (!soloUnPunto) {
+            payload.temp_maxima = maxima;
+            payload.temp_minima = minima;
+        }
+        return payload;
     }
 
     function totalesRonda(areasData) {

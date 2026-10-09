@@ -114,6 +114,8 @@ F1 removes forced fake data entry and makes the app usable for single-value inst
 | T1 | `cargo test` | ok, 37 passed, 0 failed |
 | T2 | `cargo build` | ok, `Finished dev profile` (mismo warning preexistente) |
 | T2 | `cargo test` | ok, 41 passed (37 previos + 4 nuevos single-point), RED previo observado (E0425 función inexistente) |
+| T3 | `node tests/operator-flow.test.js` | ok, 28 assertions passed, sin regresión |
+| T3 | `cargo build` | ok, backend intacto (mismo warning preexistente) |
 
 ## Delivery strategy
 
@@ -124,8 +126,9 @@ F1 removes forced fake data entry and makes the app usable for single-value inst
 | Task | Commit | Authored lines |
 | --- | --- | --- |
 | T1 | 12e5dbc | ~35 |
-| T2 | pending (validación backend un punto + tests) | ~129 |
+| T2 | f0b58ae | ~129 |
+| T3 | pending (form adaptativo 1 campo + payload) | ~139 |
 
 ## Next step
 
-T1 done (incluye `TermometroConDetalles` + 3 SELECTs). T2 done (regla central + rechazo 400 + `Option` backward-compatible). Start T3.
+T1 done. T2 done. T3 done (1 campo + payload omite max/min + prefill ambos modos). Start T4.

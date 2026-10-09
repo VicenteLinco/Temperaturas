@@ -54,6 +54,17 @@ function configurarInputDecimal(id) {
 
 // 2d. Navegación con Enter entre los campos de lectura (teclado completo en móvil):
 // Enter salta al siguiente campo y en el último cierra el teclado y ejecuta onFinish.
+// Los campos ocultos por el modo de un solo punto se saltan (no reciben foco).
+function campoVisible(el) {
+    if (!el) return false;
+    let nodo = el;
+    while (nodo && nodo !== document) {
+        if (nodo.style && nodo.style.display === 'none') return false;
+        nodo = nodo.parentElement;
+    }
+    return true;
+}
+
 function configurarNavegacionLecturas(ids, onFinish) {
     ids.forEach((id, i) => {
         const input = document.getElementById(id);
@@ -61,7 +72,9 @@ function configurarNavegacionLecturas(ids, onFinish) {
         input.addEventListener('keydown', (e) => {
             if (e.key !== 'Enter') return;
             e.preventDefault();
-            const siguiente = document.getElementById(ids[i + 1]);
+            const siguiente = ids.slice(i + 1)
+                .map(otroId => document.getElementById(otroId))
+                .find(campoVisible);
             if (siguiente) {
                 siguiente.focus();
                 siguiente.select();
@@ -78,7 +91,13 @@ function configurarNavegacionLecturas(ids, onFinish) {
 }
 
 // 3. Ordenamiento Automático de Lecturas
-function ordenarValores(actual, l2, l3) {
+// Regla T2 (normalizar_lecturas_por_tipo, src/logic.rs:439): en un tipo de un
+// solo punto la medida es temp_actual y max/min se derivan (max = min = actual).
+// No se calcula orden sobre valores no medidos.
+function ordenarValores(actual, l2, l3, soloUnPunto) {
+    if (soloUnPunto) {
+        return { actual, minima: actual, maxima: actual };
+    }
     return {
         actual,
         minima: Math.min(actual, l2, l3),
