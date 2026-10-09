@@ -113,16 +113,6 @@ async fn create_tables(pool: &PgPool) -> Result<()> {
     .execute(pool)
     .await?;
 
-    sqlx::query(
-        r#"
-        ALTER TABLE termometros
-            ADD COLUMN IF NOT EXISTS pos_x REAL,
-            ADD COLUMN IF NOT EXISTS pos_y REAL
-        "#,
-    )
-    .execute(pool)
-    .await?;
-
     // Tabla de termómetros
     sqlx::query(
         r#"
@@ -137,6 +127,18 @@ async fn create_tables(pool: &PgPool) -> Result<()> {
             created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    // T1-mapa: el ALTER va DESPUÉS del CREATE porque en una base nueva la
+    // tabla aún no existe (IF NOT EXISTS solo protege la columna, no la tabla).
+    sqlx::query(
+        r#"
+        ALTER TABLE termometros
+            ADD COLUMN IF NOT EXISTS pos_x REAL,
+            ADD COLUMN IF NOT EXISTS pos_y REAL
         "#,
     )
     .execute(pool)

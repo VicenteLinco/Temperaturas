@@ -62,6 +62,11 @@ Spatial view reduces missed points in large plants and speeds up rounds. Instanc
 - Route: delegated direct (touches `src/handlers/termometros.rs`, `src/handlers/registros.rs`).
 - `TermometroConDetalles` gained `pos_x/pos_y`, but `listar_termometros`, `obtener_termometro` and the `obtener_pendientes_area` pendientes query use explicit column lists; sqlx `query_as` is runtime-checked, so they needed `t.pos_x, t.pos_y` added or they fail at runtime. Fixed in field order; `reportes.rs`/`graficos.rs` checked, no mapping to this struct.
 
+### Hotfix — boot order en base nueva (lanzando con DB de prueba)
+
+- Route: direct inline (single mechanical move inside `src/db.rs`).
+- The T1 `ALTER TABLE termometros ADD COLUMN pos_x/pos_y` block sat BEFORE `CREATE TABLE termometros`, so fresh-DB boot died with `relation "termometros" does not exist` (`IF NOT EXISTS` guards the column, not the table; existing DBs were unaffected). Moved the ALTER to run right AFTER the CREATE. `cargo check` + unit tests cannot catch this class — always smoke-boot against an empty database after schema changes.
+
 ### T2 — Backend photo + positions API
 
 - Route: delegated direct (touches `src/handlers/mapa.rs` new, `src/main.rs`, `src/handlers/mod.rs`, `src/models.rs`, `Cargo.toml`/`Cargo.lock`, `public/uploads/.gitkeep`).
@@ -110,6 +115,8 @@ Spatial view reduces missed points in large plants and speeds up rounds. Instanc
 | T5 full | `node tests/operator-flow.test.js` + `node tests/graficos-multi-series.test.js` (parent) | ok, 28 + 14 assertions passed |
 | T5 full | `git diff --check` on branch range (parent) | ok, clean |
 | T5 | manual: mobile 360px, upload 5MB reject, percent round-trip | pending (manual, not run headless) |
+| Hotfix boot | `cargo build` + fresh-DB boot (parent) | ok after fix; before fix boot died on `relation termometros does not exist` |
+| E2E mapa | curl: config on, area+tipo+termometro CRUD, posiciones, foto upload, mapa GET, cross-area move 409 then confirmed | ok: `estado pendiente`, `imagen_url /uploads/mapa.png`, 409 preview `{cambios:[...]}` with zero writes, confirmed move flips `area_id` 1→2 |
 
 ## Delivery strategy
 
@@ -123,7 +130,8 @@ Spatial view reduces missed points in large plants and speeds up rounds. Instanc
 | T2 | 5d7ceed | ~200 |
 | T3 | 117abd7 | +411/-0 |
 | T4 | 1f8d833 | +173/-0 |
-| T5 docs | pending (final close-out commit) | docs only |
+| T5 docs | 8295fed | docs only |
+| Hotfix boot | pending (hash en el reporte final) | +8/-8 en src/db.rs |
 | T3 | pending | — |
 | T4 | pending | — |
 | T5 | pending | — |
