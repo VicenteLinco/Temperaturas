@@ -120,6 +120,11 @@ F1 removes forced fake data entry and makes the app usable for single-value inst
 | T4 | `cargo test` | ok, 50 passed (41 previos + 9 nuevos graficos multi), RED previo E0425 |
 | T5 | `cargo build` | ok, backend intacto (mismo warning preexistente) |
 | T5 | `node /tmp/opencode/t5_multi_series.test.js` | ok, 14/14 (harness en /tmp, mover a tests/ en T6) |
+| T6 | `cargo build` | ok, `Finished dev profile` (mismo warning preexistente) |
+| T6 | `cargo test` | ok, 50 passed, 0 failed |
+| T6 | `cargo clippy --all-targets` | ok, 0 errores, 20 warnings preexistentes (p.ej. doc_lazy_continuation en logic.rs:438) |
+| T6 | `node tests/graficos-multi-series.test.js` | ok, 14 assertions passed |
+| T6 | `node tests/operator-flow.test.js` | ok, 28 assertions passed, sin regresión |
 
 ## Delivery strategy
 
@@ -133,8 +138,9 @@ F1 removes forced fake data entry and makes the app usable for single-value inst
 | T2 | f0b58ae | ~129 |
 | T3 | 14ea50b | ~139 |
 | T4 | 97e4c17 | ~349 |
-| T5 | pending (render multi-serie por timestamp + tooltips) | ~327 |
+| T5 | 86af9e9 | ~327 |
+| T6 | pending (test JS multi-serie + verificación full) | ~14 tests |
 
 ## Next step
 
-T1-T5 done. Start T6.
+T1-T6 done. Pendiente: revisar diff final y decidir entrega (push/PR) bajo política ordinaria.
