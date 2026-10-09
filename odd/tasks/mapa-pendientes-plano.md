@@ -107,7 +107,7 @@ Spatial view reduces missed points in large plants and speeds up rounds. Instanc
 
 | Task | Commit | Authored lines |
 | --- | --- | --- |
-| T1+T1b | pending (hash recorded right after commit) | ~60 |
+| T1+T1b | 748b744 | ~60 |
 | T2 | pending | — |
 | T3 | pending | — |
 | T4 | pending | — |
