@@ -118,6 +118,8 @@ F1 removes forced fake data entry and makes the app usable for single-value inst
 | T3 | `cargo build` | ok, backend intacto (mismo warning preexistente) |
 | T4 | `cargo build` | ok, `Finished dev profile` (mismo warning preexistente) |
 | T4 | `cargo test` | ok, 50 passed (41 previos + 9 nuevos graficos multi), RED previo E0425 |
+| T5 | `cargo build` | ok, backend intacto (mismo warning preexistente) |
+| T5 | `node /tmp/opencode/t5_multi_series.test.js` | ok, 14/14 (harness en /tmp, mover a tests/ en T6) |
 
 ## Delivery strategy
 
@@ -130,8 +132,9 @@ F1 removes forced fake data entry and makes the app usable for single-value inst
 | T1 | 12e5dbc | ~35 |
 | T2 | f0b58ae | ~129 |
 | T3 | 14ea50b | ~139 |
-| T4 | pending (API multi-id + presupuesto por termómetro) | ~349 |
+| T4 | 97e4c17 | ~349 |
+| T5 | pending (render multi-serie por timestamp + tooltips) | ~327 |
 
 ## Next step
 
-T1-T4 done. Start T5.
+T1-T5 done. Start T6.

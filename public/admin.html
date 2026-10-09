@@ -3167,7 +3167,9 @@
             if (areaId) filtrados = termometrosListaGraficos.filter(t => t.area_id == areaId);
             actualizarContadorTermometros(filtrados.length);
 
-            renderizarGraficoSegunModo();
+            // El filtrado es server-side: recargar para que el payload coincida
+            // con la selección en lugar de refiltrar en cliente (D1).
+            cargarGraficos();
         }
 
         function seleccionarTodosTermometros(marcarTodos) {
@@ -3181,7 +3183,8 @@
             }
 
             actualizarDropdownTermometrosGraficos();
-            renderizarGraficoSegunModo();
+            // Recarga server-side para honrar la nueva selección (D1).
+            cargarGraficos();
         }
 
         function actualizarContadorTermometros(totalArea) {
@@ -3240,6 +3243,9 @@
             if (areaId) params.append('area_id', areaId);
             if (fechaDesde) params.append('fecha_desde', fechaDesde);
             if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+            // D1: la selección de termómetros se filtra en el servidor
+            // (repetido ?termometro_id=1&termometro_id=2, según contrato T4).
+            termometrosSeleccionadosGraficos.forEach(id => params.append('termometro_id', id));
 
             try {
                 const response = await fetch(`/api/admin/graficos?${params.toString()}`);
@@ -3393,10 +3399,10 @@
                 graficosCharts[0] = null;
             }
 
-            // Filtrar lecturas según los termómetros seleccionados por el usuario
-            const lecturasFiltradas = (ultimaDataGraficos.lecturas || []).filter(l =>
-                termometrosSeleccionadosGraficos.has(String(l.termometro_id))
-            );
+            // El filtrado por termómetro ya lo hizo el servidor en cargarGraficos():
+            // se usa el payload tal cual para no contradecirlo con un filtro
+            // client-side (D1). Cada cambio de selección recarga desde el servidor.
+            const lecturasFiltradas = ultimaDataGraficos.lecturas || [];
 
             // Recalcular KPIs superiores en base al PERÍODO Y TERMÓMETROS VISIBLES actualmente
             renderizarKPIsGraficos(ultimaDataGraficos ? ultimaDataGraficos.resumen : null, lecturasFiltradas);
@@ -3412,10 +3418,29 @@
                 titulo.innerHTML = `<i class="bi bi-clock-history text-primary me-2"></i> Lecturas Individuales (${termometrosSeleccionadosGraficos.size} termómetro${termometrosSeleccionadosGraficos.size > 1 ? 's' : ''})`;
                 crearChartLecturasDetalladas(lecturasFiltradas, limitesInfo);
             } else {
-                // Los promedios diarios vienen agregados por fecha sin desglose por termómetro
-                if (subtituloTendencia) subtituloTendencia.classList.remove('d-none');
+                // Promedios diarios: honrar la selección con el desglose por
+                // termómetro (tendencias_por_termometro, contrato T4). Sin
+                // desglose no se puede graficar multi sin mentir (D4): se
+                // deshabilita ese modo con un mensaje claro.
                 titulo.innerHTML = '<i class="bi bi-graph-up text-primary me-2"></i> Tendencia de Promedios Diarios';
-                crearChartTendencias(ultimaDataGraficos.tendencias, limitesInfo);
+                if (termometrosSeleccionadosGraficos.size === 1) {
+                    if (subtituloTendencia) {
+                        subtituloTendencia.classList.remove('d-none');
+                        subtituloTendencia.textContent = 'Promedio diario del termómetro seleccionado';
+                    }
+                    crearChartTendencias(ultimaDataGraficos.tendencias, limitesInfo);
+                } else if (ultimaDataGraficos.tendencias_por_termometro && ultimaDataGraficos.tendencias_por_termometro.length > 0) {
+                    if (subtituloTendencia) {
+                        subtituloTendencia.classList.remove('d-none');
+                        subtituloTendencia.textContent = 'Promedios diarios por termómetro seleccionado';
+                    }
+                    crearChartTendenciasMulti(ultimaDataGraficos.tendencias_por_termometro, limitesInfo);
+                } else {
+                    if (subtituloTendencia) {
+                        subtituloTendencia.classList.remove('d-none');
+                        subtituloTendencia.textContent = 'Promedios diarios no disponibles para varios termómetros: use Lecturas Individuales para comparar la selección.';
+                    }
+                }
             }
         }
 
@@ -3803,6 +3828,92 @@
             return resultado;
         }
 
+        // Color de serie por termómetro en vista multi: la misma familia de
+        // color identifica al termómetro en las 3 métricas (Actual sólida,
+        // Máx/Mín punteadas). Paleta del sistema, sin tintes fuera de escala.
+        function colorSerieTermometro(indice) {
+            const paleta = [
+                '#1d1d1f', '#3f7a80', '#2f6b4f', '#8a6a2f',
+                '#9c3b3b', '#6e6e73', '#58421d', '#8a8a8f'
+            ];
+            const i = ((indice % paleta.length) + paleta.length) % paleta.length;
+            return paleta[i];
+        }
+
+        // Agrupa lecturas multi-termómetro por instante (timestamp) ordenado.
+        // Cada fila queda alineada al mismo eje de instantes con null en los
+        // huecos: nunca se comparte un eje categoría entrelazado (D2).
+        function agruparLecturasMultiPorTimestamp(lecturas) {
+            const lista = Array.isArray(lecturas) ? lecturas : [];
+            const instantes = [...new Set(
+                lista.map(l => l && l.fecha_registro).filter(Boolean)
+            )].sort();
+            const porTermometro = new Map();
+            lista.forEach(l => {
+                if (!l || l.fecha_registro == null) return;
+                if (!porTermometro.has(l.termometro_id)) {
+                    porTermometro.set(l.termometro_id, {
+                        id: l.termometro_id,
+                        nombre: l.termometro_nombre,
+                        porInstante: new Map()
+                    });
+                }
+                const grupo = porTermometro.get(l.termometro_id);
+                if (!grupo.porInstante.has(l.fecha_registro)) {
+                    grupo.porInstante.set(l.fecha_registro, l);
+                }
+            });
+            const filas = [...porTermometro.values()].map(g => ({
+                id: g.id,
+                nombre: g.nombre,
+                lecturas: instantes.map(ts => g.porInstante.get(ts) || null)
+            }));
+            return { instantes, filas };
+        }
+
+        // Alinea el desglose diario por termómetro (tendencias_por_termometro)
+        // sobre la unión de fechas ordenada, con null en los huecos (D4).
+        function alinearTendenciasPorTermometro(detalle) {
+            const lista = Array.isArray(detalle) ? detalle : [];
+            const fechas = [...new Set(
+                lista.map(t => t && t.fecha).filter(Boolean)
+            )].sort();
+            const porTermometro = new Map();
+            lista.forEach(t => {
+                if (!t || t.fecha == null) return;
+                if (!porTermometro.has(t.termometro_id)) {
+                    porTermometro.set(t.termometro_id, {
+                        id: t.termometro_id,
+                        nombre: t.termometro_nombre,
+                        porFecha: new Map()
+                    });
+                }
+                const grupo = porTermometro.get(t.termometro_id);
+                if (!grupo.porFecha.has(t.fecha)) {
+                    grupo.porFecha.set(t.fecha, t);
+                }
+            });
+            const filas = [...porTermometro.values()].map(g => ({
+                id: g.id,
+                nombre: g.nombre,
+                puntos: fechas.map(f => g.porFecha.get(f) || null)
+            }));
+            return { fechas, filas };
+        }
+
+        // Resuelve la lectura de un punto desde su propio dataset
+        // (metaLecturas) en lugar de lecturas[globalIndex] (D3). El respaldo
+        // por índice solo aplica a datasets uni-termómetro sin metadatos.
+        function lecturaDePunto(dataset, dataIndex, lecturasRespaldo) {
+            if (dataset && Array.isArray(dataset.metaLecturas)) {
+                return dataset.metaLecturas[dataIndex] || null;
+            }
+            if (Array.isArray(lecturasRespaldo)) {
+                return lecturasRespaldo[dataIndex] || null;
+            }
+            return null;
+        }
+
         function crearChartLecturasDetalladas(lecturasOriginales, limites) {
             const canvasEl = document.getElementById('chartTendencias');
             if (!canvasEl) return;
@@ -3832,9 +3943,10 @@
             const radiusBase = esModoSmart ? 0 : (totalPuntos > 60 ? 1 : (totalPuntos > 25 ? 2.5 : 4));
 
             let datasets = [];
-            const labels = lecturas.map(l => formatearFechaEjeX(l.fecha_registro));
+            let labels = [];
 
             if (termometrosSeleccionadosGraficos.size === 1) {
+                labels = lecturas.map(l => formatearFechaEjeX(l.fecha_registro));
                 // 1. Temp Actual (Azul #1d1d1f)
                 const pointBgAct = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? '#9c3b3b' : '#2f6b4f');
                 const pointBorderAct = lecturas.map(l => (mostrarAlertas && esAlertaLectura(l)) ? '#9c3b3b' : '#1c4230');
@@ -3844,6 +3956,7 @@
                 datasets.push({
                     label: 'Temp. Actual (°C)',
                     data: lecturas.map(l => l.temp_actual),
+                    metaLecturas: lecturas,
                     borderColor: '#1d1d1f', // Casi negro (#1d1d1f)
                     backgroundColor: 'transparent',
                     tension: 0.35,
@@ -3866,6 +3979,7 @@
                 datasets.push({
                     label: 'Temp. Máxima (°C)',
                     data: lecturas.map(l => l.temp_maxima),
+                    metaLecturas: lecturas,
                     borderColor: '#8a6a2f', // Naranja
                     backgroundColor: 'transparent',
                     tension: 0.35,
@@ -3888,6 +4002,7 @@
                 datasets.push({
                     label: 'Temp. Mínima (°C)',
                     data: lecturas.map(l => l.temp_minima),
+                    metaLecturas: lecturas,
                     borderColor: '#3f7a80', // Cyan / Celeste
                     backgroundColor: 'transparent',
                     tension: 0.35,
@@ -3901,45 +4016,29 @@
                     order: 3
                 });
             } else {
-                // Multi-termómetro: Colores por sensor con trazados diferenciados por métrica
-                const termMap = new Map();
-                lecturas.forEach(l => {
-                    if (!termMap.has(l.termometro_id)) {
-                        termMap.set(l.termometro_id, {
-                            id: l.termometro_id,
-                            nombre: l.termometro_nombre,
-                            readings: []
-                        });
-                    }
-                    termMap.get(l.termometro_id).readings.push(l);
-                });
+                // Multi-termómetro: un dataset por (termómetro, métrica) alineado
+                // por timestamp sobre la unión de instantes ordenada. Cada serie
+                // se indexa por instante con null en los huecos: sin eje
+                // categoría compartido con null-padding entrelazado (D2).
+                // Las 3 métricas comparten el color del termómetro (D6).
+                const serieMulti = agruparLecturasMultiPorTimestamp(lecturas);
+                labels = serieMulti.instantes.map(ts => formatearFechaEjeX(ts));
 
-                // Paleta de series: solo tonos del sistema (negro, teal de mínima,
-                // verde, ámbar, rojo y grises). Fuera quedan el violeta #5a5a80 y
-                // el resto de tintes que rompían la paleta monocromática.
-                const applePalette = [
-                    '#1d1d1f', '#3f7a80', '#2f6b4f', '#8a6a2f',
-                    '#9c3b3b', '#6e6e73', '#58421d', '#8a8a8f'
-                ];
+                serieMulti.filas.forEach((fila, idxTerm) => {
+                    const colorLine = colorSerieTermometro(idxTerm);
+                    const termDataActual = fila.lecturas.map(l => (l ? l.temp_actual : null));
+                    const termDataMax = fila.lecturas.map(l => (l ? l.temp_maxima : null));
+                    const termDataMin = fila.lecturas.map(l => (l ? l.temp_minima : null));
 
-                let colorIdx = 0;
-                termMap.forEach(term => {
-                    const colorLine = applePalette[colorIdx % applePalette.length];
-                    colorIdx++;
-
-                    const termLecturas = lecturas.map(l => (l.termometro_id === term.id ? l : null));
-                    const termDataActual = termLecturas.map(l => (l ? l.temp_actual : null));
-                    const termDataMax = termLecturas.map(l => (l ? l.temp_maxima : null));
-                    const termDataMin = termLecturas.map(l => (l ? l.temp_minima : null));
-
-                    const pointBg = termLecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? '#9c3b3b' : '#2f6b4f');
-                    const pointBorder = termLecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? '#9c3b3b' : colorLine);
-                    const pointRadius = termLecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? 8 : (radiusBase || 4));
-                    const pointStyle = termLecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? 'crossRot' : 'rect');
+                    const pointBg = fila.lecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? '#9c3b3b' : colorLine);
+                    const pointBorder = fila.lecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? '#9c3b3b' : colorLine);
+                    const pointRadius = fila.lecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? 8 : (radiusBase || 4));
+                    const pointStyle = fila.lecturas.map(l => (l && mostrarAlertas && esAlertaLectura(l)) ? 'crossRot' : 'rect');
 
                     datasets.push({
-                        label: `${term.nombre} (Actual)`,
+                        label: `${fila.nombre} (Actual)`,
                         data: termDataActual,
+                        metaLecturas: fila.lecturas,
                         borderColor: colorLine,
                         backgroundColor: 'transparent',
                         tension: 0.3,
@@ -3954,10 +4053,11 @@
                         order: 1
                     });
                     datasets.push({
-                        label: `${term.nombre} (Máx)`,
+                        label: `${fila.nombre} (Máx)`,
                         data: termDataMax,
-                        borderColor: '#8a6a2f',
-                        borderDash: [5, 4],
+                        metaLecturas: fila.lecturas,
+                        borderColor: colorLine,
+                        borderDash: [6, 3],
                         backgroundColor: 'transparent',
                         tension: 0.3,
                         pointRadius: 0,
@@ -3968,10 +4068,11 @@
                         order: 2
                     });
                     datasets.push({
-                        label: `${term.nombre} (Mín)`,
+                        label: `${fila.nombre} (Mín)`,
                         data: termDataMin,
-                        borderColor: '#3f7a80',
-                        borderDash: [3, 3],
+                        metaLecturas: fila.lecturas,
+                        borderColor: colorLine,
+                        borderDash: [2, 3],
                         backgroundColor: 'transparent',
                         tension: 0.3,
                         pointRadius: 0,
@@ -4026,8 +4127,10 @@
                     },
                     onClick: (event, elements) => {
                         if (elements && elements.length > 0) {
-                            const index = elements[0].index;
-                            const item = lecturas[index];
+                            // La lectura se resuelve desde el propio dataset
+                            // (metaLecturas), nunca lecturas[globalIndex] (D3).
+                            const el = elements[0];
+                            const item = lecturaDePunto(datasets[el.datasetIndex], el.index, lecturas);
                             if (item) {
                                 mostrarDetalleLecturaModal(item);
                             }
@@ -4083,16 +4186,14 @@
                             callbacks: {
                                 title: (items) => {
                                     if (!items.length) return '';
-                                    const index = items[0].dataIndex;
-                                    const item = lecturas[index];
+                                    const item = lecturaDePunto(items[0].dataset, items[0].dataIndex, lecturas);
                                     if (!item) return items[0].label;
                                     return item.ventana_horaria
                                         ? `📅 ${item.fecha_registro} · Ventana ${item.ventana_horaria}`
                                         : `📅 ${item.fecha_registro}`;
                                 },
                                 label: (context) => {
-                                    const index = context.dataIndex;
-                                    const item = lecturas[index];
+                                    const item = lecturaDePunto(context.dataset, context.dataIndex, lecturas);
                                     const label = context.dataset.label || '';
                                     const val = context.parsed.y;
                                     if (val == null) return '';
@@ -4246,6 +4347,174 @@
                                     if (!items.length) return '';
                                     const index = items[0].dataIndex;
                                     const t = tendencias[index];
+                                    if (!t) return '';
+                                    return `Alertas: ${t.alertas || 0} | Total: ${t.total_registros || 0}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { title: { display: true, text: '°C', color: textColor }, ticks: { color: textColor }, grid: { color: gridColor } },
+                        x: {
+                            ticks: {
+                                autoSkip: true,
+                                maxTicksLimit: 12,
+                                maxRotation: 0,
+                                minRotation: 0,
+                                color: textColor,
+                                font: { family: '-apple-system, sans-serif', size: 11 }
+                            },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            graficosCharts[0] = chart;
+        }
+
+        // Promedios diarios multi-termómetro a partir del desglose por
+        // termómetro (tendencias_por_termometro, contrato T4). Un dataset por
+        // (termómetro, métrica) alineado por fecha con null en huecos; el color
+        // identifica al termómetro en las 3 métricas (D4, D6).
+        function crearChartTendenciasMulti(detalle, limites) {
+            const canvasEl = document.getElementById('chartTendencias');
+            if (!canvasEl) return;
+            const ctx = canvasEl.getContext('2d');
+            const mostrarLimites = document.getElementById('chkMostrarLimites').checked;
+            const mostrarTooltip = document.getElementById('chkMostrarTooltip') ? document.getElementById('chkMostrarTooltip').checked : false;
+
+            const serie = alinearTendenciasPorTermometro(detalle);
+            if (serie.fechas.length === 0) {
+                destruirGraficos();
+                return;
+            }
+            const labels = serie.fechas.map(f => formatearFechaEjeX(f));
+
+            const textColor = '#1d1d1f';
+            const gridColor = 'rgba(0, 0, 0, 0.05)';
+
+            let tempMinOp = (limites && limites.homogeneo !== false && limites.temp_min_operativa != null) ? limites.temp_min_operativa : null;
+            let tempMaxOp = (limites && limites.homogeneo !== false && limites.temp_max_operativa != null) ? limites.temp_max_operativa : null;
+
+            const datasets = [];
+            serie.filas.forEach((fila, idxTerm) => {
+                const colorLine = colorSerieTermometro(idxTerm);
+                datasets.push({
+                    label: `${fila.nombre} (Prom. Actual)`,
+                    data: fila.puntos.map(p => (p ? p.promedio_actual : null)),
+                    metaTendencias: fila.puntos,
+                    borderColor: colorLine,
+                    backgroundColor: 'transparent',
+                    tension: 0.35,
+                    pointRadius: 3,
+                    borderWidth: 2.5,
+                    spanGaps: true,
+                    fill: false,
+                    order: 1
+                });
+                datasets.push({
+                    label: `${fila.nombre} (Prom. Máx)`,
+                    data: fila.puntos.map(p => (p ? p.promedio_max : null)),
+                    metaTendencias: fila.puntos,
+                    borderColor: colorLine,
+                    backgroundColor: 'transparent',
+                    borderDash: [6, 3],
+                    tension: 0.35,
+                    pointRadius: 0,
+                    borderWidth: 1.8,
+                    spanGaps: true,
+                    fill: false,
+                    order: 2
+                });
+                datasets.push({
+                    label: `${fila.nombre} (Prom. Mín)`,
+                    data: fila.puntos.map(p => (p ? p.promedio_min : null)),
+                    metaTendencias: fila.puntos,
+                    borderColor: colorLine,
+                    backgroundColor: 'transparent',
+                    borderDash: [2, 3],
+                    tension: 0.35,
+                    pointRadius: 0,
+                    borderWidth: 1.8,
+                    spanGaps: true,
+                    fill: false,
+                    order: 3
+                });
+            });
+
+            if (mostrarLimites && tempMinOp != null && tempMaxOp != null) {
+                datasets.push({
+                    label: `Límite Mínimo (${tempMinOp}°C)`,
+                    data: labels.map(() => tempMinOp),
+                    borderColor: '#9c3b3b',
+                    borderWidth: 2,
+                    borderDash: [6, 4],
+                    pointRadius: 0,
+                    fill: false,
+                    order: 0
+                });
+                datasets.push({
+                    label: `Límite Máximo (${tempMaxOp}°C)`,
+                    data: labels.map(() => tempMaxOp),
+                    borderColor: '#9c3b3b',
+                    borderWidth: 2,
+                    borderDash: [6, 4],
+                    pointRadius: 0,
+                    fill: false,
+                    order: 0
+                });
+            }
+
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: { labels, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            top: 16,
+                            right: 24,
+                            bottom: 12,
+                            left: 16
+                        }
+                    },
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: textColor, usePointStyle: true } },
+                        zoom: {
+                            pan: { enabled: true, mode: 'x' },
+                            zoom: {
+                                wheel: { enabled: true, modifierKey: 'ctrl' },
+                                pinch: { enabled: true },
+                                mode: 'x'
+                            }
+                        },
+                        tooltip: {
+                            enabled: mostrarTooltip,
+                            backgroundColor: 'rgba(20, 20, 22, 0.78)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#f2f2f2',
+                            titleFont: { family: '-apple-system, sans-serif', size: 11, weight: 'bold' },
+                            bodyFont: { family: '-apple-system, sans-serif', size: 10.5 },
+                            padding: { top: 5, bottom: 5, left: 9, right: 9 },
+                            cornerRadius: 7,
+                            caretSize: 4,
+                            callbacks: {
+                                title: (items) => {
+                                    if (!items.length) return '';
+                                    const meta = items[0].dataset.metaTendencias;
+                                    const t = meta ? meta[items[0].dataIndex] : null;
+                                    return t ? `📅 ${t.fecha}` : items[0].label;
+                                },
+                                footer: (items) => {
+                                    if (!items.length) return '';
+                                    const meta = items[0].dataset.metaTendencias;
+                                    const t = meta ? meta[items[0].dataIndex] : null;
                                     if (!t) return '';
                                     return `Alertas: ${t.alertas || 0} | Total: ${t.total_registros || 0}`;
                                 }
