@@ -138,6 +138,7 @@ Spatial view reduces missed points in large plants and speeds up rounds. Instanc
 | Fix graficos | curl single/repeated/commas/invalid + `cargo test` | ok: single now 200 with limites, repeated/commas deduped, invalid 422; 55 passed, 0 failed |
 | Fix popup Registrar | `node --check public/mapa.js` | ok, SYNTAX_OK; gestos en popup sin captura, refresh al cerrar modal |
 | Ajuste plano | `node --check public/mapa.js` (writer) + parent spot check | ok; etiquetas Plano, apertura directa, pendiente azul |
+| Sweep sintaxis | `vm.Script` sobre todos los `<script>` inline de admin.html e index.html | ok: 3/3 bloques parsean (descarta muerte del bloque T3) |
 | E2E registrador | created `registrador1` on TEST db, login, pendientes + mapa as that role | ok: pendientes list + mapa snapshot visible with correct estado |
 
 ## Delivery strategy
@@ -156,7 +157,7 @@ Spatial view reduces missed points in large plants and speeds up rounds. Instanc
 | Hotfix boot | c079000 | +8/-8 en src/db.rs |
 | Fix graficos | 2af8815 | solo src/handlers/graficos.rs |
 | Fix popup Registrar | 8a41598 | solo public/mapa.js |
-| Ajuste plano | pending (hash en el reporte final) | index+admin+mapa.js |
+| Ajuste plano | 429f384 | index+admin+mapa.js |
 | T3 | pending | — |
 | T4 | pending | — |
 | T5 | pending | — |
