@@ -79,6 +79,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/tipos-termometro", get(handlers::listar_tipos_termometro))
         .route("/api/termometros", get(handlers::listar_termometros))
         .route("/api/termometros/:id", get(handlers::obtener_termometro))
+        .route("/api/mapa", get(handlers::obtener_mapa))
         .route_layer(middleware::from_fn(auth::require_auth));
 
     // Rutas de Registrador
@@ -117,6 +118,9 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/admin/reportes/incidencias", get(handlers::generar_reporte_incidencias))
         .route("/api/admin/reportes/estabilidad", get(handlers::generar_reporte_estabilidad))
         .route("/api/admin/graficos", get(handlers::obtener_graficos))
+        .route("/api/admin/mapa/config", put(handlers::actualizar_config_mapa))
+        .route("/api/admin/mapa/foto", post(handlers::subir_foto_mapa))
+        .route("/api/admin/mapa/posiciones", put(handlers::guardar_posiciones))
         .route_layer(middleware::from_fn(auth::require_admin));
 
     // Combinar todas las rutas

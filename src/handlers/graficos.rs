@@ -16,11 +16,13 @@ pub struct FiltrosGraficos {
     pub fecha_desde: Option<String>,
     pub fecha_hasta: Option<String>,
     pub area_id: Option<i32>,
-    // Acepta un id suelto (?termometro_id=5), repetido
-    // (?termometro_id=1&termometro_id=2) o separado por comas
-    // (?termometro_id=1,2). El nombre del parámetro se conserva
-    // para no romper a los clientes actuales.
-    #[serde(default, deserialize_with = "deserializar_ids_termometros")]
+    // Se rellena a mano en el handler desde los pares crudos del query:
+    // urlencoded entrega un valor suelto (?termometro_id=5) como cadena y
+    // no como secuencia, así que el Vec derivado rechaza ese caso.
+    // Acepta suelto, repetido (?termometro_id=1&termometro_id=2) o comas
+    // (?termometro_id=1,2); el nombre del parámetro se conserva para no
+    // romper a los clientes actuales.
+    #[serde(skip)]
     pub termometro_id: Option<Vec<i32>>,
 }
 
@@ -87,16 +89,6 @@ impl<'de> Deserialize<'de> for FragmentoId {
 /// debe colapsar a sin filtro: no devuelve filas).
 fn normalizar_filtro_ids(fragmentos: Option<Vec<FragmentoId>>) -> Option<Vec<i32>> {
     fragmentos.map(|fs| normalizar_ids_termometros(fs.into_iter().flat_map(|f| f.0).collect()))
-}
-
-fn deserializar_ids_termometros<'de, D>(
-    deserializador: D,
-) -> Result<Option<Vec<i32>>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let fragmentos: Option<Vec<FragmentoId>> = Option::deserialize(deserializador)?;
-    Ok(normalizar_filtro_ids(fragmentos))
 }
 
 #[derive(Serialize, FromRow)]
@@ -230,8 +222,24 @@ fn fila_a_lectura(row: &PgRow) -> LecturaGraficoItem {
 pub async fn obtener_graficos(
     _current_user: CurrentUser,
     State(pool): State<PgPool>,
-    Query(filtros): Query<FiltrosGraficos>,
+    Query(mut filtros): Query<FiltrosGraficos>,
+    Query(pares): Query<Vec<(String, String)>>,
 ) -> Result<Json<GraficosResponse>, StatusCode> {
+    // termometro_id se arma a mano: urlencoded no entrega un valor suelto
+    // como secuencia y el Vec derivado lo rechaza. Se distingue "ausente"
+    // (None = sin filtro) de "presente pero vacío" (Some([]) = no filas).
+    let mut fragmentos: Vec<FragmentoId> = Vec::new();
+    let mut visto = false;
+    for (k, v) in &pares {
+        if k == "termometro_id" {
+            visto = true;
+            match parsear_fragmento_id(v) {
+                Ok(ids) => fragmentos.push(FragmentoId(ids)),
+                Err(_) => return Err(StatusCode::UNPROCESSABLE_ENTITY),
+            }
+        }
+    }
+    filtros.termometro_id = normalizar_filtro_ids(visto.then_some(fragmentos));
     let dias = filtros.dias.unwrap_or(30).clamp(1, 365);
     let fecha_desde = filtros.fecha_desde.filter(|s| !s.trim().is_empty());
     let fecha_hasta = filtros.fecha_hasta.filter(|s| !s.trim().is_empty());

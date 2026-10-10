@@ -92,6 +92,27 @@ async fn create_tables(pool: &PgPool) -> Result<()> {
     .execute(pool)
     .await?;
 
+    // Zonas de área y posiciones de termómetro para el mapa del plano (T1 solo
+    // añade las columnas, sin comportamiento: el arrastre que mueve el punto Y
+    // cambia el área vía hit-test de zonas llega en T2).
+    //
+    // Igual que `solo_un_punto` arriba: `CREATE TABLE IF NOT EXISTS` NO añade
+    // columnas a una tabla que ya existe, así que estos ALTER idempotentes tienen
+    // que correr en cada arranque tanto en una base nueva como en una antigua.
+    // Las cuatro columnas de zona van en porcentaje 0-100 (NULL = sin delimitar)
+    // y la posición del termómetro en porcentaje 0-100 (NULL = pendiente de ubicar).
+    sqlx::query(
+        r#"
+        ALTER TABLE areas
+            ADD COLUMN IF NOT EXISTS zona_x REAL,
+            ADD COLUMN IF NOT EXISTS zona_y REAL,
+            ADD COLUMN IF NOT EXISTS zona_w REAL,
+            ADD COLUMN IF NOT EXISTS zona_h REAL
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
     // Tabla de termómetros
     sqlx::query(
         r#"
@@ -106,6 +127,18 @@ async fn create_tables(pool: &PgPool) -> Result<()> {
             created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    // T1-mapa: el ALTER va DESPUÉS del CREATE porque en una base nueva la
+    // tabla aún no existe (IF NOT EXISTS solo protege la columna, no la tabla).
+    sqlx::query(
+        r#"
+        ALTER TABLE termometros
+            ADD COLUMN IF NOT EXISTS pos_x REAL,
+            ADD COLUMN IF NOT EXISTS pos_y REAL
         "#,
     )
     .execute(pool)
@@ -218,7 +251,9 @@ async fn create_tables(pool: &PgPool) -> Result<()> {
             ('registro_hora_1', $1, 'Primera ventana horaria'),
             ('registro_hora_2', $2, 'Segunda ventana horaria'),
             ('ventana_tolerancia_minutos', $3, 'Minutos de tolerancia para las ventanas horarias'),
-            ('restriccion_ventana_activa', '0', 'Indica si se restringe el registro a las ventanas horarias (0=No, 1=Sí)')
+            ('restriccion_ventana_activa', '0', 'Indica si se restringe el registro a las ventanas horarias (0=No, 1=Sí)'),
+            ('mapa_habilitado', '0', 'Muestra la vista de mapa sobre el plano (0=No, 1=Sí)'),
+            ('mapa_imagen_path', '', 'Ruta de la foto del plano dentro de public/uploads/')
         ON CONFLICT (clave) DO NOTHING
         "#,
     )

@@ -43,3 +43,7 @@ Thumbs.db
 fix_password.rs
 test_*.rs
 *.tmp
+
+# Fotos de plano subidas por cada instancia (no versionar, solo .gitkeep)
+public/uploads/*
+!public/uploads/.gitkeep

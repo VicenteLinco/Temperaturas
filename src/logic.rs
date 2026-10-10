@@ -434,8 +434,8 @@ pub fn normalizar_lecturas(
 /// - Tipo de un solo punto (`solo_un_punto = true`): `temp_actual` es el valor
 ///   medido y se deriva `temp_maxima = temp_minima = temp_actual`. Un payload
 ///   con máxima/mínima explícitas se rechaza en vez de elegir en silencio.
-/// La validación de rangos físicos y la regla de humedad siguen en
-/// `validar_registro`, que se aplica después sobre los valores normalizados.
+///   La validación de rangos físicos y la regla de humedad siguen en
+///   `validar_registro`, que se aplica después sobre los valores normalizados.
 pub fn normalizar_lecturas_por_tipo(
     temp_actual: Option<f32>,
     temp_maxima: Option<f32>,

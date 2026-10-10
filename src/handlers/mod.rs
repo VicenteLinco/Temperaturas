@@ -15,6 +15,7 @@ pub mod registros;
 pub mod configuracion;
 pub mod reportes;
 pub mod graficos;
+pub mod mapa;
 
 // Re-exportar todas las funciones para mantener compatibilidad
 pub use auth::*;
@@ -26,3 +27,4 @@ pub use registros::*;
 pub use configuracion::*;
 pub use reportes::*;
 pub use graficos::*;
+pub use mapa::*;

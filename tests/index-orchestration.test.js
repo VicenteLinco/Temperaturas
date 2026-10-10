@@ -128,7 +128,15 @@ function createHarness({ areas, areaResponses, failAreaId = null }) {
         console: { ...console, error() {} }
     };
     vm.createContext(context);
-    vm.runInContext(`${sharedFunctions}\n${functions}`, context, { filename: 'public/index.html#orchestration' });
+    // Estado de módulo que las funciones extraídas cierran (closure). El extractor
+    // solo copia el cuerpo de cada función, así que estas `let` viven fuera de él
+    // y hay que reconstruirlas aquí: `capturaUnSoloPunto` la introdujo el modo de
+    // captura de un solo punto por tipo y vive en el scope del <script> de
+    // public/index.html (línea 1066). Sin esto, `leerLecturas` lanza ReferenceError.
+    const moduleState = [
+        'let capturaUnSoloPunto = false;'
+    ].join('\n');
+    vm.runInContext(`${sharedFunctions}\n${moduleState}\n${functions}`, context, { filename: 'public/index.html#orchestration' });
     return { context, elements, calls };
 }
 

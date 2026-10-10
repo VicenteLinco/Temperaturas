@@ -51,6 +51,9 @@ printpdf = "0.7"
 # Generación de CSV
 csv = "1"
 
+# Upload de foto del plano (JSON base64, sin multipart)
+base64 = "0.22"
+
 [profile.release]
 opt-level = 3
 lto = true
