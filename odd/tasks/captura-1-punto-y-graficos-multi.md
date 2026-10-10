@@ -57,7 +57,7 @@ F1 removes forced fake data entry and makes the app usable for single-value inst
 
 ## Checklist
 
-### T1 — Schema + type model for `solo_un_punto`
+### T1 [x] — Schema + type model for `solo_un_punto`
 
 - Route: delegated direct (touches `src/db.rs`, `src/models.rs`, `src/handlers/tipos_termometro.rs`).
 - Add the column with an idempotent-safe DDL in `src/db.rs` and a hand-run `sql/` script.
@@ -65,7 +65,7 @@ F1 removes forced fake data entry and makes the app usable for single-value inst
 - Accept and persist the flag in the admin type CRUD handler (`src/handlers/tipos_termometro.rs`).
 - Default to `false` for existing rows; never null.
 
-### T2 — Backend capture validation for one point
+### T2 [x] — Backend capture validation for one point
 
 - Route: delegated direct (touches `src/logic.rs`, `src/handlers/registros.rs`).
 - Define the ordering rule in exactly one place: when the type is single-point, `temp_actual` is the measured value and `temp_maxima = temp_minima = temp_actual`.
@@ -73,7 +73,7 @@ F1 removes forced fake data entry and makes the app usable for single-value inst
 - `normalizar_lecturas` (`src/logic.rs:419`) must handle the single-point payload without breaking the three-point path.
 - Reject a three-point payload for a single-point type rather than silently picking one value.
 
-### T3 — Adaptive capture form
+### T3 [x] — Adaptive capture form
 
 - Route: delegated direct (touches `public/index.html`, `public/admin.html`, `public/lecturas.js`).
 - Show one temperature input when the type is single-point, hide the other two, and relabel accordingly.
@@ -81,7 +81,7 @@ F1 removes forced fake data entry and makes the app usable for single-value inst
 - Update `OperatorFlow.construirPayloadLectura` (`public/operator-flow.js:38-47`) so the payload shape matches the backend contract.
 - Keep the edit/prefill path working for both modes (`public/index.html:1923-1925`).
 
-### T4 — Multi-thermometer support in the graphs API
+### T4 [x] — Multi-thermometer support in the graphs API
 
 - Route: delegated direct (touches `src/handlers/graficos.rs`).
 - Accept multiple thermometer ids (a repeated or comma-separated parameter) instead of the single scalar `termometro_id: Option<i32>` (`src/handlers/graficos.rs:13-20`).
@@ -90,7 +90,7 @@ F1 removes forced fake data entry and makes the app usable for single-value inst
 - Replace `ORDER BY ... ASC LIMIT 1000` (`src/handlers/graficos.rs:282`) with newest-first and a per-thermometer budget, so one thermometer cannot starve the others.
 - Keep the existing single-thermometer response shape backward compatible.
 
-### T5 — Multi-series rendering without shared-axis corruption
+### T5 [x] — Multi-series rendering without shared-axis corruption
 
 - Route: delegated direct (touches `public/admin.html`).
 - Send the selection from `cargarGraficos()` (`public/admin.html:3193-3197`) and filter server-side.
@@ -100,7 +100,7 @@ F1 removes forced fake data entry and makes the app usable for single-value inst
 - Honor the selection in "Promedios Diarios" mode or disable that mode for multi-selection with a clear message; fix D4.
 - Resolve operational limits per thermometer, keeping the `null`-fallback behavior sane for heterogeneous selections (`public/admin.html:3216-3297`).
 
-### T6 — Verification
+### T6 [x] — Verification
 
 - Route: direct inline / per-action delegation.
 - `cargo build`, `cargo test`, `cargo clippy` observed results recorded below.
@@ -122,7 +122,7 @@ F1 removes forced fake data entry and makes the app usable for single-value inst
 | T5 | `node /tmp/opencode/t5_multi_series.test.js` | ok, 14/14 (harness en /tmp, mover a tests/ en T6) |
 | T6 | `cargo build` | ok, `Finished dev profile` (mismo warning preexistente) |
 | T6 | `cargo test` | ok, 50 passed, 0 failed |
-| T6 | `cargo clippy --all-targets` | ok, 0 errores, 20 warnings preexistentes (p.ej. doc_lazy_continuation en logic.rs:438) |
+| T6 | `cargo clippy --all-targets` | ok, 0 errores, 28 warnings preexistentes (verificado comparando números de línea contra los hunks de `git diff 8bf74dc..HEAD`: todos caen en líneas que el feature no tocó) |
 | T6 | `node tests/graficos-multi-series.test.js` | ok, 14 assertions passed |
 | T6 | `node tests/operator-flow.test.js` | ok, 28 assertions passed, sin regresión |
 | CSV-multi | `node --check` inline admin.html | ok (1 bloque inline) |
@@ -130,10 +130,22 @@ F1 removes forced fake data entry and makes the app usable for single-value inst
 | Bordes-2y3 | `cargo test` | ok, 55 passed (50 previos + 5 nuevos), RED previo E0425 |
 | Bordes-2y3 | `cargo build` + `cargo clippy` | ok, 0 errores (mismo warning preexistente) |
 | Bordes-2y3 | JS + `git diff --check` | ok, 14 + 28 passed, limpio |
+| **Regresión (hallada aquí)** | `node tests/index-orchestration.test.js` | **FALLABA: `ReferenceError: capturaUnSoloPunto is not defined`** |
+| **Regresión (corregida)** | `node tests/index-orchestration.test.js` | ok, passed (fix en `456233a`) |
+| Clippy nuevo | `cargo clippy --all-targets` | **2 warnings NUEVOS** en `src/logic.rs:437-438` (doc_lazy_continuation / sangría de lista rustdoc) introducidos por el feature y **corregidos** en `d068fa7`. Los 28 restantes son previos. |
+| Estado final | `cargo test` + 4 ficheros JS | ok, 55 passed, 14 + 28 + integridad + orquestación passed |
 
-## Delivery strategy
+Sin `package.json` en el repo: los suites JS se corren con `node tests/<archivo>.test.js`.
 
-`ask-on-risk` (default). Authored-line forecast exceeds the ~400-line heuristic once T1–T5 are counted, so the strategy must be resolved before the commit that crosses the budget.
+### Detalle de la regresión
+
+`leerLecturas()` (`public/index.html:2009`) pasó a depender de
+`capturaUnSoloPunto`, un `let` de scope de módulo en `public/index.html:1066`.
+`tests/index-orchestration.test.js` extrae las funciones por nombre y las evalúa
+sin scope de módulo, así que la declaración quedaba invisible y todo
+`guardarRegistro()` lanzaba. Producción no se vio afectada (en el navegador la
+variable vive en el scope del `<script>`); el harness sí. Corregido
+reconstruyendo el estado cerrado dentro de `createHarness` (`moduleState`).
 
 ## Commits
 
@@ -144,10 +156,29 @@ F1 removes forced fake data entry and makes the app usable for single-value inst
 | T3 | 14ea50b | ~139 |
 | T4 | 97e4c17 | ~349 |
 | T5 | 86af9e9 | ~327 |
-| T6 | pending (test JS multi-serie + verificación full) | ~14 tests |
-| CSV-multi | pending (export CSV por termómetro en promedios-multi) | ~18 |
-| Bordes-2y3 | pending (filtro vacío + precisión segundo) | ~40 |
+| T6 | f3c3a36 | ~14 tests |
+| CSV-multi | 16ac1e8 | ~18 |
+| Bordes-2y3 | 2e66560 | ~40 |
+| follow-up (concurrente) | c079000 | orden del ALTER en arranque de BD fresca |
+| follow-up (concurrente) | 2af8815 | acepta `termometro_id` simple en el filtro |
+| **Regresión corregida** | 456233a | restaura estado de módulo en el harness |
+| **Regresión corregida** | d068fa7 | corrige sangría de lista en rustdoc |
+
+Nota: T3–T6 y los follow-up fueron implementados y commiteados por la sesión
+concurrente, no por esta, y se verificaron aquí de forma retroactiva.
+
+## Delivery strategy
+
+`ask-on-risk` **nunca se resolvió**, y la heurística de ~400 líneas se atravesó:
+la rama acumuló **1333 inserciones / 178 bajas en 14 archivos** y se fusionó a
+`main` y se empujó sin que esa conversación ocurriera. Se registra como desviación
+de proceso, no como defecto de código: los commits por unidad de trabajo en sí
+están bien.
 
 ## Next step
 
-T1-T6 + punto 1 + bordes 2 y 3 cerrados. Pendiente: push de 2 commits y PR bajo política ordinaria.
+T1-T6, el punto 1 y los bordes 2 y 3 están cerrados y verificados.
+Pendiente, y es decisión tuya: **push de 2 commits locales** (`456233a`,
+`d068fa7`) — `main` está 2 delante de `origin/main` — y PR bajo política
+ordinaria. Las capturas de pantalla sin trackear (`Captura desde 2026-10-09
+*.png`) son tuyas y no se tocaron.
