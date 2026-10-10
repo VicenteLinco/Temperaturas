@@ -72,6 +72,14 @@ Spatial view reduces missed points in large plants and speeds up rounds. Instanc
 - Route: direct inline (solo `public/mapa.js`, +16/-1).
 - Causa: `enlazar()` hacía `setPointerCapture` en cada pointerdown dentro del marco, lo que reenruta el click al contenedor y los botones nativos del popup (Registrar, X) nunca lo recibían. Ahora los gestos que nacen en `#mapaPopup` no capturan ni panean (click nativo intacto) y `fin()` los ignora. Extra: al cerrarse `#registroModal` se releen los estados para que el punto cambie de color sin salir del mapa. Sin reinicio del servidor (estáticos).
 
+### Ajuste — Plano en vez de Mapa, apertura directa, pendiente azul (pedido en pruebas)
+
+- Route: delegated direct (public/index.html, public/admin.html, public/mapa.js; solo texto visible + comportamiento).
+- Etiquetas visibles Mapa→Plano (nav, h2, toggle, botón registrador, alerts). Ids, rutas API, funciones, claves y nombre de archivo intactos por compatibilidad.
+- Tap en punto abre el registro directamente (sin popup ni botón); se eliminó `popup()`, `registrar` conservado como alias.
+- Pendiente en registrador pasa de rojo a azul (`bg-primary`); admin conserva sus colores.
+- `.gitignore`: `public/uploads/*` ignorado salvo `.gitkeep` para no versionar fotos de cada instancia.
+
 ### Fix — gráficos con un solo id (reportado en pruebas)
 
 - Route: direct inline (single file `src/handlers/graficos.rs`, pre-existing bug, not caused by the map).
@@ -129,6 +137,7 @@ Spatial view reduces missed points in large plants and speeds up rounds. Instanc
 | E2E mapa | curl: config on, area+tipo+termometro CRUD, posiciones, foto upload, mapa GET, cross-area move 409 then confirmed | ok: `estado pendiente`, `imagen_url /uploads/mapa.png`, 409 preview `{cambios:[...]}` with zero writes, confirmed move flips `area_id` 1→2 |
 | Fix graficos | curl single/repeated/commas/invalid + `cargo test` | ok: single now 200 with limites, repeated/commas deduped, invalid 422; 55 passed, 0 failed |
 | Fix popup Registrar | `node --check public/mapa.js` | ok, SYNTAX_OK; gestos en popup sin captura, refresh al cerrar modal |
+| Ajuste plano | `node --check public/mapa.js` (writer) + parent spot check | ok; etiquetas Plano, apertura directa, pendiente azul |
 | E2E registrador | created `registrador1` on TEST db, login, pendientes + mapa as that role | ok: pendientes list + mapa snapshot visible with correct estado |
 
 ## Delivery strategy
@@ -146,7 +155,8 @@ Spatial view reduces missed points in large plants and speeds up rounds. Instanc
 | T5 docs | 8295fed | docs only |
 | Hotfix boot | c079000 | +8/-8 en src/db.rs |
 | Fix graficos | 2af8815 | solo src/handlers/graficos.rs |
-| Fix popup Registrar | pending (hash en el reporte final) | solo public/mapa.js |
+| Fix popup Registrar | 8a41598 | solo public/mapa.js |
+| Ajuste plano | pending (hash en el reporte final) | index+admin+mapa.js |
 | T3 | pending | — |
 | T4 | pending | — |
 | T5 | pending | — |

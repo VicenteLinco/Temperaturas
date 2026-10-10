@@ -7,7 +7,7 @@
     var ptrs = new Map(), d0 = 0, s0 = 1, movido = 0, ox = 0, oy = 0;
 
     function $(id) { return document.getElementById(id); }
-    function cls(e) { return e === 'completado' ? 'bg-success' : e === 'fuera_de_servicio' ? 'bg-secondary' : 'bg-danger'; }
+    function cls(e) { return e === 'completado' ? 'bg-success' : e === 'fuera_de_servicio' ? 'bg-secondary' : 'bg-primary'; }
     function txt(e) { return e === 'completado' ? 'Completado' : e === 'fuera_de_servicio' ? 'Fuera de servicio' : 'Pendiente'; }
     function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
@@ -52,15 +52,12 @@
         $('mapaPopup').style.display = 'none';
     }
 
-    function popup(id) {
-        var t = S.d.termometros.find(function (x) { return x.id === Number(id); });
-        if (!t) return;
-        $('mapaPopup').innerHTML = '<div class="card-body p-2 d-flex align-items-center gap-2">'
-            + '<div class="min-width-0 flex-grow-1"><div class="fw-bold text-truncate">' + esc(t.nombre) + '</div>'
-            + '<span class="badge ' + cls(t.estado) + '">' + txt(t.estado) + '</span></div>'
-            + '<button class="btn btn-primary btn-sm" onclick="MapaVista.registrar(' + t.id + ')">Registrar</button>'
-            + '<button class="btn btn-outline-secondary btn-sm" onclick="MapaVista.cerrar()" aria-label="Cerrar">X</button></div>';
-        $('mapaPopup').style.display = 'block';
+    // Apertura directa: el punto abre el registro EXISTENTE sin popup intermedio.
+    function abrirRegistro(id) {
+        var p = $('mapaPopup');
+        if (p) p.style.display = 'none';
+        if (typeof seleccionarTermometro === 'function') seleccionarTermometro(Number(id));
+        else if (typeof procesarTermometro === 'function') procesarTermometro(Number(id));
     }
 
     function toque(el) {
@@ -68,7 +65,7 @@
         if (tipo === 'zona') {
             var a = S.d.areas.find(function (x) { return x.id === id; });
             if (a && a.zona) { S.detalle = { id: id, zona: a.zona }; reencuadrar(); render(); }
-        } else if (tipo === 'punto') { popup(id); }
+        } else if (tipo === 'punto') { abrirRegistro(id); }
     }
 
     // Pan con 1 dedo + pinch con 2 (Pointer Events); el tap se detecta manual
@@ -155,10 +152,6 @@
         reset: reencuadrar,
         cerrar: function () { $('mapaPopup').style.display = 'none'; },
         // Entra al flujo de captura EXISTENTE para ese termometro id.
-        registrar: function (id) {
-            $('mapaPopup').style.display = 'none';
-            if (typeof seleccionarTermometro === 'function') seleccionarTermometro(id);
-            else if (typeof procesarTermometro === 'function') procesarTermometro(id);
-        }
+        registrar: abrirRegistro
     };
 })();
