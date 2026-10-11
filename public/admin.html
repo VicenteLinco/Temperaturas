@@ -89,12 +89,24 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        .sidebar-heading {
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #8e8e93;
+            font-weight: 700;
+            padding: 14px 18px 4px 18px;
+            user-select: none;
+        }
+
         .sidebar .nav-link {
             color: #b8b8bd;
-            padding: 11px 20px;
-            border-left: 3px solid transparent;
+            padding: 9px 16px;
+            margin: 2px 10px;
+            border-radius: 8px;
+            border-left: none;
             transition: all 0.15s ease;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             font-weight: 500;
         }
 
@@ -104,10 +116,10 @@
         }
 
         .sidebar .nav-link.active {
-            background-color: var(--brand);
+            background-color: #3a3a3c;
             color: #ffffff;
-            border-left-color: #ffffff;
             font-weight: 600;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
         }
 
         .sidebar .nav-link i {
@@ -457,40 +469,41 @@
         <div class="row">
             <!-- Sidebar -->
             <div class="col-md-3 col-lg-2 p-0 sidebar" id="sidebar">
-                <div class="sidebar-brand">Navegación</div>
-                <nav class="nav flex-column pt-3">
-                    <!-- Sección "Gráficos" (antes "Dashboard"). El dashboard original se eliminó en v2.0
-                     porque exponía agregados de forma genérica; la sección Gráficos actual es de solo
-                     lectura, admin-only, y consume la API autenticada /api/admin/graficos. -->
+                <nav class="nav flex-column pt-2">
+                    <div class="sidebar-heading">Monitoreo y Planta</div>
+                    <a class="nav-link" href="#" onclick="showSection('mapa')">
+                        <i class="bi bi-map"></i> Plano de Planta
+                    </a>
                     <a class="nav-link active" href="#" onclick="showSection('registros')">
                         <i class="bi bi-clipboard-data"></i> Gestión de Registros
                     </a>
-                    <a class="nav-link" href="#" onclick="showSection('usuarios')">
-                        <i class="bi bi-people"></i> Usuarios
+                    <a class="nav-link" href="#" onclick="showSection('graficos')">
+                        <i class="bi bi-bar-chart-line"></i> Gráficos de Tendencia
+                    </a>
+                    <a class="nav-link" href="#" onclick="showSection('reportes')">
+                        <i class="bi bi-file-earmark-text"></i> Reportes y Auditoría
+                    </a>
+
+                    <div class="sidebar-heading mt-2">Activos y Equipos</div>
+                    <a class="nav-link" href="#" onclick="showSection('termometros')">
+                        <i class="bi bi-thermometer"></i> Termómetros
                     </a>
                     <a class="nav-link" href="#" onclick="showSection('areas')">
                         <i class="bi bi-building"></i> Áreas Técnicas
                     </a>
                     <a class="nav-link" href="#" onclick="showSection('tipos')">
-                        <i class="bi bi-gear"></i> Tipos de Termómetros
-                    </a>
-                    <a class="nav-link" href="#" onclick="showSection('termometros')">
-                        <i class="bi bi-thermometer"></i> Termómetros
+                        <i class="bi bi-gear"></i> Tipos de Termómetro
                     </a>
                     <a class="nav-link" href="#" onclick="showSection('impresion')">
                         <i class="bi bi-printer"></i> Impresión de QR
                     </a>
+
+                    <div class="sidebar-heading mt-2">Administración</div>
+                    <a class="nav-link" href="#" onclick="showSection('usuarios')">
+                        <i class="bi bi-people"></i> Usuarios y Roles
+                    </a>
                     <a class="nav-link" href="#" onclick="showSection('configuracion')">
                         <i class="bi bi-sliders"></i> Configuración
-                    </a>
-                    <a class="nav-link" href="#" onclick="showSection('reportes')">
-                        <i class="bi bi-file-earmark-text"></i> Reportes
-                    </a>
-                    <a class="nav-link" href="#" onclick="showSection('graficos')">
-                        <i class="bi bi-bar-chart-line"></i> Gráficos
-                    </a>
-                    <a class="nav-link" href="#" onclick="showSection('mapa')">
-                        <i class="bi bi-map"></i> Plano
                     </a>
                 </nav>
             </div>
@@ -1793,6 +1806,75 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
     <script src="lecturas.js"></script>
     <script>
+        // Sistema de Toasts para feedback moderno no intrusivo
+        function mostrarToast(mensaje, tipo = 'info', titulo = '') {
+            const contenedor = document.getElementById('adminToastContainer');
+            if (!contenedor) return;
+
+            const iconos = {
+                success: 'bi-check-circle-fill text-success',
+                danger: 'bi-x-circle-fill text-danger',
+                warning: 'bi-exclamation-triangle-fill text-warning',
+                info: 'bi-info-circle-fill text-primary'
+            };
+            const bordes = {
+                success: '#198754',
+                danger: '#dc3545',
+                warning: '#ffc107',
+                info: '#0d6efd'
+            };
+            const titulosDefault = {
+                success: 'Éxito',
+                danger: 'Error',
+                warning: 'Atención',
+                info: 'Información'
+            };
+
+            const icono = iconos[tipo] || iconos.info;
+            const borde = bordes[tipo] || bordes.info;
+            const tit = titulo || titulosDefault[tipo] || 'Notificación';
+
+            const toastEl = document.createElement('div');
+            toastEl.className = 'toast align-items-center shadow border-0 mb-2';
+            toastEl.setAttribute('role', 'alert');
+            toastEl.setAttribute('aria-live', 'assertive');
+            toastEl.setAttribute('aria-atomic', 'true');
+            toastEl.style.cssText = `background-color: #ffffff; border-radius: 10px; border-left: 4px solid ${borde} !important; min-width: 280px; box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;`;
+
+            toastEl.innerHTML = `
+                <div class="d-flex align-items-center p-2">
+                    <div class="toast-body d-flex align-items-start gap-2 py-1 px-2 flex-grow-1">
+                        <i class="bi ${icono} fs-5 mt-n1 flex-shrink-0"></i>
+                        <div>
+                            <strong class="d-block text-dark" style="font-size: 0.85rem; line-height: 1.2;">${tit}</strong>
+                            <span class="text-secondary" style="font-size: 0.825rem;">${mensaje}</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+                </div>
+            `;
+
+            contenedor.appendChild(toastEl);
+            const bsToast = new bootstrap.Toast(toastEl, { delay: 3500 });
+            toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+            bsToast.show();
+        }
+
+        // Intercepta alert() del navegador para renderizar toasts elegantes
+        window.alert = function(msg) {
+            if (!msg) return;
+            const str = String(msg);
+            let tipo = 'info';
+            if (/error|falló|fallo|inválid|denegad|incorrect|rechazad/i.test(str)) {
+                tipo = 'danger';
+            } else if (/éxito|exitos|guardad|actualizad|cread|eliminad|completad/i.test(str)) {
+                tipo = 'success';
+            } else if (/aviso|atención|cuidado|requerid|elige/i.test(str)) {
+                tipo = 'warning';
+            }
+            mostrarToast(str, tipo);
+        };
+
         let currentUser = null;
         
         // Verificar autenticación
@@ -1806,8 +1888,8 @@
                 currentUser = await response.json();
 
                 if (currentUser.rol !== 'ADMINISTRADOR') {
-                    alert('Acceso denegado. Solo administradores.');
-                    window.location.href = '/login.html';
+                    mostrarToast('Acceso denegado. Solo administradores.', 'danger');
+                    setTimeout(() => { window.location.href = '/login.html'; }, 1000);
                     return;
                 }
 
@@ -5370,5 +5452,8 @@
             }
         }
     </script>
+
+    <!-- Contenedor global de Toasts -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 2050; margin-top: 55px;" id="adminToastContainer"></div>
 </body>
 </html>
