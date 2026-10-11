@@ -379,6 +379,20 @@ pub async fn guardar_posiciones(
             .await
             .map_err(|_| err(StatusCode::INTERNAL_SERVER_ERROR, "Error guardando posiciones"))?;
     }
+
+    // Desubicar cualquier termómetro activo que no esté en la lista enviada (NULL)
+    if ids.is_empty() {
+        sqlx::query("UPDATE termometros SET pos_x = NULL, pos_y = NULL WHERE activo = TRUE")
+            .execute(&mut *tx)
+            .await
+            .map_err(|_| err(StatusCode::INTERNAL_SERVER_ERROR, "Error desubicando termómetros"))?;
+    } else {
+        sqlx::query("UPDATE termometros SET pos_x = NULL, pos_y = NULL WHERE activo = TRUE AND NOT (id = ANY($1))")
+            .bind(&ids)
+            .execute(&mut *tx)
+            .await
+            .map_err(|_| err(StatusCode::INTERNAL_SERVER_ERROR, "Error desubicando termómetros"))?;
+    }
     tx.commit()
         .await
         .map_err(|_| err(StatusCode::INTERNAL_SERVER_ERROR, "Error confirmando transacción"))?;

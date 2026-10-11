@@ -44,12 +44,22 @@
         S.d.termometros.forEach(function (t) {
             if (t.pos_x == null || t.pos_y == null) return; // sin ubicar: solo lista
             if (enDet && t.area_id !== S.detalle.id) return;
-            ph += '<button data-tap="punto" data-id="' + t.id + '" aria-label="' + esc(t.nombre) + '" title="' + esc(t.nombre) + ' · ' + txt(t.estado) + '" class="' + cls(t.estado) + ' text-white border border-white" style="position:absolute;left:' + t.pos_x + '%;top:' + t.pos_y + '%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;box-shadow:0 2px 8px rgba(0,0,0,.3);cursor:pointer;"><i class="bi bi-thermometer-half"></i></button>';
+            ph += '<button data-tap="punto" data-id="' + t.id + '" aria-label="' + esc(t.nombre) + '" title="' + esc(t.nombre) + ' · ' + txt(t.estado) + '" class="' + cls(t.estado) + ' text-white border border-white" style="position:absolute;left:' + t.pos_x + '%;top:' + t.pos_y + '%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.95rem;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.3);cursor:pointer;">' + esc(t.id) + '</button>';
         });
         $('mapaZonas').innerHTML = zh;
         $('mapaPuntos').innerHTML = ph;
         $('mapaVolver').style.display = enDet ? '' : 'none';
         $('mapaPopup').style.display = 'none';
+        var sel = $('mapaSelectArea');
+        if (sel) {
+            var curr = S.detalle ? String(S.detalle.id) : '';
+            var optHtml = '<option value="">Todas las áreas</option>';
+            S.d.areas.forEach(function (a) {
+                if (!a.zona) return;
+                optHtml += '<option value="' + a.id + '"' + (String(a.id) === curr ? ' selected' : '') + '>' + esc(a.nombre) + '</option>';
+            });
+            sel.innerHTML = optHtml;
+        }
     }
 
     // Apertura directa: el punto abre el registro EXISTENTE sin popup intermedio.
@@ -148,6 +158,11 @@
     window.MapaVista = {
         mostrar: mostrar,
         general: function () { S.detalle = null; reencuadrar(); render(); },
+        seleccionarArea: function (areaId) {
+            if (!areaId) { S.detalle = null; reencuadrar(); render(); return; }
+            var a = S.d.areas.find(function (x) { return x.id === Number(areaId); });
+            if (a && a.zona) { S.detalle = { id: a.id, zona: a.zona }; reencuadrar(); render(); }
+        },
         zoom: function (f) { S.s = Math.min(6, Math.max(0.5, S.s * f)); aplicar(); },
         reset: reencuadrar,
         cerrar: function () { $('mapaPopup').style.display = 'none'; },

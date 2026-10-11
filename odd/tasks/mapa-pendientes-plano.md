@@ -140,6 +140,7 @@ Spatial view reduces missed points in large plants and speeds up rounds. Instanc
 | Ajuste plano | `node --check public/mapa.js` (writer) + parent spot check | ok; etiquetas Plano, apertura directa, pendiente azul |
 | Sweep sintaxis | `vm.Script` sobre todos los `<script>` inline de admin.html e index.html | ok: 3/3 bloques parsean (descarta muerte del bloque T3) |
 | E2E registrador | created `registrador1` on TEST db, login, pendientes + mapa as that role | ok: pendientes list + mapa snapshot visible with correct estado |
+| Mejora pines+zoom+DnD | `cargo check` + `cargo test` + node syntax checks | ok: 55 unit tests + 4 suites node pasadas; pines con #ID, zoom admin/operario, DnD y desubicación limpia |
 
 ## Delivery strategy
 

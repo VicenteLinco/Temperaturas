@@ -780,8 +780,11 @@
                         <button id="btnVistaMapa" class="btn btn-outline-dark btn-sm" onclick="MapaVista.mostrar('mapa')">Plano</button>
                     </div>
                     <div id="mapaVista" style="display:none;">
-                        <div class="d-flex gap-2 my-2">
+                        <div class="d-flex gap-2 my-2 align-items-center">
                             <button id="mapaVolver" class="btn btn-outline-dark btn-sm" style="display:none;" onclick="MapaVista.general()">← General</button>
+                            <select id="mapaSelectArea" class="form-select form-select-sm" style="max-width: 190px;" onchange="MapaVista.seleccionarArea(this.value)">
+                                <option value="">Todas las áreas</option>
+                            </select>
                             <div class="btn-group ms-auto" role="group" aria-label="Zoom">
                                 <button class="btn btn-outline-dark btn-sm" onclick="MapaVista.zoom(1.25)" aria-label="Acercar">+</button>
                                 <button class="btn btn-outline-dark btn-sm" onclick="MapaVista.zoom(0.8)" aria-label="Alejar">−</button>
