@@ -399,6 +399,36 @@
                 padding: 0.9rem 1rem;
             }
         }
+
+        /* Estilos interactivos para el editor del plano */
+        .mapa-zona-rect {
+            position: absolute;
+            background: rgba(13, 110, 253, 0.12);
+            border: 2px dashed #0d6efd;
+            border-radius: 4px;
+            cursor: move;
+            touch-action: none;
+            box-sizing: border-box;
+            transition: background 0.15s ease;
+        }
+        .mapa-zona-rect:hover {
+            background: rgba(13, 110, 253, 0.22);
+        }
+        .mapa-handle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #ffffff;
+            border: 2px solid #0d6efd;
+            border-radius: 50%;
+            z-index: 10;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            touch-action: none;
+        }
+        .mapa-handle.handle-nw { top: -6px; left: -6px; cursor: nwse-resize; }
+        .mapa-handle.handle-ne { top: -6px; right: -6px; cursor: nesw-resize; }
+        .mapa-handle.handle-se { bottom: -6px; right: -6px; cursor: nwse-resize; }
+        .mapa-handle.handle-sw { bottom: -6px; left: -6px; cursor: nesw-resize; }
     </style>
 </head>
 <body style="display: none;">
@@ -1264,33 +1294,73 @@
                     </div>
                     <div id="mapaEditorCard" class="card mb-3" style="display: none;">
                         <div class="card-body">
-                            <h5 class="card-title">Editor del plano</h5>
-                            <p class="text-muted small">Arrastra los puntos y las zonas. Haz clic en un pendiente de la lista y luego en el plano para ubicarlo. Usa los campos numéricos para precisión.</p>
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                                <div>
+                                    <h5 class="card-title mb-0">Editor del plano</h5>
+                                    <p class="text-muted small mb-0">Ubica termómetros con un clic. Traza y ajusta zonas arrastrando con el mouse.</p>
+                                </div>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" id="mapaToggleMostrarZonas" checked onchange="toggleMostrarZonasMapa()">
+                                        <label class="form-check-label small" for="mapaToggleMostrarZonas">Ver zonas</label>
+                                    </div>
+                                    <button class="btn btn-primary btn-sm" onclick="guardarPosicionesMapa(false)">
+                                        <i class="bi bi-save me-1"></i> Guardar cambios
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="mapaTrazarBanner" class="alert alert-primary py-2 px-3 mb-2 d-flex justify-content-between align-items-center" style="display: none;">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="spinner-grow spinner-grow-sm text-primary" role="status"></span>
+                                    <span>Haz clic y arrastra sobre el plano para trazar la zona de: <strong id="mapaTrazarAreaNombre"></strong></span>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="cancelarModoTrazarZona()">
+                                    <i class="bi bi-x-circle me-1"></i> Cancelar
+                                </button>
+                            </div>
+
                             <div id="mapaEditor" style="position: relative; width: 100%; overflow: hidden; border: 1px solid #dee2e6; border-radius: 8px; user-select: none; touch-action: none;">
                                 <img id="mapaEditorImg" style="position: absolute; inset: 0; width: 100%; height: 100%;" alt="Plano de planta">
                                 <div id="mapaZonas" style="position: absolute; inset: 0;"></div>
-                                <div id="mapaPuntos" style="position: absolute; inset: 0;"></div>
+                                <div id="mapaDibujoPreview" style="position: absolute; display: none; border: 2px dashed #0d6efd; background: rgba(13, 110, 253, 0.25); border-radius: 4px; pointer-events: none; z-index: 5;"></div>
+                                <div id="mapaPuntos" style="position: absolute; inset: 0; z-index: 6;"></div>
                             </div>
-                            <div class="row mt-3">
+
+                            <div class="row mt-3 g-3">
                                 <div class="col-md-6">
-                                    <h6>Pendientes de ubicar</h6>
-                                    <div id="mapaPendientes" class="list-group"></div>
-                                </div>
-                                <div class="col-md-6">
-                                    <h6>Zonas por área (por ciento 0-100)</h6>
-                                    <div class="table-responsive">
-                                        <table class="table table-sm">
-                                            <thead>
-                                                <tr><th>Área</th><th>X</th><th>Y</th><th>W</th><th>H</th></tr>
-                                            </thead>
-                                            <tbody id="mapaZonasTabla"></tbody>
-                                        </table>
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="mb-0"><i class="bi bi-thermometer-half me-1"></i> Pendientes de ubicar</h6>
+                                        <span id="mapaPendientesCount" class="badge bg-secondary">0</span>
                                     </div>
+                                    <p class="text-muted small mb-2">Haz clic en un pendiente y luego en el plano para colocarlo. Clic derecho en un punto para quitarlo.</p>
+                                    <div id="mapaPendientes" class="list-group" style="max-height: 280px; overflow-y: auto;"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="mb-0"><i class="bi bi-bounding-box me-1"></i> Zonas por área (Opcional)</h6>
+                                    </div>
+                                    <p class="text-muted small mb-2">Traza o redimensiona áreas con el mouse para zoom por sector. No son obligatorias para ubicar pines.</p>
+                                    <div id="mapaAreasLista" class="list-group" style="max-height: 280px; overflow-y: auto;"></div>
+
+                                    <details class="mt-2 text-muted small">
+                                        <summary class="cursor-pointer">Ajuste numérico de coordenadas (avanzado)</summary>
+                                        <div class="table-responsive mt-2">
+                                            <table class="table table-sm table-bordered">
+                                                <thead>
+                                                    <tr><th>Área</th><th>X%</th><th>Y%</th><th>W%</th><th>H%</th></tr>
+                                                </thead>
+                                                <tbody id="mapaZonasTabla"></tbody>
+                                            </table>
+                                        </div>
+                                    </details>
                                 </div>
                             </div>
-                            <button class="btn btn-primary mt-3" onclick="guardarPosicionesMapa(false)">
-                                <i class="bi bi-save me-1"></i> Guardar posiciones
-                            </button>
+                            <div class="mt-3 text-end">
+                                <button class="btn btn-primary" onclick="guardarPosicionesMapa(false)">
+                                    <i class="bi bi-save me-1"></i> Guardar posiciones
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -4705,16 +4775,66 @@
     <script>
         // === MAPA DE PENDIENTES (T3) ===
         // Editor admin del plano: toggle, foto, arrastre de puntos/zonas y guardado batch.
-        // No toca el flujo de registro; solo lee GET /api/mapa y escribe los endpoints admin de mapa.
+        // Soporta dibujo interactivo de zonas con el mouse y colocación libre de pines.
         let mapaData = null;
         let mapaPos = {};
         let mapaZonas = {};
         let mapaPendienteSel = null;
+        let mapaTrazandoArea = null;
+        let mapaDibujando = false;
+        let mapaDibujaInicio = null;
 
         function colorEstadoMapa(estado) {
             if (estado === 'completado') return 'bg-success';
             if (estado === 'fuera_de_servicio') return 'bg-secondary';
             return 'bg-danger';
+        }
+
+        function toggleMostrarZonasMapa() {
+            const check = document.getElementById('mapaToggleMostrarZonas');
+            const cont = document.getElementById('mapaZonas');
+            if (cont && check) {
+                cont.style.display = check.checked ? 'block' : 'none';
+            }
+        }
+
+        function activarModoTrazarZona(areaId) {
+            if (!mapaData) return;
+            const a = mapaData.areas.find(function(x) { return x.id === areaId; });
+            if (!a) return;
+            mapaTrazandoArea = areaId;
+            mapaPendienteSel = null;
+            renderPendientesMapa();
+
+            document.getElementById('mapaTrazarAreaNombre').textContent = a.nombre;
+            document.getElementById('mapaTrazarBanner').style.display = 'flex';
+            document.getElementById('mapaEditor').style.cursor = 'crosshair';
+
+            // Asegurar que las zonas estén visibles mientras se traza
+            const check = document.getElementById('mapaToggleMostrarZonas');
+            if (check) {
+                check.checked = true;
+                toggleMostrarZonasMapa();
+            }
+        }
+
+        function cancelarModoTrazarZona() {
+            mapaTrazandoArea = null;
+            mapaDibujando = false;
+            mapaDibujaInicio = null;
+            const banner = document.getElementById('mapaTrazarBanner');
+            if (banner) banner.style.display = 'none';
+            const preview = document.getElementById('mapaDibujoPreview');
+            if (preview) preview.style.display = 'none';
+            const editor = document.getElementById('mapaEditor');
+            if (editor) editor.style.cursor = '';
+        }
+
+        function quitarZonaMapa(areaId) {
+            mapaZonas[areaId] = null;
+            renderZonasMapa();
+            renderAreasListaMapa();
+            renderTablaZonasMapa();
         }
 
         async function cargarMapaAdmin() {
@@ -4739,6 +4859,8 @@
                         : null;
                 });
                 mapaPendienteSel = null;
+                cancelarModoTrazarZona();
+
                 const sinFoto = !mapaData.imagen_url;
                 document.getElementById('mapaSinFoto').style.display = sinFoto ? 'block' : 'none';
                 document.getElementById('mapaEditorCard').style.display = sinFoto ? 'none' : 'block';
@@ -4822,7 +4944,9 @@
             renderZonasMapa();
             renderPuntosMapa();
             renderPendientesMapa();
+            renderAreasListaMapa();
             renderTablaZonasMapa();
+            toggleMostrarZonasMapa();
         }
 
         function renderZonasMapa() {
@@ -4833,14 +4957,34 @@
                 if (!z) return;
                 const div = document.createElement('div');
                 div.id = 'mapaZona-' + a.id;
-                div.title = a.nombre;
-                div.style.cssText = 'position:absolute;left:' + z.x + '%;top:' + z.y + '%;width:' + z.w + '%;height:' + z.h + '%;background:rgba(108,117,125,0.18);border:2px dashed #6c757d;border-radius:4px;cursor:move;touch-action:none;';
+                div.className = 'mapa-zona-rect';
+                div.title = a.nombre + ' (Arrastra para mover · Usa las esquinas para redimensionar)';
+                div.style.left = z.x + '%';
+                div.style.top = z.y + '%';
+                div.style.width = z.w + '%';
+                div.style.height = z.h + '%';
+
                 const etiqueta = document.createElement('span');
-                etiqueta.className = 'badge bg-secondary';
-                etiqueta.style.cssText = 'position:absolute;top:2px;left:2px;max-width:calc(100% - 4px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+                etiqueta.className = 'badge bg-primary text-white';
+                etiqueta.style.cssText = 'position:absolute;top:3px;left:3px;max-width:calc(100% - 6px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.75rem;pointer-events:none;';
                 etiqueta.textContent = a.nombre;
                 div.appendChild(etiqueta);
-                div.addEventListener('pointerdown', function(e) { iniciarArrastreZonaMapa(e, a.id); });
+
+                // 4 Manijas en las esquinas para redimensionado interactivo
+                ['nw', 'ne', 'se', 'sw'].forEach(function(pos) {
+                    const handle = document.createElement('div');
+                    handle.className = 'mapa-handle handle-' + pos;
+                    handle.title = 'Redimensionar zona';
+                    handle.addEventListener('pointerdown', function(e) {
+                        iniciarRedimensionZonaMapa(e, a.id, pos);
+                    });
+                    div.appendChild(handle);
+                });
+
+                div.addEventListener('pointerdown', function(e) {
+                    if (e.target && e.target.classList.contains('mapa-handle')) return;
+                    iniciarArrastreZonaMapa(e, a.id);
+                });
                 cont.appendChild(div);
             });
         }
@@ -4855,20 +4999,30 @@
                 b.type = 'button';
                 b.id = 'mapaPunto-' + t.id;
                 b.className = 'badge rounded-pill ' + colorEstadoMapa(t.estado);
-                b.title = t.nombre || ('Termómetro ' + t.id);
+                b.title = (t.nombre || ('Termómetro ' + t.id)) + ' (Arrastra para mover · Clic derecho para desubicar)';
                 b.textContent = t.nombre || t.id;
-                b.style.cssText = 'position:absolute;left:' + p.x + '%;top:' + p.y + '%;transform:translate(-50%,-50%);min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;cursor:grab;border:2px solid #fff;touch-action:none;z-index:2;';
+                b.style.cssText = 'position:absolute;left:' + p.x + '%;top:' + p.y + '%;transform:translate(-50%,-50%);min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;cursor:grab;border:2px solid #fff;touch-action:none;z-index:2;box-shadow:0 2px 6px rgba(0,0,0,0.3);';
                 b.addEventListener('pointerdown', function(e) { iniciarArrastrePuntoMapa(e, t.id); });
+                b.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    if (confirm('¿Quitar ' + (t.nombre || 'Termómetro ' + t.id) + ' del plano? Volverá a la lista de pendientes.')) {
+                        mapaPos[t.id] = null;
+                        renderPuntosMapa();
+                        renderPendientesMapa();
+                    }
+                });
                 cont.appendChild(b);
             });
         }
 
         function renderPendientesMapa() {
             const cont = document.getElementById('mapaPendientes');
+            const contador = document.getElementById('mapaPendientesCount');
             cont.innerHTML = '';
             const sinUbicar = mapaData.termometros.filter(function(t) { return !mapaPos[t.id]; });
+            if (contador) contador.textContent = sinUbicar.length;
             if (sinUbicar.length === 0) {
-                cont.innerHTML = '<div class="list-group-item text-muted small">Todos los termómetros están ubicados.</div>';
+                cont.innerHTML = '<div class="list-group-item text-muted small p-3 text-center bg-light">Todos los termómetros están ubicados en el plano.</div>';
                 return;
             }
             sinUbicar.forEach(function(t) {
@@ -4888,12 +5042,62 @@
         }
 
         function seleccionarPendienteMapa(id) {
+            cancelarModoTrazarZona();
             mapaPendienteSel = (mapaPendienteSel === id) ? null : id;
             renderPendientesMapa();
         }
 
+        function renderAreasListaMapa() {
+            const cont = document.getElementById('mapaAreasLista');
+            if (!cont) return;
+            cont.innerHTML = '';
+            mapaData.areas.forEach(function(a) {
+                const z = mapaZonas[a.id];
+                const item = document.createElement('div');
+                item.className = 'list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2 py-2';
+
+                const info = document.createElement('div');
+                const nombre = document.createElement('div');
+                nombre.className = 'fw-semibold small';
+                nombre.textContent = a.nombre;
+                const estado = document.createElement('small');
+                estado.className = z ? 'text-primary' : 'text-muted';
+                estado.textContent = z
+                    ? ('Zona: X ' + z.x + '% · Y ' + z.y + '% · ' + z.w + '%×' + z.h + '%')
+                    : 'Sin zona delimitada (libre)';
+                info.appendChild(nombre);
+                info.appendChild(estado);
+
+                const acciones = document.createElement('div');
+                acciones.className = 'btn-group btn-group-sm';
+
+                const btnTrazar = document.createElement('button');
+                btnTrazar.type = 'button';
+                btnTrazar.className = 'btn btn-outline-primary';
+                btnTrazar.title = 'Traza con el mouse sobre el plano';
+                btnTrazar.innerHTML = '<i class="bi bi-bounding-box me-1"></i> ' + (z ? 'Redibujar' : 'Trazar');
+                btnTrazar.addEventListener('click', function() { activarModoTrazarZona(a.id); });
+                acciones.appendChild(btnTrazar);
+
+                if (z) {
+                    const btnQuitar = document.createElement('button');
+                    btnQuitar.type = 'button';
+                    btnQuitar.className = 'btn btn-outline-danger';
+                    btnQuitar.title = 'Eliminar delimitación de zona';
+                    btnQuitar.innerHTML = '<i class="bi bi-trash"></i>';
+                    btnQuitar.addEventListener('click', function() { quitarZonaMapa(a.id); });
+                    acciones.appendChild(btnQuitar);
+                }
+
+                item.appendChild(info);
+                item.appendChild(acciones);
+                cont.appendChild(item);
+            });
+        }
+
         function renderTablaZonasMapa() {
             const cuerpo = document.getElementById('mapaZonasTabla');
+            if (!cuerpo) return;
             cuerpo.innerHTML = '';
             mapaData.areas.forEach(function(a) {
                 const fila = document.createElement('tr');
@@ -4930,14 +5134,7 @@
                 ? { x: vals[0], y: vals[1], w: vals[2], h: vals[3] }
                 : null;
             renderZonasMapa();
-        }
-
-        function sincronizarEntradasZonaMapa(areaId) {
-            const z = mapaZonas[areaId];
-            ['x', 'y', 'w', 'h'].forEach(function(campo) {
-                const el = document.getElementById('mapaZona-' + areaId + '-' + campo);
-                if (el && z) el.value = z[campo];
-            });
+            renderAreasListaMapa();
         }
 
         function pctMapa(e) {
@@ -4970,12 +5167,13 @@
 
         function iniciarArrastreZonaMapa(e, areaId) {
             e.preventDefault();
+            e.stopPropagation();
             const z = mapaZonas[areaId];
             if (!z) return;
             const inicio = pctMapa(e);
             const dx = inicio.x - z.x;
             const dy = inicio.y - z.y;
-            const el = e.currentTarget;
+            const el = document.getElementById('mapaZona-' + areaId);
             el.setPointerCapture(e.pointerId);
             const mover = function(ev) {
                 const p = pctMapa(ev);
@@ -4988,21 +5186,143 @@
                 el.removeEventListener('pointermove', mover);
                 el.removeEventListener('pointerup', soltar);
                 el.removeEventListener('pointercancel', soltar);
-                sincronizarEntradasZonaMapa(areaId);
+                renderAreasListaMapa();
+                renderTablaZonasMapa();
             };
             el.addEventListener('pointermove', mover);
             el.addEventListener('pointerup', soltar);
             el.addEventListener('pointercancel', soltar);
         }
 
+        function iniciarRedimensionZonaMapa(e, areaId, corner) {
+            e.preventDefault();
+            e.stopPropagation();
+            const z = mapaZonas[areaId];
+            if (!z) return;
+            const el = document.getElementById('mapaZona-' + areaId);
+            const handle = e.currentTarget;
+            handle.setPointerCapture(e.pointerId);
+
+            const origX = z.x;
+            const origY = z.y;
+            const origRight = z.x + z.w;
+            const origBottom = z.y + z.h;
+
+            const mover = function(ev) {
+                const p = pctMapa(ev);
+                let nx = origX, ny = origY, nw = z.w, nh = z.h;
+
+                if (corner === 'nw') {
+                    nx = Math.min(origRight - 2, Math.max(0, p.x));
+                    ny = Math.min(origBottom - 2, Math.max(0, p.y));
+                    nw = origRight - nx;
+                    nh = origBottom - ny;
+                } else if (corner === 'ne') {
+                    ny = Math.min(origBottom - 2, Math.max(0, p.y));
+                    nw = Math.max(2, Math.min(100 - origX, p.x - origX));
+                    nh = origBottom - ny;
+                } else if (corner === 'se') {
+                    nw = Math.max(2, Math.min(100 - origX, p.x - origX));
+                    nh = Math.max(2, Math.min(100 - origY, p.y - origY));
+                } else if (corner === 'sw') {
+                    nx = Math.min(origRight - 2, Math.max(0, p.x));
+                    nw = origRight - nx;
+                    nh = Math.max(2, Math.min(100 - origY, p.y - origY));
+                }
+
+                z.x = Math.round(nx * 10) / 10;
+                z.y = Math.round(ny * 10) / 10;
+                z.w = Math.round(nw * 10) / 10;
+                z.h = Math.round(nh * 10) / 10;
+
+                if (el) {
+                    el.style.left = z.x + '%';
+                    el.style.top = z.y + '%';
+                    el.style.width = z.w + '%';
+                    el.style.height = z.h + '%';
+                }
+            };
+
+            const soltar = function() {
+                handle.removeEventListener('pointermove', mover);
+                handle.removeEventListener('pointerup', soltar);
+                handle.removeEventListener('pointercancel', soltar);
+                renderAreasListaMapa();
+                renderTablaZonasMapa();
+            };
+
+            handle.addEventListener('pointermove', mover);
+            handle.addEventListener('pointerup', soltar);
+            handle.addEventListener('pointercancel', soltar);
+        }
+
+        // Trazado de nuevas zonas sobre el editor
+        const editorMarco = document.getElementById('mapaEditor');
+        editorMarco.addEventListener('pointerdown', function(e) {
+            if (mapaTrazandoArea) {
+                e.preventDefault();
+                editorMarco.setPointerCapture(e.pointerId);
+                mapaDibujando = true;
+                mapaDibujaInicio = pctMapa(e);
+                const preview = document.getElementById('mapaDibujoPreview');
+                preview.style.left = mapaDibujaInicio.x + '%';
+                preview.style.top = mapaDibujaInicio.y + '%';
+                preview.style.width = '0%';
+                preview.style.height = '0%';
+                preview.style.display = 'block';
+            }
+        });
+
+        editorMarco.addEventListener('pointermove', function(e) {
+            if (mapaDibujando && mapaDibujaInicio) {
+                const actual = pctMapa(e);
+                const minX = Math.min(mapaDibujaInicio.x, actual.x);
+                const minY = Math.min(mapaDibujaInicio.y, actual.y);
+                const w = Math.abs(actual.x - mapaDibujaInicio.x);
+                const h = Math.abs(actual.y - mapaDibujaInicio.y);
+                const preview = document.getElementById('mapaDibujoPreview');
+                preview.style.left = minX + '%';
+                preview.style.top = minY + '%';
+                preview.style.width = w + '%';
+                preview.style.height = h + '%';
+            }
+        });
+
+        function finalizarDibujoZona(e) {
+            if (!mapaDibujando || !mapaDibujaInicio) return;
+            mapaDibujando = false;
+            const actual = pctMapa(e);
+            const minX = Math.round(Math.min(mapaDibujaInicio.x, actual.x) * 10) / 10;
+            const minY = Math.round(Math.min(mapaDibujaInicio.y, actual.y) * 10) / 10;
+            const w = Math.round(Math.abs(actual.x - mapaDibujaInicio.x) * 10) / 10;
+            const h = Math.round(Math.abs(actual.y - mapaDibujaInicio.y) * 10) / 10;
+            const areaId = mapaTrazandoArea;
+            cancelarModoTrazarZona();
+
+            if (w >= 1.5 && h >= 1.5) {
+                mapaZonas[areaId] = { x: minX, y: minY, w: w, h: h };
+                renderZonasMapa();
+                renderAreasListaMapa();
+                renderTablaZonasMapa();
+            }
+        }
+
+        editorMarco.addEventListener('pointerup', finalizarDibujoZona);
+        editorMarco.addEventListener('pointercancel', function() {
+            if (mapaDibujando) cancelarModoTrazarZona();
+        });
+
         function alClicEditorMapa(e) {
+            if (mapaTrazandoArea) return;
             if (!mapaPendienteSel) return;
-            if (['mapaEditor', 'mapaEditorImg', 'mapaZonas', 'mapaPuntos'].indexOf(e.target.id) === -1) return;
+            if (e.target && e.target.closest && e.target.closest('#mapaPuntos button')) return;
             mapaPos[mapaPendienteSel] = pctMapa(e);
             mapaPendienteSel = null;
             renderPuntosMapa();
             renderPendientesMapa();
         }
+
+        editorMarco.addEventListener('click', alClicEditorMapa);
 
         function nombreTermoMapa(id) {
             const hallado = mapaData.termometros.filter(function(x) { return x.id === id; })[0];
@@ -5029,7 +5349,7 @@
                     body: JSON.stringify({ termometros: termometros, areas: areas, confirmar_cambio_area: !!confirmado })
                 });
                 if (response.ok) {
-                    alert('Posiciones guardadas');
+                    alert('Posiciones guardadas exitosamente');
                     await cargarMapaAdmin();
                     return;
                 }
@@ -5038,7 +5358,7 @@
                     const lineas = (data.cambios || []).map(function(c) {
                         return 'Termómetro ' + nombreTermoMapa(c.termometro_id) + ': ' + nombreAreaMapa(c.de_area_id) + ' → ' + nombreAreaMapa(c.a_area_id);
                     });
-                    if (confirm('Guardar implica cambiar de área:\n' + lineas.join('\n') + '\n¿Confirmar?')) {
+                    if (confirm('Guardar implica cambiar de área los siguientes termómetros:\n' + lineas.join('\n') + '\n¿Confirmar cambio?')) {
                         await guardarPosicionesMapa(true);
                     }
                     return;
@@ -5049,8 +5369,6 @@
                 alert('Error: ' + error.message);
             }
         }
-
-        document.getElementById('mapaEditor').addEventListener('click', alClicEditorMapa);
     </script>
 </body>
 </html>
