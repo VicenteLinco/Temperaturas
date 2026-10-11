@@ -534,6 +534,9 @@
                     <a class="nav-link" href="#" onclick="showSection('graficos')">
                         <i class="bi bi-bar-chart-line"></i> Gráficos de Tendencia
                     </a>
+                    <a class="nav-link" href="#" onclick="showSection('salidas-rango')">
+                        <i class="bi bi-exclamation-triangle"></i> Mayores Salidas de Rango
+                    </a>
                     <a class="nav-link" href="#" onclick="showSection('reportes')">
                         <i class="bi bi-file-earmark-text"></i> Reportes y Auditoría
                     </a>
@@ -1335,6 +1338,186 @@
                     </div>
                 </div>
 
+                <!-- Mayores Salidas de Rango Section -->
+                <div id="section-salidas-rango" class="content-section" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                        <div>
+                            <h2 class="mb-0"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Mayores Salidas de Rango Térmico</h2>
+                            <p class="text-muted small mb-0">Ranking y análisis de equipos y zonas con mayor cantidad y porcentaje de desvíos térmicos fuera de norma.</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-success btn-sm" onclick="exportarSalidasRangoCSV()"><i class="bi bi-file-earmark-spreadsheet me-1"></i>Exportar CSV</button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="cargarSalidasRango()"><i class="bi bi-arrow-clockwise me-1"></i>Actualizar</button>
+                        </div>
+                    </div>
+
+                    <!-- Filtros -->
+                    <div class="card mb-4 shadow-sm border-0 bg-white" style="border-radius: 16px;">
+                        <div class="card-body p-3 p-md-4">
+                            <form id="formFiltrosSalidasRango" onsubmit="event.preventDefault(); cargarSalidasRango();" class="row g-3 align-items-end">
+                                <!-- Modo Período -->
+                                <div class="col-md-3 col-sm-6">
+                                    <label class="form-label fw-bold mb-1" style="font-size: 0.85rem;"><i class="bi bi-calendar-range text-primary"></i> Período / Modo</label>
+                                    <select class="form-select form-select-sm rounded-3" id="sr_modo" onchange="alCambiarModoSalidasRango()">
+                                        <option value="total" selected>Total Histórico (Todo)</option>
+                                        <option value="fecha">Fecha Particular (1 día)</option>
+                                        <option value="rango">Rango de Fechas...</option>
+                                        <option value="hoy">Hoy</option>
+                                        <option value="ayer">Ayer</option>
+                                        <option value="7">Últimos 7 días</option>
+                                        <option value="30">Últimos 30 días</option>
+                                    </select>
+                                </div>
+
+                                <!-- Fecha Particular (cuando modo es fecha) -->
+                                <div class="col-md-3 col-sm-6" id="sr_wrapper_fecha" style="display: none;">
+                                    <label class="form-label fw-bold mb-1" style="font-size: 0.85rem;">Fecha</label>
+                                    <input type="date" class="form-control form-control-sm rounded-3" id="sr_fecha">
+                                </div>
+
+                                <!-- Fecha Desde / Hasta (cuando modo es rango) -->
+                                <div class="col-md-2 col-sm-6" id="sr_wrapper_desde" style="display: none;">
+                                    <label class="form-label fw-bold mb-1" style="font-size: 0.85rem;">Fecha Desde</label>
+                                    <input type="date" class="form-control form-control-sm rounded-3" id="sr_fecha_desde">
+                                </div>
+                                <div class="col-md-2 col-sm-6" id="sr_wrapper_hasta" style="display: none;">
+                                    <label class="form-label fw-bold mb-1" style="font-size: 0.85rem;">Fecha Hasta</label>
+                                    <input type="date" class="form-control form-control-sm rounded-3" id="sr_fecha_hasta">
+                                </div>
+
+                                <!-- Filtro Horario -->
+                                <div class="col-md-3 col-sm-6">
+                                    <label class="form-label fw-bold mb-1" style="font-size: 0.85rem;"><i class="bi bi-clock text-primary"></i> Filtro Horario</label>
+                                    <select class="form-select form-select-sm rounded-3" id="sr_modo_hora" onchange="alCambiarModoHoraSalidasRango()">
+                                        <option value="todas" selected>Cualquier hora (24h)</option>
+                                        <option value="hora">Hora particular...</option>
+                                        <option value="rango">Rango de horas...</option>
+                                        <option value="ventana_14">Ronda 14:00 (Ventana 1)</option>
+                                        <option value="ventana_02">Ronda 02:00 (Ventana 2)</option>
+                                    </select>
+                                </div>
+
+                                <!-- Hora específica (00..23) -->
+                                <div class="col-md-2 col-sm-6" id="sr_wrapper_hora" style="display: none;">
+                                    <label class="form-label fw-bold mb-1" style="font-size: 0.85rem;">Hora (hrs)</label>
+                                    <select class="form-select form-select-sm rounded-3" id="sr_hora"></select>
+                                </div>
+
+                                <!-- Rango de Horas (desde..hasta) -->
+                                <div class="col-md-3 col-sm-6" id="sr_wrapper_hora_rango" style="display: none;">
+                                    <div class="d-flex gap-2 align-items-center">
+                                        <div class="flex-grow-1">
+                                            <label class="form-label fw-bold mb-1" style="font-size: 0.8rem;">Desde</label>
+                                            <select class="form-select form-select-sm rounded-3" id="sr_hora_desde"></select>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <label class="form-label fw-bold mb-1" style="font-size: 0.8rem;">Hasta</label>
+                                            <select class="form-select form-select-sm rounded-3" id="sr_hora_hasta"></select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Filtro Área / Zona -->
+                                <div class="col-md-3 col-sm-6">
+                                    <label class="form-label fw-bold mb-1" style="font-size: 0.85rem;"><i class="bi bi-building text-primary"></i> Área / Zona</label>
+                                    <select class="form-select form-select-sm rounded-3" id="sr_area">
+                                        <option value="">Todas las zonas</option>
+                                    </select>
+                                </div>
+
+                                <!-- Botones de Acción -->
+                                <div class="col-md-3 col-sm-6 d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 w-100 fw-bold">
+                                        <i class="bi bi-funnel-fill me-1"></i> Consultar
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" onclick="limpiarFiltrosSalidasRango()" title="Limpiar filtros">
+                                        <i class="bi bi-arrow-counterclockwise"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Tarjetas de Resumen / KPIs -->
+                    <div class="row g-3 mb-4" id="sr_kpis"></div>
+
+                    <!-- Pestañas para Rankings -->
+                    <ul class="nav nav-pills mb-3 gap-2" id="srTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active rounded-pill fw-semibold" id="sr-tab-termometros" data-bs-toggle="pill" data-bs-target="#sr-content-termometros" type="button" role="tab">
+                                <i class="bi bi-thermometer-half me-1"></i> Ranking por Termómetros
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link rounded-pill fw-semibold" id="sr-tab-zonas" data-bs-toggle="pill" data-bs-target="#sr-content-zonas" type="button" role="tab">
+                                <i class="bi bi-building me-1"></i> Ranking por Zonas / Áreas
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="srTabsContent">
+                        <!-- Tab 1: Termómetros -->
+                        <div class="tab-pane fade show active" id="sr-content-termometros" role="tabpanel">
+                            <div class="card shadow-sm border-0" style="border-radius: 14px; overflow: hidden;">
+                                <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                    <h5 class="mb-0 fs-6 fw-bold text-dark"><i class="bi bi-list-ol text-danger me-2"></i>Termómetros con Mayores Salidas de Rango</h5>
+                                    <span id="sr_count_termometros" class="badge bg-secondary rounded-pill">0 equipos</span>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0" id="sr_tabla_termometros">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th style="width: 50px;" class="text-center">#</th>
+                                                <th>Termómetro</th>
+                                                <th>Zona / Ubicación</th>
+                                                <th>Rango Operativo</th>
+                                                <th class="text-center">Total Lecturas</th>
+                                                <th class="text-center">Salidas de Rango</th>
+                                                <th style="min-width: 140px;">% Desvío</th>
+                                                <th>Extremos Registrados</th>
+                                                <th class="text-end">Acción</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="sr_tbody_termometros">
+                                            <tr><td colspan="9" class="text-center py-4 text-muted">Cargando datos...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab 2: Zonas -->
+                        <div class="tab-pane fade" id="sr-content-zonas" role="tabpanel">
+                            <div class="card shadow-sm border-0" style="border-radius: 14px; overflow: hidden;">
+                                <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                    <h5 class="mb-0 fs-6 fw-bold text-dark"><i class="bi bi-building-exclamation text-danger me-2"></i>Zonas con Mayores Salidas de Rango</h5>
+                                    <span id="sr_count_zonas" class="badge bg-secondary rounded-pill">0 zonas</span>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0" id="sr_tabla_zonas">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th style="width: 50px;" class="text-center">#</th>
+                                                <th>Zona / Área</th>
+                                                <th class="text-center">Equipos en Zona</th>
+                                                <th class="text-center">Total Lecturas</th>
+                                                <th class="text-center">Salidas de Rango</th>
+                                                <th style="min-width: 140px;">% Desvío Global</th>
+                                                <th>Termómetro Más Crítico</th>
+                                                <th>Extremos Registrados</th>
+                                                <th class="text-end">Acción</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="sr_tbody_zonas">
+                                            <tr><td colspan="9" class="text-center py-4 text-muted">Cargando datos...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Mapa Section -->
                 <div id="section-mapa" class="content-section" style="display: none;">
                     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
@@ -2085,6 +2268,7 @@
                 case 'impresion': cargarSeccionImpresion(); break;
                 case 'reportes': inicializarReportes(); break;
                 case 'graficos': inicializarGraficos(); break;
+                case 'salidas-rango': inicializarSalidasRango(); break;
                 case 'configuracion': cargarConfiguracion(); break;
                 case 'mapa': cargarMapaAdmin(); break;
             }
@@ -5917,6 +6101,499 @@
             } catch (error) {
                 alert('Error: ' + error.message);
             }
+        }
+
+        // =========================================================
+        // === MAYORES SALIDAS DE RANGO TÉRMICO (RANKINGS) =======
+        // =========================================================
+        let salidasRangoData = null;
+        let salidasRangoInicializado = false;
+
+        async function inicializarSalidasRango() {
+            if (!salidasRangoInicializado) {
+                poblarSelectoresHoraSalidasRango();
+                await cargarAreasSalidasRango();
+                salidasRangoInicializado = true;
+            }
+            await cargarSalidasRango();
+        }
+
+        function poblarSelectoresHoraSalidasRango() {
+            const horas = [];
+            for (let i = 0; i < 24; i++) {
+                const h = String(i).padStart(2, '0');
+                horas.push(`<option value="${i}">${h}:00 hrs</option>`);
+            }
+            const hHtml = horas.join('');
+            const elHora = document.getElementById('sr_hora');
+            const elDesde = document.getElementById('sr_hora_desde');
+            const elHasta = document.getElementById('sr_hora_hasta');
+            if (elHora) elHora.innerHTML = hHtml;
+            if (elDesde) {
+                elDesde.innerHTML = hHtml;
+                elDesde.value = '8';
+            }
+            if (elHasta) {
+                elHasta.innerHTML = hHtml;
+                elHasta.value = '18';
+            }
+        }
+
+        async function cargarAreasSalidasRango() {
+            try {
+                const res = await fetch('/api/areas');
+                if (!res.ok) return;
+                const areas = await res.json();
+                const sel = document.getElementById('sr_area');
+                if (sel) {
+                    let html = '<option value="">Todas las zonas</option>';
+                    areas.forEach(a => {
+                        html += `<option value="${a.id}">${esc(a.nombre)}</option>`;
+                    });
+                    sel.innerHTML = html;
+                }
+            } catch (e) {
+                console.error('Error cargando áreas para salidas de rango:', e);
+            }
+        }
+
+        function alCambiarModoSalidasRango() {
+            const modo = document.getElementById('sr_modo').value;
+            const wFecha = document.getElementById('sr_wrapper_fecha');
+            const wDesde = document.getElementById('sr_wrapper_desde');
+            const wHasta = document.getElementById('sr_wrapper_hasta');
+            const inFecha = document.getElementById('sr_fecha');
+            const inDesde = document.getElementById('sr_fecha_desde');
+            const inHasta = document.getElementById('sr_fecha_hasta');
+
+            const hoy = new Date();
+            const formatYMD = d => d.toISOString().split('T')[0];
+
+            if (modo === 'total') {
+                wFecha.style.display = 'none';
+                wDesde.style.display = 'none';
+                wHasta.style.display = 'none';
+            } else if (modo === 'fecha') {
+                wFecha.style.display = 'block';
+                wDesde.style.display = 'none';
+                wHasta.style.display = 'none';
+                if (!inFecha.value) inFecha.value = formatYMD(hoy);
+            } else if (modo === 'rango') {
+                wFecha.style.display = 'none';
+                wDesde.style.display = 'block';
+                wHasta.style.display = 'block';
+                if (!inHasta.value) inHasta.value = formatYMD(hoy);
+                if (!inDesde.value) {
+                    const hace30 = new Date(hoy);
+                    hace30.setDate(hace30.getDate() - 30);
+                    inDesde.value = formatYMD(hace30);
+                }
+            } else if (modo === 'hoy') {
+                wFecha.style.display = 'none';
+                wDesde.style.display = 'none';
+                wHasta.style.display = 'none';
+                inFecha.value = formatYMD(hoy);
+            } else if (modo === 'ayer') {
+                wFecha.style.display = 'none';
+                wDesde.style.display = 'none';
+                wHasta.style.display = 'none';
+                const ayer = new Date(hoy);
+                ayer.setDate(ayer.getDate() - 1);
+                inFecha.value = formatYMD(ayer);
+            } else if (modo === '7' || modo === '30') {
+                wFecha.style.display = 'none';
+                wDesde.style.display = 'none';
+                wHasta.style.display = 'none';
+                const dias = Number(modo);
+                const desde = new Date(hoy);
+                desde.setDate(desde.getDate() - dias);
+                inDesde.value = formatYMD(desde);
+                inHasta.value = formatYMD(hoy);
+            }
+        }
+
+        function alCambiarModoHoraSalidasRango() {
+            const modo = document.getElementById('sr_modo_hora').value;
+            const wHora = document.getElementById('sr_wrapper_hora');
+            const wRango = document.getElementById('sr_wrapper_hora_rango');
+
+            if (modo === 'hora') {
+                wHora.style.display = 'block';
+                wRango.style.display = 'none';
+            } else if (modo === 'rango') {
+                wHora.style.display = 'none';
+                wRango.style.display = 'block';
+            } else {
+                wHora.style.display = 'none';
+                wRango.style.display = 'none';
+            }
+        }
+
+        function limpiarFiltrosSalidasRango() {
+            document.getElementById('sr_modo').value = 'total';
+            document.getElementById('sr_modo_hora').value = 'todas';
+            document.getElementById('sr_area').value = '';
+            document.getElementById('sr_fecha').value = '';
+            document.getElementById('sr_fecha_desde').value = '';
+            document.getElementById('sr_fecha_hasta').value = '';
+            alCambiarModoSalidasRango();
+            alCambiarModoHoraSalidasRango();
+            cargarSalidasRango();
+        }
+
+        async function cargarSalidasRango() {
+            const modo = document.getElementById('sr_modo').value;
+            const modoHora = document.getElementById('sr_modo_hora').value;
+            const areaId = document.getElementById('sr_area').value;
+
+            const params = new URLSearchParams();
+
+            // Fechas
+            if (modo === 'total') {
+                params.set('modo', 'total');
+            } else if (modo === 'fecha') {
+                params.set('modo', 'fecha');
+                const f = document.getElementById('sr_fecha').value;
+                if (f) params.set('fecha', f);
+            } else if (modo === 'hoy') {
+                params.set('modo', 'fecha');
+                params.set('fecha', new Date().toISOString().split('T')[0]);
+            } else if (modo === 'ayer') {
+                params.set('modo', 'fecha');
+                const ayer = new Date();
+                ayer.setDate(ayer.getDate() - 1);
+                params.set('fecha', ayer.toISOString().split('T')[0]);
+            } else if (modo === 'rango' || modo === '7' || modo === '30') {
+                params.set('modo', 'rango');
+                let fd = document.getElementById('sr_fecha_desde').value;
+                let fh = document.getElementById('sr_fecha_hasta').value;
+                if (modo === '7' || modo === '30') {
+                    const dias = Number(modo);
+                    const hoy = new Date();
+                    const desde = new Date();
+                    desde.setDate(desde.getDate() - dias);
+                    fd = desde.toISOString().split('T')[0];
+                    fh = hoy.toISOString().split('T')[0];
+                }
+                if (fd) params.set('fecha_desde', fd);
+                if (fh) params.set('fecha_hasta', fh);
+            }
+
+            // Horas
+            if (modoHora === 'hora') {
+                params.set('hora', document.getElementById('sr_hora').value);
+            } else if (modoHora === 'rango') {
+                params.set('hora_desde', document.getElementById('sr_hora_desde').value);
+                params.set('hora_hasta', document.getElementById('sr_hora_hasta').value);
+            } else if (modoHora === 'ventana_14') {
+                params.set('ventana_horaria', '14:00');
+            } else if (modoHora === 'ventana_02') {
+                params.set('ventana_horaria', '02:00');
+            }
+
+            // Área
+            if (areaId) {
+                params.set('area_id', areaId);
+            }
+
+            const tbT = document.getElementById('sr_tbody_termometros');
+            const tbZ = document.getElementById('sr_tbody_zonas');
+            if (tbT) tbT.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Cargando ranking de desvíos...</td></tr>';
+            if (tbZ) tbZ.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Cargando ranking de zonas...</td></tr>';
+
+            try {
+                const res = await fetch(`/api/admin/salidas-rango?${params.toString()}`);
+                if (!res.ok) throw new Error('Error en el servidor al consultar salidas de rango');
+                salidasRangoData = await res.json();
+                renderizarSalidasRango(salidasRangoData);
+            } catch (e) {
+                if (tbT) tbT.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle me-2"></i>${esc(e.message)}</td></tr>`;
+                if (tbZ) tbZ.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle me-2"></i>${esc(e.message)}</td></tr>`;
+            }
+        }
+
+        function renderizarSalidasRango(data) {
+            if (!data) return;
+            const res = data.resumen;
+
+            // 1. KPIs
+            const kpiEl = document.getElementById('sr_kpis');
+            if (kpiEl) {
+                const tasaColor = res.porcentaje_salidas > 10 ? 'danger' : res.porcentaje_salidas > 0 ? 'warning' : 'success';
+                kpiEl.innerHTML = `
+                    <div class="col-md-3 col-6">
+                        <div class="card border-0 shadow-sm p-3 bg-white" style="border-radius:14px;">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-muted small fw-semibold">Total Registros</span>
+                                <i class="bi bi-clipboard-data text-primary fs-5"></i>
+                            </div>
+                            <h3 class="fw-bold mb-0 text-dark">${res.total_registros.toLocaleString()}</h3>
+                            <small class="text-muted" style="font-size:0.75rem;">Mediciones analizadas</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="card border-0 shadow-sm p-3 bg-white" style="border-radius:14px;">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-muted small fw-semibold">Salidas de Rango</span>
+                                <i class="bi bi-exclamation-octagon text-danger fs-5"></i>
+                            </div>
+                            <h3 class="fw-bold mb-0 text-danger">${res.total_salidas_rango.toLocaleString()}</h3>
+                            <div class="d-flex align-items-center gap-1.5 mt-1">
+                                <span class="badge bg-${tasaColor}-subtle text-${tasaColor} border border-${tasaColor}-subtle rounded-pill py-0.5 px-2" style="font-size:0.75rem;">
+                                    ${res.porcentaje_salidas.toFixed(1)}% tasa de desvío
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="card border-0 shadow-sm p-3 bg-white" style="border-radius:14px;">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-muted small fw-semibold">Equipos con Desvío</span>
+                                <i class="bi bi-thermometer-high text-warning fs-5"></i>
+                            </div>
+                            <h3 class="fw-bold mb-0 text-dark">${res.termometros_con_desvio}</h3>
+                            <small class="text-muted" style="font-size:0.75rem;">Termómetros críticos</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="card border-0 shadow-sm p-3 bg-white" style="border-radius:14px;">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-muted small fw-semibold">Zonas Afectadas</span>
+                                <i class="bi bi-building-exclamation text-danger fs-5"></i>
+                            </div>
+                            <h3 class="fw-bold mb-0 text-dark">${res.zonas_con_desvio}</h3>
+                            <small class="text-muted" style="font-size:0.75rem;">Zonas con incidencias</small>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 2. Tabla de Termómetros
+            const tbT = document.getElementById('sr_tbody_termometros');
+            const cntT = document.getElementById('sr_count_termometros');
+            if (cntT) cntT.textContent = `${data.por_termometro.length} equipos`;
+
+            if (tbT) {
+                if (data.por_termometro.length === 0) {
+                    tbT.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">No se registraron datos en el período seleccionado.</td></tr>';
+                } else {
+                    tbT.innerHTML = data.por_termometro.map((t, idx) => {
+                        const rankBadge = idx === 0 && t.salidas_rango > 0
+                            ? '<span class="badge bg-danger rounded-circle p-1.5 shadow-xs" title="Mayor desvío">1</span>'
+                            : idx === 1 && t.salidas_rango > 0
+                            ? '<span class="badge bg-warning text-dark rounded-circle p-1.5">2</span>'
+                            : idx === 2 && t.salidas_rango > 0
+                            ? '<span class="badge bg-secondary rounded-circle p-1.5">3</span>'
+                            : `<span class="text-muted small fw-bold">${idx + 1}</span>`;
+
+                        const barColor = t.porcentaje_salidas > 15 ? 'bg-danger' : t.porcentaje_salidas > 5 ? 'bg-warning' : 'bg-success';
+                        const extremos = (t.temp_min_registrada != null && t.temp_max_registrada != null)
+                            ? `<span class="small font-monospace">${t.temp_min_registrada.toFixed(1)}° a ${t.temp_max_registrada.toFixed(1)}°C</span>`
+                            : '<span class="text-muted small">-</span>';
+
+                        const promedio = t.temp_promedio != null ? ` · Prom: ${t.temp_promedio.toFixed(1)}°C` : '';
+
+                        return `
+                            <tr class="${t.salidas_rango > 0 ? 'table-row-alert' : ''}">
+                                <td class="text-center">${rankBadge}</td>
+                                <td>
+                                    <div class="fw-bold text-dark">${esc(t.termometro_nombre)}</div>
+                                    <small class="text-muted">ID #${t.termometro_id} · ${esc(t.tipo_nombre)}</small>
+                                </td>
+                                <td>
+                                    <div><i class="bi bi-geo-alt text-secondary me-1"></i><strong>${esc(t.area_nombre)}</strong></div>
+                                    <small class="text-muted">${esc(t.ubicacion || 'Sin subzona')}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border font-monospace">
+                                        ${t.temp_min_operativa}°C a ${t.temp_max_operativa}°C
+                                    </span>
+                                </td>
+                                <td class="text-center fw-semibold">${t.total_registros}</td>
+                                <td class="text-center">
+                                    ${t.salidas_rango > 0
+                                        ? `<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1 fw-bold fs-7">${t.salidas_rango}</span>`
+                                        : '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5">0</span>'}
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress flex-grow-1" style="height: 7px; border-radius: 4px; background: rgba(0,0,0,0.06);">
+                                            <div class="progress-bar ${barColor}" role="progressbar" style="width: ${Math.min(100, t.porcentaje_salidas)}%"></div>
+                                        </div>
+                                        <span class="small fw-bold text-nowrap" style="min-width: 45px;">${t.porcentaje_salidas.toFixed(1)}%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    ${extremos}
+                                    ${promedio ? `<div class="text-muted small" style="font-size:0.75rem;">${promedio}</div>` : ''}
+                                </td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2.5 rounded-pill" onclick="irAGraficosTermometro(${t.termometro_id})" title="Ver evolución en Gráficos">
+                                        <i class="bi bi-graph-up me-1"></i>Gráficos
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            }
+
+            // 3. Tabla de Zonas
+            const tbZ = document.getElementById('sr_tbody_zonas');
+            const cntZ = document.getElementById('sr_count_zonas');
+            if (cntZ) cntZ.textContent = `${data.por_zona.length} zonas`;
+
+            if (tbZ) {
+                if (data.por_zona.length === 0) {
+                    tbZ.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">No se registraron datos en el período seleccionado.</td></tr>';
+                } else {
+                    tbZ.innerHTML = data.por_zona.map((z, idx) => {
+                        const rankBadge = idx === 0 && z.salidas_rango > 0
+                            ? '<span class="badge bg-danger rounded-circle p-1.5 shadow-xs" title="Zona más crítica">1</span>'
+                            : idx === 1 && z.salidas_rango > 0
+                            ? '<span class="badge bg-warning text-dark rounded-circle p-1.5">2</span>'
+                            : idx === 2 && z.salidas_rango > 0
+                            ? '<span class="badge bg-secondary rounded-circle p-1.5">3</span>'
+                            : `<span class="text-muted small fw-bold">${idx + 1}</span>`;
+
+                        const barColor = z.porcentaje_salidas > 15 ? 'bg-danger' : z.porcentaje_salidas > 5 ? 'bg-warning' : 'bg-success';
+                        const extremos = (z.temp_min_registrada != null && z.temp_max_registrada != null)
+                            ? `<span class="small font-monospace">${z.temp_min_registrada.toFixed(1)}° a ${z.temp_max_registrada.toFixed(1)}°C</span>`
+                            : '<span class="text-muted small">-</span>';
+
+                        return `
+                            <tr class="${z.salidas_rango > 0 ? 'table-row-alert' : ''}">
+                                <td class="text-center">${rankBadge}</td>
+                                <td>
+                                    <div class="fw-bold text-dark fs-6"><i class="bi bi-building text-primary me-1.5"></i>${esc(z.area_nombre)}</div>
+                                    <small class="text-muted">ID Zona #${z.area_id}</small>
+                                </td>
+                                <td class="text-center">
+                                    <span class="small fw-semibold">${z.total_termometros} equipos</span>
+                                    ${z.termometros_con_desvio > 0
+                                        ? `<div class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size:0.7rem;">${z.termometros_con_desvio} con alerta</div>`
+                                        : '<div class="badge bg-success-subtle text-success" style="font-size:0.7rem;">0 con alerta</div>'}
+                                </td>
+                                <td class="text-center fw-semibold">${z.total_registros}</td>
+                                <td class="text-center">
+                                    ${z.salidas_rango > 0
+                                        ? `<span class="badge bg-danger px-2.5 py-1 fw-bold fs-7">${z.salidas_rango}</span>`
+                                        : '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5">0</span>'}
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress flex-grow-1" style="height: 7px; border-radius: 4px; background: rgba(0,0,0,0.06);">
+                                            <div class="progress-bar ${barColor}" role="progressbar" style="width: ${Math.min(100, z.porcentaje_salidas)}%"></div>
+                                        </div>
+                                        <span class="small fw-bold text-nowrap" style="min-width: 45px;">${z.porcentaje_salidas.toFixed(1)}%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    ${z.termometro_mas_critico
+                                        ? `<span class="badge bg-light text-danger border border-danger-subtle p-1.5 text-wrap text-start"><i class="bi bi-exclamation-triangle-fill me-1"></i>${esc(z.termometro_mas_critico)}</span>`
+                                        : '<span class="text-muted small">Ninguno con desvío</span>'}
+                                </td>
+                                <td>${extremos}</td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2.5 rounded-pill" onclick="irAGraficosArea(${z.area_id})" title="Ver gráficos de esta zona">
+                                        <i class="bi bi-bar-chart me-1"></i>Ver Área
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            }
+        }
+
+        function irAGraficosTermometro(termometroId) {
+            showSection('graficos');
+            setTimeout(() => {
+                seleccionarTodosTermometros(false);
+                const chip = document.getElementById(`chip_term_${termometroId}`);
+                if (chip) {
+                    chip.checked = true;
+                    alCambiarChipTermometro(termometroId);
+                } else if (typeof termometrosSeleccionadosGraficos !== 'undefined') {
+                    termometrosSeleccionadosGraficos.add(Number(termometroId));
+                }
+                cargarGraficos();
+            }, 250);
+        }
+
+        function irAGraficosArea(areaId) {
+            showSection('graficos');
+            setTimeout(() => {
+                const sel = document.getElementById('graficos_area');
+                if (sel) {
+                    sel.value = String(areaId);
+                    alCambiarAreaGraficos();
+                    seleccionarTodosTermometros(true);
+                    cargarGraficos();
+                }
+            }, 250);
+        }
+
+        function exportarSalidasRangoCSV() {
+            if (!salidasRangoData) {
+                alert('No hay datos cargados para exportar');
+                return;
+            }
+
+            const activeTab = document.querySelector('#srTabs .nav-link.active');
+            const esZonas = activeTab && activeTab.id === 'sr-tab-zonas';
+
+            let lineas = [];
+            if (esZonas) {
+                lineas.push(['Posicion', 'Area_ID', 'Area_Nombre', 'Total_Termometros', 'Termometros_Con_Desvio', 'Total_Registros', 'Salidas_Rango', 'Porcentaje_Desvio', 'Termometro_Critico', 'Temp_Minima_Registrada', 'Temp_Maxima_Registrada'].join(','));
+                salidasRangoData.por_zona.forEach((z, idx) => {
+                    lineas.push([
+                        idx + 1,
+                        z.area_id,
+                        `"${(z.area_nombre || '').replace(/"/g, '""')}"`,
+                        z.total_termometros,
+                        z.termometros_con_desvio,
+                        z.total_registros,
+                        z.salidas_rango,
+                        z.porcentaje_salidas,
+                        `"${(z.termometro_mas_critico || '').replace(/"/g, '""')}"`,
+                        z.temp_min_registrada ?? '',
+                        z.temp_max_registrada ?? ''
+                    ].join(','));
+                });
+            } else {
+                lineas.push(['Posicion', 'Termometro_ID', 'Nombre', 'Ubicacion', 'Area_ID', 'Area_Nombre', 'Tipo', 'Temp_Min_Operativa', 'Temp_Max_Operativa', 'Total_Registros', 'Salidas_Rango', 'Porcentaje_Desvio', 'Temp_Min_Registrada', 'Temp_Max_Registrada', 'Temp_Promedio'].join(','));
+                salidasRangoData.por_termometro.forEach((t, idx) => {
+                    lineas.push([
+                        idx + 1,
+                        t.termometro_id,
+                        `"${(t.termometro_nombre || '').replace(/"/g, '""')}"`,
+                        `"${(t.ubicacion || '').replace(/"/g, '""')}"`,
+                        t.area_id,
+                        `"${(t.area_nombre || '').replace(/"/g, '""')}"`,
+                        `"${(t.tipo_nombre || '').replace(/"/g, '""')}"`,
+                        t.temp_min_operativa,
+                        t.temp_max_operativa,
+                        t.total_registros,
+                        t.salidas_rango,
+                        t.porcentaje_salidas,
+                        t.temp_min_registrada ?? '',
+                        t.temp_max_registrada ?? '',
+                        t.temp_promedio ?? ''
+                    ].join(','));
+                });
+            }
+
+            const csvContent = '\uFEFF' + lineas.join('\r\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `salidas_rango_${esZonas ? 'zonas' : 'termometros'}_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
     </script>
 

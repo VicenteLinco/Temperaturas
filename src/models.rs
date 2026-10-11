@@ -502,6 +502,7 @@ pub struct MapaTermometro {
     pub id: i32,
     pub area_id: i32,
     pub nombre: Option<String>,
+    pub ubicacion: Option<String>,
     pub pos_x: Option<f32>,
     pub pos_y: Option<f32>,
     /// pendiente | completado | fuera_de_servicio
@@ -549,3 +550,68 @@ pub struct FotoRequest {
 pub struct MapaConfigRequest {
     pub mapa_habilitado: bool,
 }
+
+// ===== REPORTE Y ANÁLISIS DE SALIDAS DE RANGO TÉRMICO =====
+
+#[derive(Debug, Deserialize)]
+pub struct FiltrosSalidasRango {
+    pub modo: Option<String>,
+    pub fecha: Option<String>,
+    pub fecha_desde: Option<String>,
+    pub fecha_hasta: Option<String>,
+    pub hora: Option<i32>,
+    pub hora_desde: Option<i32>,
+    pub hora_hasta: Option<i32>,
+    pub ventana_horaria: Option<String>,
+    pub area_id: Option<i32>,
+}
+
+#[derive(Debug, Clone, Serialize, FromRow)]
+pub struct ResumenSalidasRango {
+    pub total_registros: i64,
+    pub total_salidas_rango: i64,
+    pub porcentaje_salidas: f32,
+    pub termometros_con_desvio: i64,
+    pub zonas_con_desvio: i64,
+}
+
+#[derive(Debug, Clone, Serialize, FromRow)]
+pub struct SalidaRangoTermometroItem {
+    pub termometro_id: i32,
+    pub termometro_nombre: String,
+    pub ubicacion: Option<String>,
+    pub area_id: i32,
+    pub area_nombre: String,
+    pub tipo_nombre: String,
+    pub temp_min_operativa: f32,
+    pub temp_max_operativa: f32,
+    pub total_registros: i64,
+    pub salidas_rango: i64,
+    pub porcentaje_salidas: f32,
+    pub temp_min_registrada: Option<f32>,
+    pub temp_max_registrada: Option<f32>,
+    pub temp_promedio: Option<f32>,
+}
+
+#[derive(Debug, Clone, Serialize, FromRow)]
+pub struct SalidaRangoZonaItem {
+    pub area_id: i32,
+    pub area_nombre: String,
+    pub total_termometros: i64,
+    pub termometros_con_desvio: i64,
+    pub total_registros: i64,
+    pub salidas_rango: i64,
+    pub porcentaje_salidas: f32,
+    pub temp_min_registrada: Option<f32>,
+    pub temp_max_registrada: Option<f32>,
+    #[sqlx(default)]
+    pub termometro_mas_critico: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SalidasRangoResponse {
+    pub resumen: ResumenSalidasRango,
+    pub por_termometro: Vec<SalidaRangoTermometroItem>,
+    pub por_zona: Vec<SalidaRangoZonaItem>,
+}
+

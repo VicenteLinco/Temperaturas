@@ -117,6 +117,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/admin/reportes/mensual", get(handlers::generar_reporte_mensual))
         .route("/api/admin/reportes/incidencias", get(handlers::generar_reporte_incidencias))
         .route("/api/admin/reportes/estabilidad", get(handlers::generar_reporte_estabilidad))
+        .route("/api/admin/reportes/salidas-rango", get(handlers::obtener_salidas_rango))
+        .route("/api/admin/salidas-rango", get(handlers::obtener_salidas_rango))
         .route("/api/admin/graficos", get(handlers::obtener_graficos))
         .route("/api/admin/mapa/config", put(handlers::actualizar_config_mapa))
         .route("/api/admin/mapa/foto", post(handlers::subir_foto_mapa))

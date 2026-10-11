@@ -1071,3 +1071,219 @@ fn generar_pdf_informe_franja(
     let bytes = pdf.guardar()?;
     Ok((StatusCode::OK, bytes))
 }
+
+// ===== ANÁLISIS DE MAYORES SALIDAS DE RANGO TÉRMICO =====
+
+pub fn aplicar_filtros_salidas_rango<'a>(
+    builder: &mut sqlx::QueryBuilder<'a, sqlx::Postgres>,
+    filtros: &'a FiltrosSalidasRango,
+) {
+    let modo = filtros.modo.as_deref().unwrap_or("");
+    if modo == "total" {
+        // Modo acumulado total histórico: sin filtro de fecha
+    } else if let Some(fecha) = filtros.fecha.as_deref().filter(|s| !s.trim().is_empty()) {
+        builder.push(" AND (r.fecha_registro AT TIME ZONE 'America/Santiago')::date = ");
+        builder.push_bind(fecha.to_string());
+        builder.push("::date ");
+    } else {
+        if let Some(fd) = filtros.fecha_desde.as_deref().filter(|s| !s.trim().is_empty()) {
+            builder.push(" AND (r.fecha_registro AT TIME ZONE 'America/Santiago')::date >= ");
+            builder.push_bind(fd.to_string());
+            builder.push("::date ");
+        }
+        if let Some(fh) = filtros.fecha_hasta.as_deref().filter(|s| !s.trim().is_empty()) {
+            builder.push(" AND (r.fecha_registro AT TIME ZONE 'America/Santiago')::date <= ");
+            builder.push_bind(fh.to_string());
+            builder.push("::date ");
+        }
+    }
+
+    if let Some(h) = filtros.hora {
+        builder.push(" AND EXTRACT(HOUR FROM (r.fecha_registro AT TIME ZONE 'America/Santiago'))::int = ");
+        builder.push_bind(h);
+        builder.push(" ");
+    } else if let (Some(h1), Some(h2)) = (filtros.hora_desde, filtros.hora_hasta) {
+        builder.push(" AND EXTRACT(HOUR FROM (r.fecha_registro AT TIME ZONE 'America/Santiago'))::int BETWEEN ");
+        builder.push_bind(h1);
+        builder.push(" AND ");
+        builder.push_bind(h2);
+        builder.push(" ");
+    }
+
+    if let Some(vh) = filtros.ventana_horaria.as_deref().filter(|s| !s.trim().is_empty()) {
+        builder.push(" AND r.ventana_horaria = ");
+        builder.push_bind(vh.to_string());
+        builder.push(" ");
+    }
+
+    if let Some(aid) = filtros.area_id {
+        builder.push(" AND t.area_id = ");
+        builder.push_bind(aid);
+        builder.push(" ");
+    }
+}
+
+pub async fn obtener_salidas_rango(
+    _current_user: CurrentUser,
+    State(pool): State<PgPool>,
+    Query(filtros): Query<FiltrosSalidasRango>,
+) -> Result<Json<SalidasRangoResponse>, StatusCode> {
+    // 1. Resumen global
+    let mut b_res = sqlx::QueryBuilder::new(
+        r#"
+        SELECT
+            COUNT(*)::bigint AS total_registros,
+            COUNT(*) FILTER (WHERE r.fuera_rango_operativo)::bigint AS total_salidas_rango,
+            COALESCE(ROUND((COUNT(*) FILTER (WHERE r.fuera_rango_operativo)::numeric / NULLIF(COUNT(*), 0)::numeric * 100), 1)::real, 0.0::real) AS porcentaje_salidas,
+            COUNT(DISTINCT t.id) FILTER (WHERE r.fuera_rango_operativo)::bigint AS termometros_con_desvio,
+            COUNT(DISTINCT a.id) FILTER (WHERE r.fuera_rango_operativo)::bigint AS zonas_con_desvio
+        FROM registros r
+        JOIN termometros t ON r.termometro_id = t.id
+        JOIN areas a ON t.area_id = a.id
+        WHERE 1=1
+        "#
+    );
+    aplicar_filtros_salidas_rango(&mut b_res, &filtros);
+
+    let resumen: ResumenSalidasRango = b_res
+        .build_query_as()
+        .fetch_one(&pool)
+        .await
+        .map_err(|e| {
+            tracing::error!("Error resumen salidas rango: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    // 2. Ranking por termómetros
+    let mut b_term = sqlx::QueryBuilder::new(
+        r#"
+        SELECT
+            t.id AS termometro_id,
+            COALESCE(t.nombre, 'Termómetro #' || t.id) AS termometro_nombre,
+            t.ubicacion,
+            a.id AS area_id,
+            a.nombre AS area_nombre,
+            tt.nombre AS tipo_nombre,
+            tt.temp_min_operativa,
+            tt.temp_max_operativa,
+            COUNT(*)::bigint AS total_registros,
+            COUNT(*) FILTER (WHERE r.fuera_rango_operativo)::bigint AS salidas_rango,
+            COALESCE(ROUND((COUNT(*) FILTER (WHERE r.fuera_rango_operativo)::numeric / NULLIF(COUNT(*), 0)::numeric * 100), 1)::real, 0.0::real) AS porcentaje_salidas,
+            MIN(r.temp_minima) AS temp_min_registrada,
+            MAX(r.temp_maxima) AS temp_max_registrada,
+            ROUND(AVG(r.temp_actual)::numeric, 1)::real AS temp_promedio
+        FROM registros r
+        JOIN termometros t ON r.termometro_id = t.id
+        JOIN areas a ON t.area_id = a.id
+        JOIN tipos_termometro tt ON t.tipo_id = tt.id
+        WHERE 1=1
+        "#
+    );
+    aplicar_filtros_salidas_rango(&mut b_term, &filtros);
+    b_term.push(" GROUP BY t.id, t.nombre, t.ubicacion, a.id, a.nombre, tt.nombre, tt.temp_min_operativa, tt.temp_max_operativa ORDER BY salidas_rango DESC, porcentaje_salidas DESC, t.id ASC ");
+
+    let por_termometro: Vec<SalidaRangoTermometroItem> = b_term
+        .build_query_as()
+        .fetch_all(&pool)
+        .await
+        .map_err(|e| {
+            tracing::error!("Error termometros salidas rango: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    // 3. Ranking por zonas/áreas
+    let mut b_zona = sqlx::QueryBuilder::new(
+        r#"
+        SELECT
+            a.id AS area_id,
+            a.nombre AS area_nombre,
+            COUNT(DISTINCT t.id)::bigint AS total_termometros,
+            COUNT(DISTINCT t.id) FILTER (WHERE r.fuera_rango_operativo)::bigint AS termometros_con_desvio,
+            COUNT(*)::bigint AS total_registros,
+            COUNT(*) FILTER (WHERE r.fuera_rango_operativo)::bigint AS salidas_rango,
+            COALESCE(ROUND((COUNT(*) FILTER (WHERE r.fuera_rango_operativo)::numeric / NULLIF(COUNT(*), 0)::numeric * 100), 1)::real, 0.0::real) AS porcentaje_salidas,
+            MIN(r.temp_minima) AS temp_min_registrada,
+            MAX(r.temp_maxima) AS temp_max_registrada,
+            NULL::text AS termometro_mas_critico
+        FROM registros r
+        JOIN termometros t ON r.termometro_id = t.id
+        JOIN areas a ON t.area_id = a.id
+        WHERE 1=1
+        "#
+    );
+    aplicar_filtros_salidas_rango(&mut b_zona, &filtros);
+    b_zona.push(" GROUP BY a.id, a.nombre ORDER BY salidas_rango DESC, porcentaje_salidas DESC, a.id ASC ");
+
+    let mut por_zona: Vec<SalidaRangoZonaItem> = b_zona
+        .build_query_as()
+        .fetch_all(&pool)
+        .await
+        .map_err(|e| {
+            tracing::error!("Error zonas salidas rango: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    // Asignar el termómetro más crítico de cada zona
+    let mut critico_por_area: std::collections::HashMap<i32, String> = std::collections::HashMap::new();
+    for t in &por_termometro {
+        if t.salidas_rango > 0 && !critico_por_area.contains_key(&t.area_id) {
+            critico_por_area.insert(
+                t.area_id,
+                format!("{} ({} desvíos)", t.termometro_nombre, t.salidas_rango),
+            );
+        }
+    }
+    for z in &mut por_zona {
+        z.termometro_mas_critico = critico_por_area.get(&z.area_id).cloned();
+    }
+
+    Ok(Json(SalidasRangoResponse {
+        resumen,
+        por_termometro,
+        por_zona,
+    }))
+}
+
+#[cfg(test)]
+mod tests_salidas_rango {
+    use super::*;
+
+    #[test]
+    fn test_filtros_salidas_rango_builder() {
+        let f_total = FiltrosSalidasRango {
+            modo: Some("total".to_string()),
+            fecha: None,
+            fecha_desde: Some("2026-01-01".to_string()),
+            fecha_hasta: Some("2026-01-10".to_string()),
+            hora: None,
+            hora_desde: None,
+            hora_hasta: None,
+            ventana_horaria: None,
+            area_id: None,
+        };
+        let mut b = sqlx::QueryBuilder::new("SELECT 1 WHERE 1=1");
+        aplicar_filtros_salidas_rango(&mut b, &f_total);
+        let sql = b.sql();
+        assert!(!sql.contains("fecha_registro"));
+
+        let f_fecha = FiltrosSalidasRango {
+            modo: Some("fecha".to_string()),
+            fecha: Some("2026-10-11".to_string()),
+            fecha_desde: None,
+            fecha_hasta: None,
+            hora: Some(14),
+            hora_desde: None,
+            hora_hasta: None,
+            ventana_horaria: Some("14:00".to_string()),
+            area_id: Some(3),
+        };
+        let mut b2 = sqlx::QueryBuilder::new("SELECT 1 WHERE 1=1");
+        aplicar_filtros_salidas_rango(&mut b2, &f_fecha);
+        let sql2 = b2.sql();
+        assert!(sql2.contains("::date"));
+        assert!(sql2.contains("EXTRACT(HOUR"));
+        assert!(sql2.contains("r.ventana_horaria"));
+        assert!(sql2.contains("t.area_id"));
+    }
+}
+

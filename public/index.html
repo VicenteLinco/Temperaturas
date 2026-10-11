@@ -780,10 +780,16 @@
                         <button id="btnVistaMapa" class="btn btn-outline-dark btn-sm" onclick="MapaVista.mostrar('mapa')">Plano</button>
                     </div>
                     <div id="mapaVista" style="display:none;">
-                        <div class="d-flex gap-2 my-2 align-items-center">
-                            <button id="mapaVolver" class="btn btn-outline-dark btn-sm" style="display:none;" onclick="MapaVista.general()">← General</button>
-                            <select id="mapaSelectArea" class="form-select form-select-sm" style="max-width: 190px;" onchange="MapaVista.seleccionarArea(this.value)">
-                                <option value="">Todas las áreas</option>
+                        <!-- Controles de navegación y zoom -->
+                        <div class="d-flex gap-2 my-2 align-items-center flex-wrap">
+                            <button id="mapaVolver" class="btn btn-outline-dark btn-sm" style="display:none;" onclick="MapaVista.general()">
+                                <i class="bi bi-arrow-left"></i> Salir de zona
+                            </button>
+                            <select id="mapaSelectArea" class="form-select form-select-sm" style="max-width: 175px;" onchange="MapaVista.seleccionarArea(this.value)">
+                                <option value="">Todas las zonas</option>
+                            </select>
+                            <select id="mapaSelectSubzona" class="form-select form-select-sm" style="display:none; max-width: 170px;" onchange="MapaVista.seleccionarSubzona(this.value)">
+                                <option value="">Todas las subzonas</option>
                             </select>
                             <div class="btn-group ms-auto" role="group" aria-label="Zoom">
                                 <button class="btn btn-outline-dark btn-sm" onclick="MapaVista.zoom(1.25)" aria-label="Acercar">+</button>
@@ -791,7 +797,27 @@
                                 <button class="btn btn-outline-dark btn-sm" onclick="MapaVista.reset()">Reset</button>
                             </div>
                         </div>
+
+                        <!-- Barra de acceso rápido para entrar a cualquier zona o salir al general -->
+                        <div id="mapaZonasBar" class="d-flex gap-1 overflow-auto pb-1 mb-2" style="white-space:nowrap; scrollbar-width:thin;"></div>
+
+                        <!-- Banner explicativo de zona activa con botón para salir -->
+                        <div id="mapaZonaActivaBanner" class="alert alert-light border py-1.5 px-3 mb-2 d-flex justify-content-between align-items-center shadow-xs" style="display:none; border-radius:10px;">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <span class="badge bg-dark"><i class="bi bi-geo-alt-fill me-1"></i>Zona activa</span>
+                                <strong id="mapaNombreZonaActiva" class="text-dark"></strong>
+                                <span id="mapaInfoZonaActiva"></span>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-dark py-0.5 px-2" onclick="MapaVista.general()" title="Salir al plano general">
+                                <i class="bi bi-box-arrow-left me-1"></i>Salir de zona
+                            </button>
+                        </div>
+
+                        <!-- Marco del plano -->
                         <div id="mapaMarco" style="position:relative;overflow:hidden;border-radius:14px;background:#e9e9ec;touch-action:none;">
+                            <button id="mapaBtnFlotanteSalir" class="btn btn-dark btn-sm shadow-sm" style="display:none;position:absolute;top:10px;left:10px;z-index:10;" onclick="MapaVista.general()">
+                                <i class="bi bi-arrow-left me-1"></i> Salir al Plano General
+                            </button>
                             <div id="mapaInterior" style="position:relative;width:100%;transform-origin:0 0;">
                                 <img id="mapaImg" style="display:block;width:100%;height:auto;user-select:none;" draggable="false" alt="Plano de la planta">
                                 <div id="mapaZonas" style="position:absolute;inset:0;"></div>
@@ -799,6 +825,9 @@
                             </div>
                             <div id="mapaPopup" class="card" style="display:none;position:absolute;left:8px;right:8px;bottom:8px;z-index:5;"></div>
                         </div>
+
+                        <!-- Panel de Faltantes (cuáles faltan y en qué parte) -->
+                        <div id="mapaPanelFaltantes" class="mt-2 mb-3"></div>
                     </div>
                     <div id="areaActualContent">
                         <div class="text-center text-muted py-5">

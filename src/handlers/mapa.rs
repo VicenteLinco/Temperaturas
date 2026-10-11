@@ -124,6 +124,7 @@ pub async fn obtener_mapa(
                 id: t.id,
                 area_id: t.area_id,
                 nombre: t.nombre,
+                ubicacion: t.ubicacion,
                 pos_x: t.pos_x,
                 pos_y: t.pos_y,
                 estado: estado_term.to_string(),
