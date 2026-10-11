@@ -426,21 +426,34 @@
         .mapa-zona-rect:hover {
             background: rgba(13, 110, 253, 0.22);
         }
+        .mapa-zona-rect.en-ajuste {
+            border: 2px solid #0d6efd !important;
+            background: rgba(13, 110, 253, 0.2) !important;
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.35);
+            z-index: 15;
+        }
         .mapa-handle {
             position: absolute;
-            width: 12px;
-            height: 12px;
+            width: 16px;
+            height: 16px;
             background: #ffffff;
-            border: 2px solid #0d6efd;
+            border: 3px solid #0d6efd;
             border-radius: 50%;
-            z-index: 10;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            z-index: 30;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
             touch-action: none;
+            cursor: pointer;
+            transition: transform 0.1s ease, background-color 0.1s ease;
         }
-        .mapa-handle.handle-nw { top: -6px; left: -6px; cursor: nwse-resize; }
-        .mapa-handle.handle-ne { top: -6px; right: -6px; cursor: nesw-resize; }
-        .mapa-handle.handle-se { bottom: -6px; right: -6px; cursor: nwse-resize; }
-        .mapa-handle.handle-sw { bottom: -6px; left: -6px; cursor: nesw-resize; }
+        .mapa-handle:hover, .mapa-handle:active {
+            transform: scale(1.35);
+            background: #0d6efd;
+            border-color: #ffffff;
+        }
+        .mapa-handle.handle-nw { top: -8px; left: -8px; cursor: nwse-resize; }
+        .mapa-handle.handle-ne { top: -8px; right: -8px; cursor: nesw-resize; }
+        .mapa-handle.handle-se { bottom: -8px; right: -8px; cursor: nwse-resize; }
+        .mapa-handle.handle-sw { bottom: -8px; left: -8px; cursor: nesw-resize; }
 
         .mapa-punto-btn {
             position: absolute;
@@ -1371,6 +1384,31 @@
                                 </div>
                                 <button type="button" class="btn btn-sm btn-outline-danger" onclick="cancelarModoTrazarZona()">
                                     <i class="bi bi-x-circle me-1"></i> Cancelar
+                                </button>
+                            </div>
+
+                            <div id="mapaPostTrazoBanner" class="alert alert-success py-2 px-3 mb-2 d-flex justify-content-between align-items-center flex-wrap gap-2" style="display: none;">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-check2-circle fs-5 text-success"></i>
+                                    <span>Zona trazada para: <strong id="mapaPostTrazoAreaNombre"></strong>. ¿Deseas ajustar las esquinas en el plano?</span>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-primary" onclick="confirmarAjustarPostTrazo()">
+                                        <i class="bi bi-arrows-angle-expand me-1"></i> Ajustar esquinas
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="cerrarBannerPostTrazo()">
+                                        Listo
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="mapaAjustarBanner" class="alert alert-info py-2 px-3 mb-2 d-flex justify-content-between align-items-center flex-wrap gap-2" style="display: none;">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="spinner-grow spinner-grow-sm text-info" role="status"></span>
+                                    <span>Ajustando esquinas de: <strong id="mapaAjustarAreaNombre"></strong>. Arrastra las manijas en las esquinas o bordes de la zona para calibrar.</span>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-success" onclick="finalizarModoAjustarEsquinas()">
+                                    <i class="bi bi-check-lg me-1"></i> Terminar ajuste
                                 </button>
                             </div>
 
@@ -4952,6 +4990,8 @@
         let mapaZoom = { s: 1, tx: 0, ty: 0 };
         let mapaPaneando = false;
         let mapaPanInicio = { x: 0, y: 0, tx: 0, ty: 0 };
+        let mapaAjustandoArea = null;
+        let mapaPostTrazoAreaId = null;
 
         function colorEstadoMapa(estado) {
             if (estado === 'completado') return 'bg-success';
@@ -5066,6 +5106,9 @@
         }
 
         function activarModoTrazarZona(areaId) {
+            cancelarModoTrazarZona();
+            cerrarBannerPostTrazo();
+            finalizarModoAjustarEsquinas();
             if (!mapaData) return;
             const a = mapaData.areas.find(function(x) { return x.id === areaId; });
             if (!a) return;
@@ -5096,7 +5139,54 @@
             if (editor) editor.style.cursor = '';
         }
 
+        function activarModoAjustarEsquinas(areaId) {
+            cancelarModoTrazarZona();
+            cerrarBannerPostTrazo();
+            if (!mapaData) return;
+            const a = mapaData.areas.find(function(x) { return x.id === areaId; });
+            if (!a || !mapaZonas[areaId]) return;
+
+            mapaAjustandoArea = areaId;
+            mapaPendienteSel = null;
+
+            const check = document.getElementById('mapaToggleMostrarZonas');
+            if (check && !check.checked) {
+                check.checked = true;
+                toggleMostrarZonasMapa();
+            }
+
+            const nombreEl = document.getElementById('mapaAjustarAreaNombre');
+            if (nombreEl) nombreEl.textContent = a.nombre;
+            const banner = document.getElementById('mapaAjustarBanner');
+            if (banner) banner.style.display = 'flex';
+
+            renderZonasMapa();
+            renderAreasListaMapa();
+        }
+
+        function finalizarModoAjustarEsquinas() {
+            mapaAjustandoArea = null;
+            const banner = document.getElementById('mapaAjustarBanner');
+            if (banner) banner.style.display = 'none';
+            renderZonasMapa();
+            renderAreasListaMapa();
+            sincronizarSelectorAreasAdmin();
+        }
+
+        function confirmarAjustarPostTrazo() {
+            const id = mapaPostTrazoAreaId;
+            cerrarBannerPostTrazo();
+            if (id) activarModoAjustarEsquinas(id);
+        }
+
+        function cerrarBannerPostTrazo() {
+            mapaPostTrazoAreaId = null;
+            const banner = document.getElementById('mapaPostTrazoBanner');
+            if (banner) banner.style.display = 'none';
+        }
+
         function quitarZonaMapa(areaId) {
+            if (mapaAjustandoArea === areaId) finalizarModoAjustarEsquinas();
             mapaZonas[areaId] = null;
             renderZonasMapa();
             renderAreasListaMapa();
@@ -5127,6 +5217,8 @@
                 });
                 mapaPendienteSel = null;
                 cancelarModoTrazarZona();
+                cerrarBannerPostTrazo();
+                finalizarModoAjustarEsquinas();
 
                 const sinFoto = !mapaData.imagen_url;
                 document.getElementById('mapaSinFoto').style.display = sinFoto ? 'block' : 'none';
@@ -5226,30 +5318,33 @@
             mapaData.areas.forEach(function(a) {
                 const z = mapaZonas[a.id];
                 if (!z) return;
+                const esAjuste = (mapaAjustandoArea === a.id);
                 const div = document.createElement('div');
                 div.id = 'mapaZona-' + a.id;
-                div.className = 'mapa-zona-rect';
-                div.title = a.nombre + ' (Arrastra para mover · Usa las esquinas para redimensionar)';
+                div.className = 'mapa-zona-rect' + (esAjuste ? ' en-ajuste' : '');
+                div.title = a.nombre + (esAjuste ? ' (Modo ajuste activo: arrastra las manijas para calibrar)' : ' (Arrastra para mover · Usa «Ajustar esquinas» para calibrar)');
                 div.style.left = z.x + '%';
                 div.style.top = z.y + '%';
                 div.style.width = z.w + '%';
                 div.style.height = z.h + '%';
 
                 const etiqueta = document.createElement('span');
-                etiqueta.className = 'badge bg-primary text-white';
+                etiqueta.className = 'badge ' + (esAjuste ? 'bg-primary text-white border border-light' : 'bg-primary text-white');
                 etiqueta.style.cssText = 'position:absolute;top:3px;left:3px;max-width:calc(100% - 6px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.75rem;pointer-events:none;';
-                etiqueta.textContent = a.nombre;
+                etiqueta.textContent = a.nombre + (esAjuste ? ' (Ajustando esquinas)' : '');
                 div.appendChild(etiqueta);
 
-                ['nw', 'ne', 'se', 'sw'].forEach(function(pos) {
-                    const handle = document.createElement('div');
-                    handle.className = 'mapa-handle handle-' + pos;
-                    handle.title = 'Redimensionar zona';
-                    handle.addEventListener('pointerdown', function(e) {
-                        iniciarRedimensionZonaMapa(e, a.id, pos);
+                if (esAjuste) {
+                    ['nw', 'ne', 'se', 'sw'].forEach(function(pos) {
+                        const handle = document.createElement('div');
+                        handle.className = 'mapa-handle handle-' + pos;
+                        handle.title = 'Ajustar esquina ' + pos.toUpperCase();
+                        handle.addEventListener('pointerdown', function(e) {
+                            iniciarRedimensionZonaMapa(e, a.id, pos);
+                        });
+                        div.appendChild(handle);
                     });
-                    div.appendChild(handle);
-                });
+                }
 
                 div.addEventListener('pointerdown', function(e) {
                     if (e.target && e.target.classList.contains('mapa-handle')) return;
@@ -5430,6 +5525,20 @@
                 acciones.appendChild(btnTrazar);
 
                 if (z) {
+                    const btnAjustar = document.createElement('button');
+                    btnAjustar.type = 'button';
+                    btnAjustar.className = 'btn ' + (mapaAjustandoArea === a.id ? 'btn-primary' : 'btn-outline-primary');
+                    btnAjustar.title = 'Ajustar esquinas de la zona en el plano';
+                    btnAjustar.innerHTML = '<i class="bi bi-arrows-angle-expand me-1"></i> ' + (mapaAjustandoArea === a.id ? 'Ajustando' : 'Ajustar');
+                    btnAjustar.addEventListener('click', function() {
+                        if (mapaAjustandoArea === a.id) {
+                            finalizarModoAjustarEsquinas();
+                        } else {
+                            activarModoAjustarEsquinas(a.id);
+                        }
+                    });
+                    acciones.appendChild(btnAjustar);
+
                     const btnEnfocar = document.createElement('button');
                     btnEnfocar.type = 'button';
                     btnEnfocar.className = 'btn btn-outline-secondary';
@@ -5611,8 +5720,10 @@
                 handle.removeEventListener('pointermove', mover);
                 handle.removeEventListener('pointerup', soltar);
                 handle.removeEventListener('pointercancel', soltar);
+                renderZonasMapa();
                 renderAreasListaMapa();
                 renderTablaZonasMapa();
+                sincronizarSelectorAreasAdmin();
             };
 
             handle.addEventListener('pointermove', mover);
@@ -5721,6 +5832,13 @@
                 renderAreasListaMapa();
                 renderTablaZonasMapa();
                 sincronizarSelectorAreasAdmin();
+
+                const a = mapaData.areas.find(function(x) { return x.id === areaId; });
+                mapaPostTrazoAreaId = areaId;
+                const nombreEl = document.getElementById('mapaPostTrazoAreaNombre');
+                if (nombreEl) nombreEl.textContent = a ? a.nombre : ('Área #' + areaId);
+                const banner = document.getElementById('mapaPostTrazoBanner');
+                if (banner) banner.style.display = 'flex';
             }
         }
 
