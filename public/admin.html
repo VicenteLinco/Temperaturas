@@ -1560,7 +1560,7 @@
                                 </div>
                             </div>
 
-                            <div id="mapaTrazarBanner" class="alert alert-primary py-2 px-3 mb-2 d-flex justify-content-between align-items-center" style="display: none;">
+                            <div id="mapaTrazarBanner" class="alert alert-primary py-2 px-3 mb-2 justify-content-between align-items-center" style="display: none;">
                                 <div class="d-flex align-items-center gap-2">
                                     <span class="spinner-grow spinner-grow-sm text-primary" role="status"></span>
                                     <span>Haz clic y arrastra sobre el plano para trazar la zona de: <strong id="mapaTrazarAreaNombre"></strong></span>
@@ -1570,7 +1570,7 @@
                                 </button>
                             </div>
 
-                            <div id="mapaPostTrazoBanner" class="alert alert-success py-2 px-3 mb-2 d-flex justify-content-between align-items-center flex-wrap gap-2" style="display: none;">
+                            <div id="mapaPostTrazoBanner" class="alert alert-success py-2 px-3 mb-2 justify-content-between align-items-center flex-wrap gap-2" style="display: none;">
                                 <div class="d-flex align-items-center gap-2">
                                     <i class="bi bi-check2-circle fs-5 text-success"></i>
                                     <span>Zona trazada para: <strong id="mapaPostTrazoAreaNombre"></strong>. ¿Deseas ajustar las esquinas en el plano?</span>
@@ -1585,7 +1585,7 @@
                                 </div>
                             </div>
 
-                            <div id="mapaAjustarBanner" class="alert alert-info py-2 px-3 mb-2 d-flex justify-content-between align-items-center flex-wrap gap-2" style="display: none;">
+                            <div id="mapaAjustarBanner" class="alert alert-info py-2 px-3 mb-2 justify-content-between align-items-center flex-wrap gap-2" style="display: none;">
                                 <div class="d-flex align-items-center gap-2">
                                     <span class="spinner-grow spinner-grow-sm text-info" role="status"></span>
                                     <span>Ajustando esquinas de: <strong id="mapaAjustarAreaNombre"></strong>. Arrastra las manijas en las esquinas o bordes de la zona para calibrar.</span>
@@ -5379,10 +5379,26 @@
         }
 
         async function cargarMapaAdmin() {
+            const preview = document.getElementById('mapaPreview');
+            const editorImg = document.getElementById('mapaEditorImg');
+            const editorCard = document.getElementById('mapaEditorCard');
+            const estado = document.getElementById('mapaSinFoto');
+            function ocultarImagen(message) {
+                editorImg.onload = null;
+                editorImg.onerror = null;
+                editorImg.removeAttribute('src');
+                preview.removeAttribute('src');
+                preview.style.display = 'none';
+                editorCard.style.display = 'none';
+                document.getElementById('mapaEditor').style.aspectRatio = '';
+                estado.textContent = message;
+                estado.style.display = 'block';
+            }
+            ocultarImagen('Cargando plano…');
             try {
                 const response = await fetch('/api/mapa');
                 if (!response.ok) {
-                    alert('Error al cargar el plano');
+                    ocultarImagen('No se pudo cargar el plano. Vuelve a abrir esta sección para reintentar.');
                     return;
                 }
                 mapaData = await response.json();
@@ -5404,23 +5420,36 @@
                 cerrarBannerPostTrazo();
                 finalizarModoAjustarEsquinas();
 
-                const sinFoto = !mapaData.imagen_url;
-                document.getElementById('mapaSinFoto').style.display = sinFoto ? 'block' : 'none';
-                document.getElementById('mapaEditorCard').style.display = sinFoto ? 'none' : 'block';
-                const preview = document.getElementById('mapaPreview');
-                const editorImg = document.getElementById('mapaEditorImg');
-                if (sinFoto) {
-                    preview.style.display = 'none';
+                if (!mapaData.imagen_url) {
+                    ocultarImagen('Sube la foto del plano de planta para activar el editor. Sin foto, el registrador sigue usando la lista actual.');
                 } else {
-                    preview.src = mapaData.imagen_url;
-                    preview.style.display = 'block';
-                    editorImg.onload = ajustarAspectoMapa;
-                    editorImg.src = mapaData.imagen_url;
-                    if (editorImg.complete && editorImg.naturalWidth) ajustarAspectoMapa();
+                    const datos = mapaData;
+                    editorImg.onload = function() {
+                        if (mapaData !== datos) return;
+                        if (!editorImg.naturalWidth || !editorImg.naturalHeight) {
+                            editorImg.onerror();
+                            return;
+                        }
+                        ajustarAspectoMapa();
+                        estado.style.display = 'none';
+                        editorCard.style.display = 'block';
+                        preview.src = datos.imagen_url;
+                        preview.style.display = 'block';
+                    };
+                    editorImg.onerror = function() {
+                        if (mapaData !== datos) return;
+                        ocultarImagen('No se pudo cargar la imagen del plano. Vuelve a abrir esta sección para reintentar o sube una nueva foto.');
+                    };
+                    editorImg.src = datos.imagen_url;
+                    if (editorImg.complete) {
+                        if (editorImg.naturalWidth && editorImg.naturalHeight) editorImg.onload();
+                        else editorImg.onerror();
+                    }
                 }
                 resetearZoomMapaAdmin();
                 renderMapaAdmin();
             } catch (error) {
+                ocultarImagen('No se pudo cargar el plano. Vuelve a abrir esta sección para reintentar.');
                 console.error('Error al cargar mapa:', error);
             }
         }
